@@ -1,0 +1,100 @@
+import { Suspense } from "react";
+import Link from "next/link";
+
+function CancelContent({
+  searchParams,
+}: {
+  searchParams?: { orderId?: string };
+}) {
+  const orderId = searchParams?.orderId;
+
+  return (
+    <main className="min-h-screen bg-white px-6 py-16 text-neutral-900">
+      <div className="mx-auto max-w-3xl rounded-3xl border border-neutral-200 bg-white p-8 shadow-sm">
+        <div className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-red-100">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            className="h-7 w-7"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M15 9L9 15"
+              stroke="#DC2626"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <path
+              d="M9 9L15 15"
+              stroke="#DC2626"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </div>
+
+        <h1 className="mt-6 text-3xl font-extrabold tracking-tight">
+          Platba bola zrušená
+        </h1>
+
+        <p className="mt-4 text-base leading-relaxed text-neutral-600">
+          Objednávka nebola dokončená. Môžete sa vrátiť späť do konfigurátora,
+          upraviť parametre a skúsiť platbu znova.
+        </p>
+
+        {orderId ? (
+          <div className="mt-6 rounded-2xl border border-neutral-200 bg-neutral-50 p-4 text-sm">
+            <div className="text-neutral-500">ID objednávky</div>
+            <div className="mt-1 break-all font-mono text-neutral-900">
+              {orderId}
+            </div>
+          </div>
+        ) : null}
+
+        <div className="mt-8 flex flex-wrap gap-3">
+          <Link
+            href="/#kalkulator"
+            className="rounded-2xl bg-[#FFAE00] px-5 py-3 text-sm font-semibold text-black shadow-sm hover:opacity-90"
+          >
+            Späť do konfigurátora
+          </Link>
+
+          <Link
+            href="/"
+            className="rounded-2xl border border-neutral-200 bg-white px-5 py-3 text-sm font-semibold text-neutral-900 hover:bg-neutral-50"
+          >
+            Prejsť na hlavnú stránku
+          </Link>
+        </div>
+      </div>
+    </main>
+  );
+}
+
+export default async function CancelPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ orderId?: string }>;
+}) {
+  const resolvedSearchParams = await searchParams;
+
+  return (
+    <Suspense fallback={<CancelFallback />}>
+      <CancelContent searchParams={resolvedSearchParams} />
+    </Suspense>
+  );
+}
+
+function CancelFallback() {
+  return (
+    <main className="min-h-screen bg-white px-6 py-16 text-neutral-900">
+      <div className="mx-auto max-w-3xl rounded-3xl border border-neutral-200 bg-white p-8 shadow-sm">
+        <div className="h-6 w-40 animate-pulse rounded bg-neutral-200" />
+        <div className="mt-4 h-4 w-full animate-pulse rounded bg-neutral-100" />
+        <div className="mt-2 h-4 w-5/6 animate-pulse rounded bg-neutral-100" />
+      </div>
+    </main>
+  );
+}
