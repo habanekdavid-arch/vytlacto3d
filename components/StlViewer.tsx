@@ -5,222 +5,229 @@ import * as THREE from "three";
 import { STLLoader } from "three/examples/jsm/loaders/STLLoader.js";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 
-const COLOR_TO_HEX: Record<string, string> = {
-  black: "#111827",
-  white: "#F9FAFB",
-  gray: "#9CA3AF",
-  red: "#EF4444",
-  blue: "#3B82F6",
-  green: "#22C55E",
-  purple: "#8B5CF6",
-  orange: "#F97316",
-  yellow: "#FFAE00",
+type Props = {
+  fileKey: string;
+  title?: string;
+  colorId?: string;
+  height?: number;
 };
 
-function normalizeColor(input?: string) {
-  if (!input) return "#111827";
-  if (input.startsWith("#")) return input;
-  return COLOR_TO_HEX[input] ?? "#111827";
+function getModelColor(colorId?: string) {
+  switch (colorId) {
+    case "white":
+      return "#f5f5f5";
+    case "gray":
+      return "#9ca3af";
+    case "red":
+      return "#ef4444";
+    case "blue":
+      return "#3b82f6";
+    case "green":
+      return "#22c55e";
+    case "purple":
+      return "#8b5cf6";
+    case "orange":
+      return "#f97316";
+    case "yellow":
+      return "#FFAE00";
+    case "black":
+    default:
+      return "#111111";
+  }
+}
+
+function resolveModelUrl(fileKey: string) {
+  if (!fileKey) return "";
+
+  if (fileKey.startsWith("http://") || fileKey.startsWith("https://")) {
+    return fileKey;
+  }
+
+  return `/api/file?key=${encodeURIComponent(fileKey)}`;
 }
 
 export default function StlViewer({
   fileKey,
-  colorId = "black",
   title = "3D náhľad",
-  height = 420,
-}: {
-  fileKey: string;
-  colorId?: string;
-  title?: string;
-  height?: number;
-}) {
-  const hostRef = useRef<HTMLDivElement | null>(null);
-  const materialRef = useRef<THREE.MeshStandardMaterial | null>(null);
-  const [status, setStatus] = useState("Načítavam 3D náhľad…");
+  colorId = "black",
+  height = 380,
+}: Props) {
+  const mountRef = useRef<HTMLDivElement | null>(null);
+  const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  const resolvedColor = useMemo(() => normalizeColor(colorId), [colorId]);
+  const modelUrl = useMemo(() => resolveModelUrl(fileKey), [fileKey]);
+  const modelColor = useMemo(() => getModelColor(colorId), [colorId]);
 
-  // menenie farby bez reloadu STL
   useEffect(() => {
-    if (materialRef.current) {
-      materialRef.current.color = new THREE.Color(resolvedColor);
-      materialRef.current.needsUpdate = true;
+    const mount = mountRef.current;
+    if (!mount || !modelUrl) return;
+
+    setLoading(true);
+    setError("");
+
+    while (mount.firstChild) {
+      mount.removeChild(mount.firstChild);
     }
-  }, [resolvedColor]);
-
-  useEffect(() => {
-    const host = hostRef.current;
-    if (!host || !fileKey) return;
-
-    host.innerHTML = "";
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color("#F3F4F6");
+    scene.background = new THREE.Color("#f5f5f5");
 
-    const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 4000);
-    camera.position.set(0, 50, 180);
+    const camera = new THREE.PerspectiveCamera(
+      45,
+      mount.clientWidth / height,
+      0.1,
+      5000
+    );
+    camera.position.set(140, 110, 140);
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    const renderer = new THREE.WebGLRenderer({
+      antialias: true,
+      alpha: false,
+      preserveDrawingBuffer: false,
+    });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    renderer.domElement.style.display = "block";
-    renderer.domElement.style.width = "100%";
-    renderer.domElement.style.height = "100%";
-    host.appendChild(renderer.domElement);
+    renderer.setSize(mount.clientWidth, height);
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    mount.appendChild(renderer.domElement);
+    rendererRef.current = renderer;
 
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
-    controls.dampingFactor = 0.08;
-    controls.screenSpacePanning = true;
+    controls.target.set(0, 0, 0);
 
-    const ambient = new THREE.AmbientLight(0xffffff, 0.72);
+    const ambient = new THREE.AmbientLight(0xffffff, 1.15);
     scene.add(ambient);
 
-    const dir1 = new THREE.DirectionalLight(0xffffff, 0.9);
-    dir1.position.set(220, 260, 200);
-    dir1.castShadow = true;
-    dir1.shadow.mapSize.set(2048, 2048);
+    const dir1 = new THREE.DirectionalLight(0xffffff, 1.2);
+    dir1.position.set(120, 180, 120);
     scene.add(dir1);
 
-    const dir2 = new THREE.DirectionalLight(0xffffff, 0.35);
-    dir2.position.set(-220, 120, -180);
+    const dir2 = new THREE.DirectionalLight(0xffffff, 0.8);
+    dir2.position.set(-120, 100, -80);
     scene.add(dir2);
 
-    const floorGeo = new THREE.PlaneGeometry(2000, 2000);
-    const floorMat = new THREE.ShadowMaterial({ opacity: 0.12 });
-    const floor = new THREE.Mesh(floorGeo, floorMat);
-    floor.rotation.x = -Math.PI / 2;
-    floor.position.y = -0.01;
-    floor.receiveShadow = true;
-    scene.add(floor);
+    const grid = new THREE.GridHelper(220, 12, 0xe5e7eb, 0xe5e7eb);
+    grid.position.y = -35;
+    scene.add(grid);
+
+    const material = new THREE.MeshStandardMaterial({
+      color: new THREE.Color(modelColor),
+      metalness: 0.1,
+      roughness: 0.65,
+    });
 
     let mesh: THREE.Mesh | null = null;
-
-    const resize = () => {
-      const w = host.clientWidth;
-      const h = host.clientHeight;
-      renderer.setSize(w, h, false);
-      camera.aspect = w / h;
-      camera.updateProjectionMatrix();
-    };
-
-    const ro = new ResizeObserver(resize);
-    ro.observe(host);
-    resize();
+    let disposed = false;
 
     const loader = new STLLoader();
 
-    const applyFrontView = (maxDim: number) => {
-      const dist = maxDim * 1.9;
-      camera.position.set(0, dist * 0.2, dist * 1.1);
-      camera.lookAt(0, 0, 0);
-      controls.target.set(0, 0, 0);
-      controls.update();
-    };
+    loader.load(
+      modelUrl,
+      (geometry) => {
+        if (disposed) return;
 
-    (async () => {
-      try {
-        setStatus("Načítavam STL…");
+        geometry.computeVertexNormals();
+        geometry.center();
 
-        const res = await fetch(`/api/file?key=${encodeURIComponent(fileKey)}`, {
-          cache: "no-store",
-        });
-
-        if (!res.ok) {
-          throw new Error("Nepodarilo sa načítať STL.");
-        }
-
-        const buf = await res.arrayBuffer();
-        const geo = loader.parse(buf);
-
-        geo.computeVertexNormals();
-        geo.computeBoundingBox();
-
-        const box = geo.boundingBox!;
+        const bbox = new THREE.Box3().setFromBufferAttribute(
+          geometry.getAttribute("position") as THREE.BufferAttribute
+        );
         const size = new THREE.Vector3();
-        const center = new THREE.Vector3();
-        box.getSize(size);
-        box.getCenter(center);
+        bbox.getSize(size);
 
-        geo.translate(-center.x, -center.y, -center.z);
+        const maxDim = Math.max(size.x, size.y, size.z) || 1;
+        const targetSize = 120;
+        const scale = targetSize / maxDim;
 
-        // STL býva často Z-up
-        geo.rotateX(-Math.PI / 2);
+        geometry.scale(scale, scale, scale);
+        geometry.computeBoundingBox();
+        geometry.computeBoundingSphere();
 
-        const maxDim = Math.max(size.x, size.y, size.z);
-
-        const mat = new THREE.MeshStandardMaterial({
-          color: new THREE.Color(resolvedColor),
-          roughness: 0.35,
-          metalness: 0.08,
-        });
-
-        materialRef.current = mat;
-
-        mesh = new THREE.Mesh(geo, mat);
-        mesh.castShadow = true;
+        mesh = new THREE.Mesh(geometry, material);
+        mesh.rotation.x = -Math.PI / 2;
         scene.add(mesh);
 
-        applyFrontView(maxDim);
-        setStatus("");
-      } catch (e: any) {
-        console.error(e);
-        setStatus(e?.message || "Chyba pri načítaní 3D náhľadu.");
-      }
-    })();
+        const sphere = geometry.boundingSphere;
+        const radius = sphere?.radius ?? 50;
+        const distance = radius * 3.2;
 
-    let raf = 0;
-    const tick = () => {
+        camera.position.set(distance, distance * 0.75, distance);
+        controls.target.set(0, 0, 0);
+        controls.update();
+
+        setLoading(false);
+      },
+      undefined,
+      (err) => {
+        console.error("STL LOAD ERROR:", err);
+        if (disposed) return;
+        setError("Nepodarilo sa načítať STL.");
+        setLoading(false);
+      }
+    );
+
+    let animationFrame = 0;
+
+    const animate = () => {
+      animationFrame = requestAnimationFrame(animate);
       controls.update();
       renderer.render(scene, camera);
-      raf = requestAnimationFrame(tick);
     };
-    tick();
+    animate();
+
+    const onResize = () => {
+      if (!mount || !renderer) return;
+      const width = mount.clientWidth || 300;
+      camera.aspect = width / height;
+      camera.updateProjectionMatrix();
+      renderer.setSize(width, height);
+    };
+
+    window.addEventListener("resize", onResize);
 
     return () => {
-      cancelAnimationFrame(raf);
-      ro.disconnect();
+      disposed = true;
+      cancelAnimationFrame(animationFrame);
+      window.removeEventListener("resize", onResize);
       controls.dispose();
 
       if (mesh) {
         mesh.geometry.dispose();
-        (mesh.material as THREE.Material).dispose();
-        scene.remove(mesh);
       }
 
-      materialRef.current = null;
-      floorGeo.dispose();
-      floorMat.dispose();
+      material.dispose();
       renderer.dispose();
 
-      if (renderer.domElement.parentNode) {
-        renderer.domElement.parentNode.removeChild(renderer.domElement);
+      while (mount.firstChild) {
+        mount.removeChild(mount.firstChild);
       }
     };
-  }, [fileKey, resolvedColor]);
+  }, [modelUrl, modelColor, height]);
 
   return (
-    <div className="rounded-3xl border border-neutral-200 bg-white p-5 shadow-sm">
-      <div className="flex items-center justify-between">
+    <div className="rounded-3xl border border-neutral-200 bg-white p-4">
+      <div className="mb-4 flex items-center justify-between gap-4">
         <div>
           <div className="text-sm font-semibold text-neutral-500">3D náhľad</div>
-          <div className="mt-1 text-lg font-bold text-neutral-900">{title}</div>
+          <div className="text-2xl font-extrabold text-neutral-900">{title}</div>
         </div>
-        <div className="text-xs text-neutral-500">{status ? "načítavam…" : "hotovo"}</div>
+
+        <div className="text-xs font-semibold text-neutral-500">
+          {loading ? "načítavam..." : error ? "chyba" : "pripravené"}
+        </div>
       </div>
 
-      <div className="mt-4 overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-100">
-        <div ref={hostRef} className="w-full" style={{ height }} />
-      </div>
+      <div
+        ref={mountRef}
+        className="w-full overflow-hidden rounded-3xl border border-neutral-200 bg-[#f5f5f5]"
+        style={{ height }}
+      />
 
-      {status ? (
-        <div className="mt-3 text-sm text-neutral-600">{status}</div>
-      ) : (
-        <div className="mt-3 text-xs text-neutral-500">
-          Tip: ľavé tlačidlo = otáčať, koliesko = zoom, pravé = posúvať.
-        </div>
-      )}
+      {error ? (
+        <div className="mt-4 text-sm text-red-600">{error}</div>
+      ) : null}
     </div>
   );
 }
