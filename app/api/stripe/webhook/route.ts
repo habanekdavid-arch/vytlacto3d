@@ -4,192 +4,129 @@ import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "");
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
+  apiVersion: "2026-02-25.clover",
+});
 
-async function sendOrderPaidEmail({
-  to,
-  orderId,
-  fileName,
-  paidTotalEur,
-  shippingMethod,
-}: {
-  to: string;
-  orderId: string;
-  fileName: string;
-  paidTotalEur: number | null;
-  shippingMethod: string | null;
-}) {
-  const resendApiKey = process.env.RESEND_API_KEY;
-  const fromEmail = process.env.ORDER_FROM_EMAIL;
+function getShippingMethod(session: Stripe.Checkout.Session) {
+  const shippingOption = session.shipping_cost?.shipping_rate;
 
-  if (!resendApiKey || !fromEmail) {
-    console.log("Email not sent: missing RESEND_API_KEY or ORDER_FROM_EMAIL");
-    return;
+  if (!shippingOption) return null;
+
+  if (typeof shippingOption === "string") {
+    return shippingOption;
   }
 
-  const totalText =
-    typeof paidTotalEur === "number"
-      ? `${paidTotalEur.toFixed(2).replace(".", ",")} €`
-      : "—";
+  return shippingOption.id ?? null;
+}
 
-  const shippingText = shippingMethod || "Podľa checkoutu";
+function getShippingAddress(session: Stripe.Checkout.Session) {
+  const details = session.collected_information?.shipping_details;
 
-  const html = `
-    <div style="font-family: Arial, sans-serif; color: #111; line-height: 1.6;">
-      <h2 style="margin-bottom: 12px;">Ďakujeme za objednávku</h2>
-      <p>Vaša objednávka bola úspešne zaplatená.</p>
+  if (!details?.address) return null;
 
-      <div style="margin: 20px 0; padding: 16px; border: 1px solid #e5e7eb; border-radius: 12px;">
-        <p><strong>ID objednávky:</strong> ${orderId}</p>
-        <p><strong>Model:</strong> ${fileName}</p>
-        <p><strong>Zaplatená suma:</strong> ${totalText}</p>
-        <p><strong>Doprava:</strong> ${shippingText}</p>
-      </div>
-
-      <p>Ďalší stav objednávky vám potvrdíme po spracovaní.</p>
-      <p>VytlačTo3D / 4from media, s.r.o.</p>
-    </div>
-  `;
-
-  const text = [
-    "Ďakujeme za objednávku.",
-    `ID objednávky: ${orderId}`,
-    `Model: ${fileName}`,
-    `Zaplatená suma: ${totalText}`,
-    `Doprava: ${shippingText}`,
-    "",
-    "VytlačTo3D / 4from media, s.r.o.",
-  ].join("\n");
-
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${resendApiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from: fromEmail,
-      to: [to],
-      subject: `Potvrdenie objednávky ${orderId}`,
-      html,
-      text,
-    }),
-  });
-
-  if (!response.ok) {
-    const body = await response.text();
-    console.error("Resend error:", body);
-  }
+  return {
+    name: details.name ?? null,
+    line1: details.address.line1 ?? null,
+    line2: details.address.line2 ?? null,
+    city: details.address.city ?? null,
+    postal_code: details.address.postal_code ?? null,
+    state: details.address.state ?? null,
+    country: details.address.country ?? null,
+  };
 }
 
 export async function POST(req: NextRequest) {
-  const sig = req.headers.get("stripe-signature");
-  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-
-  if (!sig) {
-    return NextResponse.json(
-      { error: "Missing stripe-signature" },
-      { status: 400 }
-    );
-  }
-
-  if (!webhookSecret) {
-    return NextResponse.json(
-      { error: "Missing STRIPE_WEBHOOK_SECRET" },
-      { status: 500 }
-    );
-  }
-
-  let event: Stripe.Event;
-
   try {
-    const rawBody = await req.text();
-    event = stripe.webhooks.constructEvent(rawBody, sig, webhookSecret);
-  } catch (err: any) {
-    console.error("Webhook signature error:", err?.message);
-    return NextResponse.json(
-      { error: `Invalid signature: ${err?.message || "unknown"}` },
-      { status: 400 }
-    );
-  }
+    const signature = req.headers.get("stripe-signature");
 
-  try {
+    if (!signature) {
+      return NextResponse.json(
+        { error: "Missing stripe-signature header" },
+        { status: 400 }
+      );
+    }
+
+    if (!process.env.STRIPE_WEBHOOK_SECRET) {
+      return NextResponse.json(
+        { error: "Missing STRIPE_WEBHOOK_SECRET" },
+        { status: 500 }
+      );
+    }
+
+    if (!process.env.STRIPE_SECRET_KEY) {
+      return NextResponse.json(
+        { error: "Missing STRIPE_SECRET_KEY" },
+        { status: 500 }
+      );
+    }
+
+    const body = await req.text();
+
+    let event: Stripe.Event;
+
+    try {
+      event = stripe.webhooks.constructEvent(
+        body,
+        signature,
+        process.env.STRIPE_WEBHOOK_SECRET
+      );
+    } catch (err: any) {
+      console.error("Webhook signature verification failed:", err?.message);
+      return NextResponse.json(
+        { error: `Webhook Error: ${err?.message}` },
+        { status: 400 }
+      );
+    }
+
     if (event.type === "checkout.session.completed") {
       const session = event.data.object as Stripe.Checkout.Session;
 
       const orderId = session.metadata?.orderId;
       if (!orderId) {
-        return NextResponse.json(
-          { error: "Missing orderId in metadata" },
-          { status: 400 }
-        );
+        console.error("Missing orderId in checkout session metadata");
+        return NextResponse.json({ received: true });
       }
 
-      const full = await stripe.checkout.sessions.retrieve(session.id, {
-        expand: ["shipping_cost.shipping_rate", "payment_intent"],
+      const fullSession = await stripe.checkout.sessions.retrieve(session.id, {
+        expand: ["shipping_cost.shipping_rate"],
       });
 
-      const shippingDetails = (full as any).shipping_details ?? null;
-      const shippingCost = (full as any).shipping_cost ?? null;
-      const shippingMethod =
-        ((full as any).shipping_cost?.shipping_rate?.display_name as
-          | string
-          | undefined) ?? null;
+      const amountTotal =
+        typeof fullSession.amount_total === "number"
+          ? fullSession.amount_total / 100
+          : null;
 
-      const paidTotalEur =
-        typeof full.amount_total === "number" ? full.amount_total / 100 : null;
+      const shippingCost =
+        typeof fullSession.shipping_cost?.amount_total === "number"
+          ? fullSession.shipping_cost.amount_total / 100
+          : null;
 
-      const paymentIntentId =
-        typeof full.payment_intent === "string"
-          ? full.payment_intent
-          : full.payment_intent?.id ?? null;
+      const shippingMethod = getShippingMethod(fullSession);
+      const shippingAddress = getShippingAddress(fullSession);
 
-      const updatedOrder = await prisma.order.update({
-        where: { id: orderId },
-        data: {
-          status: "PAID",
-          stripeSessionId: full.id,
-          stripePaymentIntentId: paymentIntentId,
-          customerEmail: full.customer_details?.email ?? null,
-          paidTotalEur,
-          shippingAddress: shippingDetails,
-          shippingCost,
-          shippingMethod,
-        },
-      });
+     await prisma.order.update({
+  where: { id: orderId },
+  data: {
+    status: "PAID",
+    customerEmail: fullSession.customer_details?.email ?? null,
+    paidTotalEur: amountTotal,
+    stripeSessionId: fullSession.id,
+    stripePaymentIntentId:
+      typeof fullSession.payment_intent === "string"
+        ? fullSession.payment_intent
+        : fullSession.payment_intent?.id ?? null,
+    shippingMethod,
+    shippingAddress: shippingAddress as any
+  },
+});
 
-      console.log(`✅ Order ${orderId} marked as PAID`);
-
-      if (updatedOrder.customerEmail) {
-        await sendOrderPaidEmail({
-          to: updatedOrder.customerEmail,
-          orderId: updatedOrder.id,
-          fileName: updatedOrder.fileName,
-          paidTotalEur: updatedOrder.paidTotalEur,
-          shippingMethod: updatedOrder.shippingMethod,
-        });
-      }
-    }
-
-    if (event.type === "checkout.session.expired") {
-      const session = event.data.object as Stripe.Checkout.Session;
-      const orderId = session.metadata?.orderId;
-
-      if (orderId) {
-        await prisma.order.update({
-          where: { id: orderId },
-          data: {
-            status: "CANCELED",
-          },
-        });
-
-        console.log(`ℹ️ Order ${orderId} marked as CANCELED`);
-      }
+      console.log("Order marked as PAID:", orderId);
     }
 
     return NextResponse.json({ received: true });
   } catch (e: any) {
-    console.error("Webhook DB error:", e);
+    console.error("Stripe webhook error:", e);
     return NextResponse.json(
       { error: e?.message || "Webhook failed" },
       { status: 500 }
