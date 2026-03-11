@@ -24,16 +24,17 @@ function formatPrice(value: unknown) {
   return `${value.toFixed(2).replace(".", ",")} €`;
 }
 
-function formatDateStable(value: Date | string) {
+function formatDateBratislava(value: Date | string) {
   const d = typeof value === "string" ? new Date(value) : value;
 
-  const yyyy = d.getUTCFullYear();
-  const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
-  const dd = String(d.getUTCDate()).padStart(2, "0");
-  const hh = String(d.getUTCHours()).padStart(2, "0");
-  const min = String(d.getUTCMinutes()).padStart(2, "0");
-
-  return `${dd}.${mm}.${yyyy} ${hh}:${min} UTC`;
+  return new Intl.DateTimeFormat("sk-SK", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "Europe/Bratislava",
+  }).format(d);
 }
 
 function getConfigLabel(config: any) {
@@ -96,7 +97,7 @@ export default async function AdminOrdersPage() {
     shippingMethod: order.shippingMethod ?? "—",
     stripeSessionId: order.stripeSessionId ?? null,
     paidTotalText: formatPrice(order.paidTotalEur),
-    createdAtText: formatDateStable(order.createdAt),
+    createdAtText: formatDateBratislava(order.createdAt),
     configLabel: getConfigLabel(order.config),
   }));
 
@@ -247,7 +248,7 @@ export default async function AdminOrdersPage() {
                       href={`/api/file?key=${encodeURIComponent(order.fileKey)}`}
                       target="_blank"
                       rel="noreferrer"
-                      className="rounded-xl border border-neutral-200 bg-white px-3 py-2 text-xs font-bold text-neutral-900 hover:bg-neutral-50 text-center"
+                      className="rounded-xl border border-neutral-200 bg-white px-3 py-2 text-center text-xs font-bold text-neutral-900 hover:bg-neutral-50"
                     >
                       Otvoriť STL
                     </a>
@@ -255,7 +256,7 @@ export default async function AdminOrdersPage() {
                     <a
                       href={`/api/file?key=${encodeURIComponent(order.fileKey)}`}
                       download
-                      className="rounded-xl bg-[#FFAE00] px-3 py-2 text-xs font-bold text-black hover:opacity-90 text-center"
+                      className="rounded-xl bg-[#FFAE00] px-3 py-2 text-center text-xs font-bold text-black hover:opacity-90"
                     >
                       Stiahnuť STL
                     </a>

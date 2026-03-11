@@ -5,7 +5,9 @@ import { quote } from "@/lib/pricing";
 
 export const runtime = "nodejs";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "");
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
+  apiVersion: "2026-02-25.clover",
+});
 
 function getBaseUrl(req: NextRequest) {
   const origin = req.headers.get("origin");
@@ -13,8 +15,8 @@ function getBaseUrl(req: NextRequest) {
 
   const host = req.headers.get("host");
   const proto = req.headers.get("x-forwarded-proto") ?? "http";
-
   if (host) return `${proto}://${host}`;
+
   return "http://localhost:3000";
 }
 
@@ -43,20 +45,20 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (
-      !body?.config?.material ||
-      !body?.config?.quality ||
-      typeof body?.config?.infillPct !== "number"
-    ) {
+    if (!body?.config?.material || !body?.config?.quality) {
       return NextResponse.json(
-        { error: "Missing config (material/quality/infillPct)" },
+        { error: "Missing config" },
         { status: 400 }
       );
     }
 
     const volumeCm3 = Number(body.uploaded.analysis.volumeCm3);
     const quantity = Number(body.config.quantity ?? 1);
-    const infillPct = Number(body.config.infillPct ?? 20);
+    const infillPct = Number(
+      body.config.infillPct ??
+      body.config.strength ??
+      20
+    );
 
     if (!Number.isFinite(volumeCm3) || volumeCm3 <= 0) {
       return NextResponse.json(
@@ -72,7 +74,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (!Number.isFinite(infillPct) || infillPct < 5 || infillPct > 70) {
+    if (!Number.isFinite(infillPct) || infillPct < 0 || infillPct > 100) {
       return NextResponse.json(
         { error: "Invalid infillPct" },
         { status: 400 }
@@ -93,23 +95,24 @@ export async function POST(req: NextRequest) {
         fileKey: body.uploaded.fileKey,
         fileName: body.uploaded.fileName,
         analysis: body.uploaded.analysis,
-        config: body.config,
+        config: {
+          ...body.config,
+          infillPct,
+        },
         pricing: pricing as any,
       },
       select: { id: true },
     });
 
     const baseUrl = getBaseUrl(req);
-    const itemAmountCents = Math.max(1, Math.round(pricing.total * 100));
+    const itemAmountCents = Math.round(pricing.total * 100);
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       billing_address_collection: "auto",
-
       shipping_address_collection: {
-        allowed_countries: ["SK"],
+        allowed_countries: ["SK", "CZ"],
       },
-
       shipping_options: [
         {
           shipping_rate_data: {
@@ -134,7 +137,6 @@ export async function POST(req: NextRequest) {
           },
         },
       ],
-
       line_items: [
         {
           quantity: 1,
@@ -148,11 +150,14 @@ export async function POST(req: NextRequest) {
           },
         },
       ],
-
       metadata: {
         orderId: order.id,
       },
-
+      payment_intent_data: {
+        metadata: {
+          orderId: order.id,
+        },
+      },
       success_url: `${baseUrl}/success?orderId=${order.id}&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${baseUrl}/cancel?orderId=${order.id}`,
     });
