@@ -155,35 +155,41 @@ function detectAsciiStl(buffer: Buffer) {
   return head.trimStart().startsWith("solid");
 }
 
+async function loadStlBuffer(fileKey: string) {
+  if (fileKey.startsWith("http://") || fileKey.startsWith("https://")) {
+    const res = await fetch(fileKey, { cache: "no-store" });
+
+    if (!res.ok) {
+      throw new Error(`Nepodarilo sa načítať vzdialený STL súbor (${res.status}).`);
+    }
+
+    const arr = await res.arrayBuffer();
+    return Buffer.from(arr);
+  }
+
+  const filePath = getLocalFilePath(fileKey);
+
+  if (!fs.existsSync(filePath)) {
+    throw new Error(`File not found: ${fileKey}`);
+  }
+
+  const stat = fs.statSync(filePath);
+  if (!stat.isFile()) {
+    throw new Error("Invalid file path");
+  }
+
+  return fs.readFileSync(filePath);
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json().catch(() => null);
 
     if (!body?.fileKey) {
-      return NextResponse.json(
-        { error: "Missing fileKey" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Missing fileKey" }, { status: 400 });
     }
 
-    const filePath = getLocalFilePath(body.fileKey);
-
-    if (!fs.existsSync(filePath)) {
-      return NextResponse.json(
-        { error: `File not found: ${body.fileKey}` },
-        { status: 404 }
-      );
-    }
-
-    const stat = fs.statSync(filePath);
-    if (!stat.isFile()) {
-      return NextResponse.json(
-        { error: "Invalid file path" },
-        { status: 400 }
-      );
-    }
-
-    const buffer = fs.readFileSync(filePath);
+    const buffer = await loadStlBuffer(body.fileKey);
 
     let analysis: {
       dimsXmm: number;
@@ -193,8 +199,7 @@ export async function POST(req: NextRequest) {
     };
 
     if (detectAsciiStl(buffer)) {
-      const text = buffer.toString("utf8");
-      analysis = parseAsciiStl(text);
+      analysis = parseAsciiStl(buffer.toString("utf8"));
     } else {
       analysis = parseBinaryStl(buffer);
     }
@@ -203,7 +208,7 @@ export async function POST(req: NextRequest) {
       ok: true,
       analysis,
       fileKey: body.fileKey,
-      fileName: body.fileName ?? path.basename(filePath),
+      fileName: body.fileName ?? path.basename(body.fileKey),
     });
   } catch (e: any) {
     console.error("Analyze API error:", e);

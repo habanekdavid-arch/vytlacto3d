@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { upload } from "@vercel/blob/client";
 
 type Uploaded = {
   fileKey: string;
@@ -30,33 +31,21 @@ export default function UploadBox({
     onUploadingChange?.(true);
 
     try {
-      const form = new FormData();
-      form.append("file", file);
+      if (!file.name.toLowerCase().endsWith(".stl")) {
+        throw new Error("Podporujeme len STL (.stl).");
+      }
 
-      const uploadRes = await fetch("/api/upload", {
-        method: "POST",
-        body: form,
+      const blob = await upload(file.name, file, {
+        access: "public",
+        handleUploadUrl: "/api/blob/upload",
+        multipart: true,
+        contentType: file.type || "application/octet-stream",
+        onUploadProgress: ({ percentage }) => {
+          console.log(`Upload progress: ${percentage}%`);
+        },
       });
 
-      const uploadText = await uploadRes.text();
-      let uploadData: any = null;
-
-      try {
-        uploadData = JSON.parse(uploadText);
-      } catch {
-        uploadData = { error: uploadText };
-      }
-
-      console.log("UPLOAD STATUS:", uploadRes.status);
-      console.log("UPLOAD DATA:", uploadData);
-
-      if (!uploadRes.ok) {
-        throw new Error(uploadData?.error || "Upload zlyhal.");
-      }
-
-      if (!uploadData?.fileKey) {
-        throw new Error("Upload nevrátil fileKey.");
-      }
+      console.log("BLOB UPLOAD OK:", blob);
 
       const analyzeRes = await fetch("/api/analyze", {
         method: "POST",
@@ -64,9 +53,9 @@ export default function UploadBox({
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          fileKey: uploadData.fileKey,
-          fileName: uploadData.fileName,
-          fileSize: uploadData.fileSize,
+          fileKey: blob.url,
+          fileName: file.name,
+          fileSize: file.size,
         }),
       });
 
@@ -91,9 +80,9 @@ export default function UploadBox({
       }
 
       onUploaded({
-        fileKey: uploadData.fileKey,
-        fileName: uploadData.fileName,
-        fileSize: uploadData.fileSize,
+        fileKey: blob.url,
+        fileName: file.name,
+        fileSize: file.size,
         analysis: analyzeData.analysis,
       });
     } catch (e: any) {
