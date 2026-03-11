@@ -108,9 +108,7 @@ export default function StlViewer({
     dir2.position.set(-120, 100, -80);
     scene.add(dir2);
 
-    const grid = new THREE.GridHelper(220, 12, 0xe5e7eb, 0xe5e7eb);
-    grid.position.y = -35;
-    scene.add(grid);
+  // grid removed
 
     const material = new THREE.MeshStandardMaterial({
       color: new THREE.Color(modelColor),
