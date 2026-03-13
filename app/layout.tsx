@@ -3,7 +3,9 @@ import Footer from "@/components/Footer";
 import CookieBanner from "@/components/CookieBanner";
 
 export const metadata = {
-  metadataBase: new URL("https://vytlacto3d.com"),
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_BASE_URL || "https://vytlacto3d-5mxw.vercel.app"
+  ),
 
   title: {
     default: "VytlačTo3D – Online konfigurátor 3D tlače",
@@ -26,7 +28,7 @@ export const metadata = {
     title: "VytlačTo3D – Online konfigurátor 3D tlače",
     description:
       "Nahraj STL model, nastav parametre a okamžite zisti cenu 3D tlače.",
-    url: "https://vytlacto3d.com",
+    url: process.env.NEXT_PUBLIC_BASE_URL || "https://vytlacto3d-5mxw.vercel.app",
     siteName: "VytlačTo3D",
     locale: "sk_SK",
     type: "website",

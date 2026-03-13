@@ -13,7 +13,6 @@ function unauthorized() {
 export function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // chránime iba admin sekciu
   if (!pathname.startsWith("/admin")) {
     return NextResponse.next();
   }
