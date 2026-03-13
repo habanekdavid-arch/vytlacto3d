@@ -44,9 +44,13 @@ function CancelContent({
           upraviť parametre a skúsiť platbu znova.
         </p>
 
+        <p className="mt-3 text-sm leading-relaxed text-neutral-500">
+          Ak ste platbu prerušili omylom, stačí sa vrátiť späť a pokračovať v objednávke.
+        </p>
+
         {orderId ? (
           <div className="mt-6 rounded-2xl border border-neutral-200 bg-neutral-50 p-4 text-sm">
-            <div className="text-neutral-500">ID objednávky</div>
+            <div className="text-neutral-500">ID rozpracovanej objednávky</div>
             <div className="mt-1 break-all font-mono text-neutral-900">
               {orderId}
             </div>

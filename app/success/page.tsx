@@ -7,7 +7,6 @@ function SuccessContent({
   searchParams?: { orderId?: string; session_id?: string };
 }) {
   const orderId = searchParams?.orderId;
-  const sessionId = searchParams?.session_id;
 
   return (
     <main className="min-h-screen bg-white px-6 py-16 text-neutral-900">
@@ -34,29 +33,22 @@ function SuccessContent({
         </h1>
 
         <p className="mt-4 text-base leading-relaxed text-neutral-600">
-          Ďakujeme za objednávku. Vašu objednávku sme prijali a budeme ju ďalej
-          spracovávať. V prípade potreby vás budeme kontaktovať.
+          Ďakujeme za objednávku. Vaša platba bola úspešne prijatá a objednávka
+          je zaevidovaná.
         </p>
 
-        <div className="mt-6 grid gap-4 md:grid-cols-2">
-          {orderId ? (
-            <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4 text-sm">
-              <div className="text-neutral-500">ID objednávky</div>
-              <div className="mt-1 break-all font-mono text-neutral-900">
-                {orderId}
-              </div>
-            </div>
-          ) : null}
+        <p className="mt-3 text-sm leading-relaxed text-neutral-500">
+          Potvrdenie objednávky a ďalšie informácie sme vám poslali e-mailom.
+        </p>
 
-          {sessionId ? (
-            <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4 text-sm">
-              <div className="text-neutral-500">Stripe session</div>
-              <div className="mt-1 break-all font-mono text-neutral-900">
-                {sessionId}
-              </div>
+        {orderId ? (
+          <div className="mt-6 rounded-2xl border border-neutral-200 bg-neutral-50 p-4 text-sm">
+            <div className="text-neutral-500">ID objednávky</div>
+            <div className="mt-1 break-all font-mono text-neutral-900">
+              {orderId}
             </div>
-          ) : null}
-        </div>
+          </div>
+        ) : null}
 
         <div className="mt-8 flex flex-wrap gap-3">
           <Link
@@ -67,10 +59,10 @@ function SuccessContent({
           </Link>
 
           <Link
-            href="/admin/orders"
+            href="/#kalkulator"
             className="rounded-2xl border border-neutral-200 bg-white px-5 py-3 text-sm font-semibold text-neutral-900 hover:bg-neutral-50"
           >
-            Skontrolovať objednávky
+            Vytvoriť ďalšiu objednávku
           </Link>
         </div>
       </div>
