@@ -37,15 +37,13 @@ export default function Footer() {
         </div>
 
         <div>
-          <div className="text-base font-semibold text-neutral-900">Prevádzkovateľ</div>
+          <div className="text-base font-semibold text-neutral-900">Výroba</div>
 
           <div className="mt-4 space-y-1 text-sm text-neutral-600">
             <div>4from media, s.r.o.</div>
-            <div>Nezábudková 5</div>
-            <div>821 01 Bratislava</div>
-            <div className="pt-2">IČO: 35976063</div>
-            <div>DIČ: 2022117966</div>
-            <div>IČ DPH: SK2022117966</div>
+            <div>M. Hodžu 393/5</div>
+            <div>971 01 Prievidza</div>
+            <div>Email: info@4frommedia.sk</div>
           </div>
         </div>
       </div>
