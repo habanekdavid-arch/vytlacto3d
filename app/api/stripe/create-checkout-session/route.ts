@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
 import { quote } from "@/lib/pricing";
+import { addVat, formatEur } from "@/lib/vat";
 
 export const runtime = "nodejs";
 
@@ -105,7 +106,8 @@ export async function POST(req: NextRequest) {
     });
 
     const baseUrl = getBaseUrl(req);
-    const itemAmountCents = Math.round(pricing.total * 100);
+    const totalWithVat = addVat(pricing.total);
+    const itemAmountCents = Math.round(totalWithVat * 100);
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
@@ -145,7 +147,7 @@ export async function POST(req: NextRequest) {
             unit_amount: itemAmountCents,
             product_data: {
               name: `3D tlač: ${body.uploaded.fileName}`,
-              description: `${body.config.material} • ${body.config.quality} • ${infillPct}% infill • ${quantity} ks`,
+              description: `${formatEur(pricing.total)} bez DPH • ${formatEur(totalWithVat)} s DPH`,
             },
           },
         },

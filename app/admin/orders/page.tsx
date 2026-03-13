@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { formatPricePair, formatEur, addVat } from "@/lib/vat";
 
 async function updateOrderStatus(formData: FormData) {
   "use server";
@@ -17,11 +18,6 @@ async function updateOrderStatus(formData: FormData) {
 
   revalidatePath("/admin/orders");
   revalidatePath(`/admin/orders/${id}`);
-}
-
-function formatPrice(value: unknown) {
-  if (typeof value !== "number" || Number.isNaN(value)) return "—";
-  return `${value.toFixed(2).replace(".", ",")} €`;
 }
 
 function formatDateBratislava(value: Date | string) {
@@ -96,7 +92,7 @@ export default async function AdminOrdersPage() {
     customerEmail: order.customerEmail ?? "—",
     shippingMethod: order.shippingMethod ?? "—",
     stripeSessionId: order.stripeSessionId ?? null,
-    paidTotalText: formatPrice(order.paidTotalEur),
+    paidTotal: formatPricePair(order.paidTotalEur ?? null),
     createdAtText: formatDateBratislava(order.createdAt),
     configLabel: getConfigLabel(order.config),
   }));
@@ -107,9 +103,11 @@ export default async function AdminOrdersPage() {
   const printingOrders = orders.filter((o) => o.status === "PRINTING").length;
   const doneOrders = orders.filter((o) => o.status === "DONE").length;
 
-  const revenue = ordersRaw.reduce((sum, order) => {
+  const revenueWithoutVat = ordersRaw.reduce((sum, order) => {
     return sum + (typeof order.paidTotalEur === "number" ? order.paidTotalEur : 0);
   }, 0);
+
+  const revenueWithVat = addVat(revenueWithoutVat);
 
   return (
     <main className="min-h-screen bg-white px-6 py-10 text-neutral-900">
@@ -145,7 +143,11 @@ export default async function AdminOrdersPage() {
           <StatCard title="Zaplatené" value={String(paidOrders)} hint="Status PAID" highlight />
           <StatCard title="Tlačia sa" value={String(printingOrders)} hint="Status PRINTING" />
           <StatCard title="Hotové" value={String(doneOrders)} hint="Status DONE" />
-          <StatCard title="Tržby" value={formatPrice(revenue)} hint="Súčet paidTotalEur" />
+          <StatCard
+            title="Tržby"
+            value={formatEur(revenueWithoutVat)}
+            hint={`${formatEur(revenueWithVat)} s DPH`}
+          />
         </section>
 
         <section className="mt-8 space-y-4">
@@ -222,7 +224,10 @@ export default async function AdminOrdersPage() {
                       Cena
                     </div>
                     <div className="mt-2 text-lg font-bold text-neutral-900">
-                      {order.paidTotalText}
+                      {order.paidTotal.withoutVat}
+                    </div>
+                    <div className="text-xs text-neutral-500">
+                      {order.paidTotal.withVat} s DPH
                     </div>
 
                     <div className="mt-4 text-xs font-semibold uppercase tracking-wide text-neutral-500">

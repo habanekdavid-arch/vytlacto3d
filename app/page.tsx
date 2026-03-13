@@ -9,6 +9,7 @@ import MaterialPricing from "@/components/MaterialPricing";
 import HowItWorks from "@/components/HowItWorks";
 import FaqPreview from "@/components/FaqPreview";
 import FloatingCta from "@/components/FloatingCta";
+import { formatPricePair } from "@/lib/vat";
 
 type Uploaded = {
   fileKey: string;
@@ -78,6 +79,8 @@ export default function Home() {
     }
   }
 
+  const totalPrice = formatPricePair(latestQuote?.total ?? null);
+
   return (
     <div className="min-h-screen bg-white text-neutral-900">
       <Navbar />
@@ -119,7 +122,10 @@ export default function Home() {
             <div className="rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm">
               <div className="text-neutral-500">Aktuálne</div>
               <div className="mt-1 text-lg font-extrabold">
-                {latestQuote ? `${latestQuote.total} €` : "—"}
+                {totalPrice.withoutVat}
+              </div>
+              <div className="text-xs text-neutral-500">
+                {totalPrice.withVat} s DPH
               </div>
             </div>
           </div>
@@ -161,7 +167,7 @@ export default function Home() {
             {uploaded?.analysis ? (
               <div className="mt-4 rounded-2xl border border-neutral-200 bg-white p-4 text-sm">
                 <div className="font-semibold text-neutral-900">Analýza modelu</div>
-                <div className="mt-2 grid gap-2 md:grid-cols-2 text-neutral-700">
+                <div className="mt-2 grid gap-2 text-neutral-700 md:grid-cols-2">
                   <div>
                     Rozmery (mm): {uploaded.analysis.dimsXmm.toFixed(1)} ×{" "}
                     {uploaded.analysis.dimsYmm.toFixed(1)} ×{" "}
@@ -235,22 +241,29 @@ export default function Home() {
                 </div>
 
                 {latestQuote ? (
-                  <div className="ml-auto text-sm text-neutral-600">
-                    Aktuálne:{" "}
-                    <span className="font-extrabold text-neutral-900">
-                      {latestQuote.total} €
-                    </span>
+                  <div className="ml-auto text-right text-sm text-neutral-600">
+                    <div>
+                      Aktuálne:{" "}
+                      <span className="font-extrabold text-neutral-900">
+                        {totalPrice.withoutVat}
+                      </span>
+                    </div>
+                    <div className="text-xs text-neutral-500">
+                      {totalPrice.withVat} s DPH
+                    </div>
                   </div>
                 ) : null}
+              </div>
+
+              <div className="mt-3 text-xs text-neutral-500">
+                Hlavná cena je bez DPH, menším textom je uvedená cena s DPH.
               </div>
             </div>
           ) : null}
         </section>
 
         <HowItWorks />
-
         <MaterialPricing />
-
         <FaqPreview />
       </main>
     </div>

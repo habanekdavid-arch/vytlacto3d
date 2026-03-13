@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { formatPricePair } from "@/lib/vat";
 
 async function updateOrderStatus(formData: FormData) {
   "use server";
@@ -20,14 +21,7 @@ async function updateOrderStatus(formData: FormData) {
   revalidatePath(`/admin/orders/${id}`);
 }
 
-function formatPrice(value: unknown) {
-  if (typeof value !== "number" || Number.isNaN(value)) return "—";
-  return `${value.toFixed(2).replace(".", ",")} €`;
-}
-
-function formatDate(value: Date | string) {
-  const date = typeof value === "string" ? new Date(value) : value;
-
+function formatDate(value: Date) {
   return new Intl.DateTimeFormat("sk-SK", {
     day: "2-digit",
     month: "2-digit",
@@ -35,7 +29,7 @@ function formatDate(value: Date | string) {
     hour: "2-digit",
     minute: "2-digit",
     timeZone: "Europe/Bratislava",
-  }).format(date);
+  }).format(value);
 }
 
 function getStatusClasses(status: string) {
@@ -75,6 +69,8 @@ export default async function AdminOrderDetailPage({
   });
 
   if (!order) notFound();
+
+  const paid = formatPricePair(order.paidTotalEur ?? null);
 
   return (
     <main className="min-h-screen bg-white px-6 py-10 text-neutral-900">
@@ -116,7 +112,8 @@ export default async function AdminOrderDetailPage({
                 <Info label="ID objednávky" value={order.id} mono />
                 <Info label="Model" value={order.fileName} />
                 <Info label="Dátum vytvorenia" value={formatDate(order.createdAt)} />
-                <Info label="Zaplatené" value={formatPrice(order.paidTotalEur)} />
+                <Info label="Cena bez DPH" value={paid.withoutVat} />
+                <Info label="Cena s DPH" value={paid.withVat} />
                 <Info label="Email zákazníka" value={order.customerEmail || "—"} />
                 <Info label="Doprava" value={order.shippingMethod || "—"} />
               </div>
@@ -144,7 +141,7 @@ export default async function AdminOrderDetailPage({
                 </a>
               </div>
 
-              <div className="mt-4 rounded-2xl bg-neutral-50 p-4 text-sm text-neutral-600 break-all">
+              <div className="mt-4 break-all rounded-2xl bg-neutral-50 p-4 text-sm text-neutral-600">
                 <span className="font-semibold text-neutral-900">fileKey:</span> {order.fileKey}
               </div>
             </section>
@@ -256,20 +253,16 @@ export default async function AdminOrderDetailPage({
               <div className="mt-5 space-y-4">
                 <Info label="Stripe Session ID" value={order.stripeSessionId || "—"} mono />
                 <Info label="Payment Intent ID" value={order.stripePaymentIntentId || "—"} mono />
-                <Info label="Zaplatená suma" value={formatPrice(order.paidTotalEur)} />
+                <Info label="Cena bez DPH" value={paid.withoutVat} />
+                <Info label="Cena s DPH" value={paid.withVat} />
                 <Info label="Spôsob dopravy" value={order.shippingMethod || "—"} />
               </div>
             </section>
 
             <section className="rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm">
               <h2 className="text-xl font-bold">Adresa a shipping data</h2>
-
               <pre className="mt-4 overflow-x-auto rounded-2xl bg-neutral-50 p-4 text-xs text-neutral-700">
                 {prettyJson(order.shippingAddress)}
-              </pre>
-
-              <pre className="mt-4 overflow-x-auto rounded-2xl bg-neutral-50 p-4 text-xs text-neutral-700">
-                {prettyJson(order.shippingCost)}
               </pre>
             </section>
           </div>

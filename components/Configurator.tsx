@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import ColorPalette, { COLOR_LABELS } from "@/components/ColorPalette";
+import { formatPricePair, formatEur } from "@/lib/vat";
 
 type Analysis = { volumeCm3: number };
 
@@ -75,9 +76,14 @@ export default function Configurator({
     return () => {
       alive = false;
     };
-  }, [payload, onQuote]); // ✅ bez config v dependencies (inak loop)
+  }, [payload, onQuote]);
 
   const infillChips = [10, 20, 35, 50, 70];
+
+  const materialCost = formatPricePair(quote?.materialCostPerPart ?? null);
+  const machineCost = formatPricePair(quote?.machineCostPerPart ?? null);
+  const subtotalPerPart = formatPricePair(quote?.subtotalPerPart ?? null);
+  const totalPrice = formatPricePair(quote?.total ?? null);
 
   return (
     <div className="mt-6 rounded-2xl border border-zinc-200 bg-white p-6">
@@ -114,7 +120,10 @@ export default function Configurator({
           </select>
         </Field>
 
-        <Field label="Kvalita (detail)" hint="Rýchla = hrubšia vrstva. Detailná = krajší povrch.">
+        <Field
+          label="Kvalita (detail)"
+          hint="Rýchla = hrubšia vrstva. Detailná = krajší povrch."
+        >
           <div className="flex flex-wrap gap-2">
             <Seg
               active={config.quality === "DRAFT"}
@@ -148,7 +157,10 @@ export default function Configurator({
           </div>
         </Field>
 
-        <Field label="Pevnosť (Infill)" hint="Vyšší infill = pevnejšie, ale viac materiálu a času.">
+        <Field
+          label="Pevnosť (Infill)"
+          hint="Vyšší infill = pevnejšie, ale viac materiálu a času."
+        >
           <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
             <div className="flex items-center justify-between text-xs text-zinc-600">
               <span className="font-medium text-zinc-800">{config.infillPct}%</span>
@@ -186,7 +198,10 @@ export default function Configurator({
           </div>
         </Field>
 
-        <Field label="Farba" hint="Farba je len vizuálna (reálne závisí od dostupnosti).">
+        <Field
+          label="Farba"
+          hint="Farba je len vizuálna (reálne závisí od dostupnosti)."
+        >
           <ColorPalette
             value={config.color}
             onChange={(id) => setConfig((c) => ({ ...c, color: id }))}
@@ -220,21 +235,49 @@ export default function Configurator({
         </div>
 
         {quote ? (
-          <div className="mt-3 grid gap-2 md:grid-cols-2 text-sm text-zinc-800">
+          <div className="mt-3 grid gap-3 text-sm text-zinc-800 md:grid-cols-2">
             <div>
               Odhad materiálu / ks: <b>{quote.gramsPerPart} g</b>
             </div>
+
             <div>
               Odhad času / ks: <b>{quote.printTimeMinPerPart} min</b>
             </div>
+
             <div>
-              Náklad materiál / ks: <b>{quote.materialCostPerPart} €</b>
+              <div>
+                Náklad materiál / ks: <b>{materialCost.withoutVat}</b>
+              </div>
+              <div className="text-xs text-zinc-500">
+                {materialCost.withVat} s DPH
+              </div>
             </div>
+
             <div>
-              Náklad čas / ks: <b>{quote.machineCostPerPart} €</b>
+              <div>
+                Náklad čas / ks: <b>{machineCost.withoutVat}</b>
+              </div>
+              <div className="text-xs text-zinc-500">
+                {machineCost.withVat} s DPH
+              </div>
             </div>
-            <div className="md:col-span-2 mt-2 text-lg text-zinc-900">
-              Spolu: <b>{quote.total} €</b>
+
+            <div className="md:col-span-2">
+              <div>
+                Medzisúčet / ks: <b>{subtotalPerPart.withoutVat}</b>
+              </div>
+              <div className="text-xs text-zinc-500">
+                {subtotalPerPart.withVat} s DPH
+              </div>
+            </div>
+
+            <div className="mt-2 md:col-span-2">
+              <div className="text-lg text-zinc-900">
+                Spolu: <b>{totalPrice.withoutVat}</b>
+              </div>
+              <div className="text-sm text-zinc-500">
+                {totalPrice.withVat} s DPH
+              </div>
             </div>
           </div>
         ) : (
@@ -242,6 +285,10 @@ export default function Configurator({
             Nepodarilo sa vypočítať cenu.
           </div>
         )}
+
+        <div className="mt-4 text-xs text-zinc-500">
+          Hlavná cena je zobrazená bez DPH, menším textom je uvedená cena s DPH.
+        </div>
       </div>
     </div>
   );
