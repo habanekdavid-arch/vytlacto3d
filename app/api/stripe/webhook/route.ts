@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
+import { sendOrderPaidEmail } from "@/lib/email";
 
 export const runtime = "nodejs";
 
@@ -103,7 +104,7 @@ export async function POST(req: NextRequest) {
       const shippingMethod = getShippingMethod(fullSession);
       const shippingAddress = getShippingAddress(fullSession);
 
-      await prisma.order.update({
+      const updatedOrder = await prisma.order.update({
         where: { id: orderId },
         data: {
           status: "PAID",
@@ -117,7 +118,28 @@ export async function POST(req: NextRequest) {
           shippingMethod,
           shippingAddress: shippingAddress as any,
         },
+        select: {
+          id: true,
+          fileName: true,
+          customerEmail: true,
+          paidTotalEur: true,
+          shippingMethod: true,
+        },
       });
+
+      if (updatedOrder.customerEmail) {
+        try {
+          await sendOrderPaidEmail({
+            to: updatedOrder.customerEmail,
+            orderId: updatedOrder.id,
+            fileName: updatedOrder.fileName,
+            totalEur: updatedOrder.paidTotalEur,
+            shippingMethod: updatedOrder.shippingMethod,
+          });
+        } catch (emailError) {
+          console.error("Failed to send order email:", emailError);
+        }
+      }
 
       console.log("Order marked as PAID:", orderId);
     }
