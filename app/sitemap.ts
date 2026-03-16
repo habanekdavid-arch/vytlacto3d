@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl =
-    process.env.NEXT_PUBLIC_BASE_URL || "https://vytlacto3d-5mxw.vercel.app";
+    process.env.NEXT_PUBLIC_BASE_URL || "https://vytlacto3d.sk";
 
   const now = new Date();
 
