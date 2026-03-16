@@ -3,7 +3,7 @@ import Footer from "@/components/Footer";
 import CookieBanner from "@/components/CookieBanner";
 
 const baseUrl =
-  process.env.NEXT_PUBLIC_BASE_URL || "https://vytlacto3d.sk";
+  process.env.NEXT_PUBLIC_BASE_URL || "https://www.vytlacto3d.sk";
 
 export const metadata = {
   metadataBase: new URL(baseUrl),
