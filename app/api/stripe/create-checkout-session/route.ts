@@ -55,31 +55,18 @@ export async function POST(req: NextRequest) {
 
     const volumeCm3 = Number(body.uploaded.analysis.volumeCm3);
     const quantity = Number(body.config.quantity ?? 1);
-    const infillPct = Number(
-      body.config.infillPct ??
-      body.config.strength ??
-      20
-    );
+    const infillPct = Number(body.config.infillPct ?? body.config.strength ?? 20);
 
     if (!Number.isFinite(volumeCm3) || volumeCm3 <= 0) {
-      return NextResponse.json(
-        { error: "Invalid volumeCm3" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Invalid volumeCm3" }, { status: 400 });
     }
 
     if (!Number.isFinite(quantity) || quantity < 1) {
-      return NextResponse.json(
-        { error: "Quantity must be >= 1" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Quantity must be >= 1" }, { status: 400 });
     }
 
     if (!Number.isFinite(infillPct) || infillPct < 0 || infillPct > 100) {
-      return NextResponse.json(
-        { error: "Invalid infillPct" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Invalid infillPct" }, { status: 400 });
     }
 
     const pricing = quote({
@@ -147,7 +134,7 @@ export async function POST(req: NextRequest) {
             unit_amount: itemAmountCents,
             product_data: {
               name: `3D tlač: ${body.uploaded.fileName}`,
-              description: `${formatEur(pricing.total)} bez DPH • ${formatEur(totalWithVat)} s DPH`,
+              description: `${formatEur(totalWithVat)} s DPH`,
             },
           },
         },

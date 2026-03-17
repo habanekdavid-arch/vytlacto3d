@@ -9,7 +9,7 @@ import MaterialPricing from "@/components/MaterialPricing";
 import HowItWorks from "@/components/HowItWorks";
 import FaqPreview from "@/components/FaqPreview";
 import FloatingCta from "@/components/FloatingCta";
-import { formatPricePair } from "@/lib/vat";
+import { formatPriceWithVat } from "@/lib/vat";
 
 type Uploaded = {
   fileKey: string;
@@ -79,7 +79,7 @@ export default function Home() {
     }
   }
 
-  const totalPrice = formatPricePair(latestQuote?.total ?? null);
+  const totalWithVat = formatPriceWithVat(latestQuote?.total ?? null);
 
   return (
     <div className="min-h-screen bg-white text-neutral-900">
@@ -122,10 +122,10 @@ export default function Home() {
             <div className="rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm">
               <div className="text-neutral-500">Aktuálne</div>
               <div className="mt-1 text-lg font-extrabold">
-                {totalPrice.withoutVat}
+                {totalWithVat}
               </div>
               <div className="text-xs text-neutral-500">
-                {totalPrice.withVat} s DPH
+                Cena je uvedená s DPH
               </div>
             </div>
           </div>
@@ -245,18 +245,14 @@ export default function Home() {
                     <div>
                       Aktuálne:{" "}
                       <span className="font-extrabold text-neutral-900">
-                        {totalPrice.withoutVat}
+                        {totalWithVat}
                       </span>
                     </div>
                     <div className="text-xs text-neutral-500">
-                      {totalPrice.withVat} s DPH
+                      Všetky ceny sú uvedené s DPH
                     </div>
                   </div>
                 ) : null}
-              </div>
-
-              <div className="mt-3 text-xs text-neutral-500">
-                Hlavná cena je bez DPH, menším textom je uvedená cena s DPH.
               </div>
             </div>
           ) : null}

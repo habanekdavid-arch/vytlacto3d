@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import ColorPalette, { COLOR_LABELS } from "@/components/ColorPalette";
-import { formatPricePair, formatEur } from "@/lib/vat";
+import { formatPriceWithVat } from "@/lib/vat";
 
 type Analysis = { volumeCm3: number };
 
@@ -18,7 +18,7 @@ type Quote = {
 export type ConfigState = {
   material: "PLA" | "PETG" | "ABS" | "TPU";
   quality: "DRAFT" | "STANDARD" | "FINE";
-  infillPct: number; // 5–70
+  infillPct: number;
   color: string;
   quantity: number;
 };
@@ -79,11 +79,6 @@ export default function Configurator({
   }, [payload, onQuote]);
 
   const infillChips = [10, 20, 35, 50, 70];
-
-  const materialCost = formatPricePair(quote?.materialCostPerPart ?? null);
-  const machineCost = formatPricePair(quote?.machineCostPerPart ?? null);
-  const subtotalPerPart = formatPricePair(quote?.subtotalPerPart ?? null);
-  const totalPrice = formatPricePair(quote?.total ?? null);
 
   return (
     <div className="mt-6 rounded-2xl border border-zinc-200 bg-white p-6">
@@ -245,38 +240,20 @@ export default function Configurator({
             </div>
 
             <div>
-              <div>
-                Náklad materiál / ks: <b>{materialCost.withoutVat}</b>
-              </div>
-              <div className="text-xs text-zinc-500">
-                {materialCost.withVat} s DPH
-              </div>
+              Náklad materiál / ks: <b>{formatPriceWithVat(quote.materialCostPerPart)}</b>
             </div>
 
             <div>
-              <div>
-                Náklad čas / ks: <b>{machineCost.withoutVat}</b>
-              </div>
-              <div className="text-xs text-zinc-500">
-                {machineCost.withVat} s DPH
-              </div>
+              Náklad čas / ks: <b>{formatPriceWithVat(quote.machineCostPerPart)}</b>
             </div>
 
             <div className="md:col-span-2">
-              <div>
-                Medzisúčet / ks: <b>{subtotalPerPart.withoutVat}</b>
-              </div>
-              <div className="text-xs text-zinc-500">
-                {subtotalPerPart.withVat} s DPH
-              </div>
+              Medzisúčet / ks: <b>{formatPriceWithVat(quote.subtotalPerPart)}</b>
             </div>
 
             <div className="mt-2 md:col-span-2">
               <div className="text-lg text-zinc-900">
-                Spolu: <b>{totalPrice.withoutVat}</b>
-              </div>
-              <div className="text-sm text-zinc-500">
-                {totalPrice.withVat} s DPH
+                Spolu: <b>{formatPriceWithVat(quote.total)}</b>
               </div>
             </div>
           </div>
@@ -287,7 +264,7 @@ export default function Configurator({
         )}
 
         <div className="mt-4 text-xs text-zinc-500">
-          Hlavná cena je zobrazená bez DPH, menším textom je uvedená cena s DPH.
+          Všetky zobrazené ceny sú uvedené s DPH.
         </div>
       </div>
     </div>

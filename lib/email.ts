@@ -1,5 +1,5 @@
 import { Resend } from "resend";
-import { formatPricePair } from "@/lib/vat";
+import { formatPriceWithVat } from "@/lib/vat";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -26,7 +26,7 @@ export async function sendOrderPaidEmail({
     throw new Error("Missing ORDER_FROM_EMAIL");
   }
 
-  const price = formatPricePair(totalEur);
+  const priceWithVat = formatPriceWithVat(totalEur);
 
   const subject = `Potvrdenie objednávky ${fileName}`;
 
@@ -41,8 +41,7 @@ export async function sendOrderPaidEmail({
       <div style="margin: 24px 0; padding: 16px; border: 1px solid #e5e5e5; border-radius: 12px; background: #fafafa;">
         <p style="margin: 0 0 8px;"><strong>ID objednávky:</strong> ${orderId}</p>
         <p style="margin: 0 0 8px;"><strong>Model:</strong> ${fileName}</p>
-        <p style="margin: 0 0 8px;"><strong>Cena:</strong> ${price.withoutVat}</p>
-        <p style="margin: 0 0 8px;"><strong>Cena s DPH:</strong> ${price.withVat}</p>
+        <p style="margin: 0 0 8px;"><strong>Cena s DPH:</strong> ${priceWithVat}</p>
         <p style="margin: 0;"><strong>Doprava:</strong> ${shippingMethod || "—"}</p>
       </div>
 
@@ -64,8 +63,7 @@ export async function sendOrderPaidEmail({
     "",
     `ID objednávky: ${orderId}`,
     `Model: ${fileName}`,
-    `Cena: ${price.withoutVat}`,
-    `Cena s DPH: ${price.withVat}`,
+    `Cena s DPH: ${priceWithVat}`,
     `Doprava: ${shippingMethod || "—"}`,
     "",
     "S pozdravom,",
