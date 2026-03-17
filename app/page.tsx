@@ -233,7 +233,7 @@ export default function Home() {
                   onClick={payByCard}
                   className="rounded-2xl bg-[#FFAE00] px-5 py-3 text-sm font-semibold text-black shadow-sm hover:opacity-90 disabled:opacity-50"
                 >
-                  {orderLoading ? "Presmerúvam…" : "Zaplatiť kartou"}
+                  {orderLoading ? "Presmerúvam…" : "Objednať"}
                 </button>
 
                 <div className="text-xs text-neutral-500">

@@ -1,5 +1,3 @@
-import { addVat, formatEur } from "@/lib/vat";
-
 export default function MaterialPricing() {
   const materials = [
     {
@@ -42,9 +40,10 @@ export default function MaterialPricing() {
         <h2 className="text-center text-4xl font-extrabold tracking-tight sm:text-5xl">
           Cenník materiálov
         </h2>
+
         <p className="mx-auto mt-4 max-w-3xl text-center text-neutral-600">
           Transparentné ceny pre materiály v konfigurátore. Konečná cena závisí aj od času tlače,
-          kvality a pevnosti. Všetky ceny sú uvedené s DPH.
+          kvality a pevnosti.
         </p>
 
         <div className="mt-12 overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm">
@@ -53,7 +52,7 @@ export default function MaterialPricing() {
               <thead className="border-b border-neutral-200 bg-neutral-50">
                 <tr className="text-sm font-semibold text-neutral-600">
                   <th className="px-6 py-4">Materiál</th>
-                  <th className="px-6 py-4">Cena/gram s DPH</th>
+                  <th className="px-6 py-4">Cena/gram</th>
                   <th className="px-6 py-4">Hustota</th>
                   <th className="px-6 py-4">Aplikácie</th>
                 </tr>
@@ -73,7 +72,7 @@ export default function MaterialPricing() {
                     </td>
 
                     <td className="px-6 py-5 font-semibold text-[#E65300]">
-                      {formatEur(addVat(m.eurPerGram))}
+                      {m.eurPerGram.toFixed(3)} €
                     </td>
 
                     <td className="px-6 py-5 text-neutral-700">{m.density}</td>
@@ -87,7 +86,7 @@ export default function MaterialPricing() {
         </div>
 
         <div className="mt-6 text-sm text-neutral-500">
-          Poznámka: Cena/gram vychádza z ceny rolky (1 kg) nastavenej v kalkulácii. Všetky ceny sú uvedené s DPH.
+          Poznámka: Cena/gram vychádza z ceny rolky (1 kg) nastavenej v kalkulácii.
         </div>
       </div>
     </section>
