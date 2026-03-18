@@ -71,7 +71,7 @@ export default function MaterialPricing() {
                       </div>
                     </td>
 
-                    <td className="px-6 py-5 font-semibold text-[#E65300]">
+                    <td className="px-6 py-5 font-semibold text-[#FFAE00]">
                       {m.eurPerGram.toFixed(3)} €
                     </td>
 
