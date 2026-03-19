@@ -9,6 +9,7 @@ import MaterialPricing from "@/components/MaterialPricing";
 import HowItWorks from "@/components/HowItWorks";
 import FaqPreview from "@/components/FaqPreview";
 import FloatingCta from "@/components/FloatingCta";
+import ModelSummaryBar from "@/components/ModelSummaryBar";
 import { formatPriceWithVat } from "@/lib/vat";
 
 type Uploaded = {
@@ -156,52 +157,14 @@ export default function Home() {
           </div>
 
           {uploaded?.analysis ? (
-            <div className="sticky top-24 z-30 mt-6">
-              <div className="rounded-3xl border border-neutral-200 bg-white p-5 shadow-md">
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-stretch lg:justify-between">
-                  <div className="flex-1">
-                    <div className="text-lg font-extrabold text-neutral-900">
-                      Analýza modelu
-                    </div>
-
-                    <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                      <div className="rounded-2xl bg-neutral-50 p-4">
-                        <div className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
-                          Rozmery
-                        </div>
-                        <div className="mt-2 text-base font-semibold text-neutral-900">
-                          {uploaded.analysis.dimsXmm.toFixed(1)} ×{" "}
-                          {uploaded.analysis.dimsYmm.toFixed(1)} ×{" "}
-                          {uploaded.analysis.dimsZmm.toFixed(1)} mm
-                        </div>
-                      </div>
-
-                      <div className="rounded-2xl bg-neutral-50 p-4">
-                        <div className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
-                          Objem
-                        </div>
-                        <div className="mt-2 text-base font-semibold text-neutral-900">
-                          {uploaded.analysis.volumeCm3.toFixed(2)} cm³
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="lg:w-[280px]">
-                    <div className="h-full rounded-2xl border border-[#FFAE00]/40 bg-[#FFAE00]/10 p-4">
-                      <div className="text-xs font-semibold uppercase tracking-wide text-neutral-600">
-                        Aktuálna cena
-                      </div>
-                      <div className="mt-2 text-3xl font-extrabold tracking-tight text-neutral-900">
-                        {totalWithVat}
-                      </div>
-                      <div className="mt-1 text-sm text-neutral-500">
-                        Cena je uvedená s DPH
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+            <div className="mt-6">
+              <ModelSummaryBar
+                dimsX={uploaded.analysis.dimsXmm}
+                dimsY={uploaded.analysis.dimsYmm}
+                dimsZ={uploaded.analysis.dimsZmm}
+                volume={uploaded.analysis.volumeCm3}
+                totalWithVat={totalWithVat}
+              />
             </div>
           ) : null}
 
