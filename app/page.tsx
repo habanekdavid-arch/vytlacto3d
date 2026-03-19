@@ -86,7 +86,33 @@ export default function Home() {
       <Navbar />
       <FloatingCta />
 
-      <main className="mx-auto max-w-6xl px-6 pb-20 pt-10">
+      {uploaded?.analysis ? (
+        <>
+          {/* Desktop fixed summary */}
+          <div className="fixed right-6 top-24 z-40 hidden w-[340px] xl:block">
+            <ModelFloatingSummary
+              dimsX={uploaded.analysis.dimsXmm}
+              dimsY={uploaded.analysis.dimsYmm}
+              dimsZ={uploaded.analysis.dimsZmm}
+              volume={uploaded.analysis.volumeCm3}
+              totalWithVat={totalWithVat}
+            />
+          </div>
+
+          {/* Mobile / tablet fixed bottom summary */}
+          <div className="fixed inset-x-4 bottom-4 z-40 xl:hidden">
+            <MobileFloatingSummary
+              dimsX={uploaded.analysis.dimsXmm}
+              dimsY={uploaded.analysis.dimsYmm}
+              dimsZ={uploaded.analysis.dimsZmm}
+              volume={uploaded.analysis.volumeCm3}
+              totalWithVat={totalWithVat}
+            />
+          </div>
+        </>
+      ) : null}
+
+      <main className="mx-auto max-w-6xl px-6 pb-24 pt-10 xl:pr-[380px]">
         <section className="mb-12 text-center">
           <div className="inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-3 py-1 text-sm text-neutral-700 shadow-sm">
             <span className="inline-block h-2 w-2 rounded-full bg-[#FFAE00]" />
@@ -153,57 +179,21 @@ export default function Home() {
                 </div>
               </div>
             ) : null}
-          </div>
 
-          {uploaded?.analysis ? (
-            <div className="sticky top-24 z-30 mt-6">
-              <div className="rounded-3xl border border-neutral-200 bg-white p-5 shadow-md">
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-stretch lg:justify-between">
-                  <div className="flex-1">
-                    <div className="text-lg font-extrabold text-neutral-900">
-                      Analýza modelu
-                    </div>
-
-                    <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                      <div className="rounded-2xl bg-neutral-50 p-4">
-                        <div className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
-                          Rozmery
-                        </div>
-                        <div className="mt-2 text-base font-semibold text-neutral-900">
-                          {uploaded.analysis.dimsXmm.toFixed(1)} ×{" "}
-                          {uploaded.analysis.dimsYmm.toFixed(1)} ×{" "}
-                          {uploaded.analysis.dimsZmm.toFixed(1)} mm
-                        </div>
-                      </div>
-
-                      <div className="rounded-2xl bg-neutral-50 p-4">
-                        <div className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
-                          Objem
-                        </div>
-                        <div className="mt-2 text-base font-semibold text-neutral-900">
-                          {uploaded.analysis.volumeCm3.toFixed(2)} cm³
-                        </div>
-                      </div>
-                    </div>
+            {uploaded?.analysis ? (
+              <div className="mt-4 rounded-2xl border border-neutral-200 bg-white p-4 text-sm">
+                <div className="font-semibold text-neutral-900">Analýza modelu</div>
+                <div className="mt-2 grid gap-2 text-neutral-700 md:grid-cols-2">
+                  <div>
+                    Rozmery (mm): {uploaded.analysis.dimsXmm.toFixed(1)} ×{" "}
+                    {uploaded.analysis.dimsYmm.toFixed(1)} ×{" "}
+                    {uploaded.analysis.dimsZmm.toFixed(1)}
                   </div>
-
-                  <div className="lg:w-[280px]">
-                    <div className="h-full rounded-2xl border border-[#FFAE00]/40 bg-[#FFAE00]/10 p-4">
-                      <div className="text-xs font-semibold uppercase tracking-wide text-neutral-600">
-                        Aktuálna cena
-                      </div>
-                      <div className="mt-2 text-3xl font-extrabold tracking-tight text-neutral-900">
-                        {totalWithVat}
-                      </div>
-                      <div className="mt-1 text-sm text-neutral-500">
-                        Cena je uvedená s DPH
-                      </div>
-                    </div>
-                  </div>
+                  <div>Objem (cm³): {uploaded.analysis.volumeCm3.toFixed(2)}</div>
                 </div>
               </div>
-            </div>
-          ) : null}
+            ) : null}
+          </div>
 
           {uploaded?.analysis ? (
             <div className="mt-6 rounded-3xl border border-neutral-200 bg-white p-5">
@@ -274,6 +264,100 @@ export default function Home() {
         <MaterialPricing />
         <FaqPreview />
       </main>
+    </div>
+  );
+}
+
+function ModelFloatingSummary({
+  dimsX,
+  dimsY,
+  dimsZ,
+  volume,
+  totalWithVat,
+}: {
+  dimsX: number;
+  dimsY: number;
+  dimsZ: number;
+  volume: number;
+  totalWithVat: string;
+}) {
+  return (
+    <div className="rounded-3xl border border-neutral-200 bg-white p-5 shadow-xl">
+      <div className="text-lg font-extrabold text-neutral-900">
+        Analýza modelu
+      </div>
+
+      <div className="mt-4 grid gap-3">
+        <div className="rounded-2xl bg-neutral-50 p-4">
+          <div className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
+            Rozmery
+          </div>
+          <div className="mt-2 text-base font-semibold text-neutral-900">
+            {dimsX.toFixed(1)} × {dimsY.toFixed(1)} × {dimsZ.toFixed(1)} mm
+          </div>
+        </div>
+
+        <div className="rounded-2xl bg-neutral-50 p-4">
+          <div className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
+            Objem
+          </div>
+          <div className="mt-2 text-base font-semibold text-neutral-900">
+            {volume.toFixed(2)} cm³
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-[#FFAE00]/40 bg-[#FFAE00]/10 p-4">
+          <div className="text-xs font-semibold uppercase tracking-wide text-neutral-600">
+            Aktuálna cena
+          </div>
+          <div className="mt-2 text-3xl font-extrabold tracking-tight text-neutral-900">
+            {totalWithVat}
+          </div>
+          <div className="mt-1 text-sm text-neutral-500">
+            Cena je uvedená s DPH
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MobileFloatingSummary({
+  dimsX,
+  dimsY,
+  dimsZ,
+  volume,
+  totalWithVat,
+}: {
+  dimsX: number;
+  dimsY: number;
+  dimsZ: number;
+  volume: number;
+  totalWithVat: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-neutral-200 bg-white p-4 shadow-2xl">
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <div className="text-sm font-bold text-neutral-900">Analýza modelu</div>
+          <div className="mt-1 text-xs text-neutral-600">
+            {dimsX.toFixed(1)} × {dimsY.toFixed(1)} × {dimsZ.toFixed(1)} mm
+          </div>
+          <div className="text-xs text-neutral-600">
+            {volume.toFixed(2)} cm³
+          </div>
+        </div>
+
+        <div className="text-right">
+          <div className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
+            Cena
+          </div>
+          <div className="text-lg font-extrabold text-neutral-900">
+            {totalWithVat}
+          </div>
+          <div className="text-[11px] text-neutral-500">s DPH</div>
+        </div>
+      </div>
     </div>
   );
 }
