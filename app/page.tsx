@@ -153,55 +153,57 @@ export default function Home() {
                 </div>
               </div>
             ) : null}
+          </div>
 
-            {uploaded?.analysis ? (
-              <div className="sticky top-24 z-20 mt-4 rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm">
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                  <div className="min-w-0">
-                    <div className="text-sm font-bold text-neutral-900">
+          {uploaded?.analysis ? (
+            <div className="sticky top-24 z-30 mt-6">
+              <div className="rounded-3xl border border-neutral-200 bg-white p-5 shadow-md">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-stretch lg:justify-between">
+                  <div className="flex-1">
+                    <div className="text-lg font-extrabold text-neutral-900">
                       Analýza modelu
                     </div>
 
-                    <div className="mt-3 grid gap-3 md:grid-cols-2">
-                      <div className="rounded-2xl bg-neutral-50 p-4 text-sm">
+                    <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                      <div className="rounded-2xl bg-neutral-50 p-4">
                         <div className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
                           Rozmery
                         </div>
-                        <div className="mt-2 font-semibold text-neutral-900">
+                        <div className="mt-2 text-base font-semibold text-neutral-900">
                           {uploaded.analysis.dimsXmm.toFixed(1)} ×{" "}
                           {uploaded.analysis.dimsYmm.toFixed(1)} ×{" "}
                           {uploaded.analysis.dimsZmm.toFixed(1)} mm
                         </div>
                       </div>
 
-                      <div className="rounded-2xl bg-neutral-50 p-4 text-sm">
+                      <div className="rounded-2xl bg-neutral-50 p-4">
                         <div className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
                           Objem
                         </div>
-                        <div className="mt-2 font-semibold text-neutral-900">
+                        <div className="mt-2 text-base font-semibold text-neutral-900">
                           {uploaded.analysis.volumeCm3.toFixed(2)} cm³
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  <div className="w-full lg:max-w-[260px]">
-                    <div className="rounded-2xl border border-[#FFAE00]/30 bg-[#FFAE00]/10 p-4">
+                  <div className="lg:w-[280px]">
+                    <div className="h-full rounded-2xl border border-[#FFAE00]/40 bg-[#FFAE00]/10 p-4">
                       <div className="text-xs font-semibold uppercase tracking-wide text-neutral-600">
                         Aktuálna cena
                       </div>
-                      <div className="mt-2 text-2xl font-extrabold tracking-tight text-neutral-900">
+                      <div className="mt-2 text-3xl font-extrabold tracking-tight text-neutral-900">
                         {totalWithVat}
                       </div>
-                      <div className="mt-1 text-xs text-neutral-500">
+                      <div className="mt-1 text-sm text-neutral-500">
                         Cena je uvedená s DPH
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
-            ) : null}
-          </div>
+            </div>
+          ) : null}
 
           {uploaded?.analysis ? (
             <div className="mt-6 rounded-3xl border border-neutral-200 bg-white p-5">
@@ -263,20 +265,6 @@ export default function Home() {
                 <div className="text-xs text-neutral-500">
                   Poštovné a adresa sa vyberajú v ďalšom kroku v Stripe checkoute.
                 </div>
-
-                {latestQuote ? (
-                  <div className="ml-auto text-right text-sm text-neutral-600">
-                    <div>
-                      Aktuálne:{" "}
-                      <span className="font-extrabold text-neutral-900">
-                        {totalWithVat}
-                      </span>
-                    </div>
-                    <div className="text-xs text-neutral-500">
-                      Všetky ceny sú uvedené s DPH
-                    </div>
-                  </div>
-                ) : null}
               </div>
             </div>
           ) : null}
