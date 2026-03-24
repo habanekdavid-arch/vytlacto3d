@@ -10,40 +10,35 @@ type Props = {
   title?: string;
   colorId?: string;
   height?: number;
+  scalePct?: number;
 };
 
-function getModelColor(colorId?: string) {
+function getColor(colorId: string) {
   switch (colorId) {
     case "white":
-      return "#f5f5f5";
+      return "#E5E7EB";
     case "gray":
-      return "#9ca3af";
+      return "#9CA3AF";
     case "red":
-      return "#ef4444";
+      return "#DC2626";
     case "blue":
-      return "#3b82f6";
+      return "#2563EB";
     case "green":
-      return "#22c55e";
-    case "purple":
-      return "#8b5cf6";
-    case "orange":
-      return "#f97316";
+      return "#16A34A";
     case "yellow":
-      return "#FFAE00";
+      return "#EAB308";
+    case "orange":
+      return "#F97316";
+    case "purple":
+      return "#9333EA";
+    case "pink":
+      return "#EC4899";
+    case "transparent":
+      return "#D1D5DB";
     case "black":
     default:
       return "#111111";
   }
-}
-
-function resolveModelUrl(fileKey: string) {
-  if (!fileKey) return "";
-
-  if (fileKey.startsWith("http://") || fileKey.startsWith("https://")) {
-    return fileKey;
-  }
-
-  return `/api/file?key=${encodeURIComponent(fileKey)}`;
 }
 
 export default function StlViewer({
@@ -51,181 +46,260 @@ export default function StlViewer({
   title = "3D náhľad",
   colorId = "black",
   height = 380,
+  scalePct = 100,
 }: Props) {
-  const mountRef = useRef<HTMLDivElement | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const sceneRef = useRef<THREE.Scene | null>(null);
+  const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
+  const controlsRef = useRef<OrbitControls | null>(null);
+  const meshRef = useRef<THREE.Mesh | null>(null);
+  const frameRef = useRef<number | null>(null);
 
-  const modelUrl = useMemo(() => resolveModelUrl(fileKey), [fileKey]);
-  const modelColor = useMemo(() => getModelColor(colorId), [colorId]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const resolvedColor = useMemo(() => getColor(colorId), [colorId]);
 
   useEffect(() => {
-    const mount = mountRef.current;
-    if (!mount || !modelUrl) return;
+    const container = containerRef.current;
+    if (!container || !fileKey) return;
 
     setLoading(true);
-    setError("");
+    setError(null);
 
-    while (mount.firstChild) {
-      mount.removeChild(mount.firstChild);
+    while (container.firstChild) {
+      container.removeChild(container.firstChild);
     }
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color("#f5f5f5");
+    scene.background = new THREE.Color("#F5F5F5");
+    sceneRef.current = scene;
 
-    const camera = new THREE.PerspectiveCamera(
-      45,
-      mount.clientWidth / height,
-      0.1,
-      5000
-    );
+    const width = Math.max(container.clientWidth, 320);
+    const initialHeight = height;
+
+    const camera = new THREE.PerspectiveCamera(45, width / initialHeight, 0.1, 5000);
     camera.position.set(140, 110, 140);
+    cameraRef.current = camera;
 
     const renderer = new THREE.WebGLRenderer({
       antialias: true,
       alpha: false,
-      preserveDrawingBuffer: false,
+      powerPreference: "high-performance",
     });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.setSize(mount.clientWidth, height);
+    renderer.setSize(width, initialHeight);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
-    mount.appendChild(renderer.domElement);
     rendererRef.current = renderer;
+    container.appendChild(renderer.domElement);
+
+    const ambientLight = new THREE.AmbientLight(0xffffff, 1.25);
+    scene.add(ambientLight);
+
+    const dirLight1 = new THREE.DirectionalLight(0xffffff, 1.1);
+    dirLight1.position.set(120, 160, 120);
+    scene.add(dirLight1);
+
+    const dirLight2 = new THREE.DirectionalLight(0xffffff, 0.7);
+    dirLight2.position.set(-120, 80, -60);
+    scene.add(dirLight2);
+
+    const dirLight3 = new THREE.DirectionalLight(0xffffff, 0.45);
+    dirLight3.position.set(0, -80, 80);
+    scene.add(dirLight3);
 
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
-    controls.target.set(0, 0, 0);
-
-    const ambient = new THREE.AmbientLight(0xffffff, 1.15);
-    scene.add(ambient);
-
-    const dir1 = new THREE.DirectionalLight(0xffffff, 1.2);
-    dir1.position.set(120, 180, 120);
-    scene.add(dir1);
-
-    const dir2 = new THREE.DirectionalLight(0xffffff, 0.8);
-    dir2.position.set(-120, 100, -80);
-    scene.add(dir2);
-
-  // grid removed
-
-    const material = new THREE.MeshStandardMaterial({
-      color: new THREE.Color(modelColor),
-      metalness: 0.1,
-      roughness: 0.65,
-    });
-
-    let mesh: THREE.Mesh | null = null;
-    let disposed = false;
+    controls.dampingFactor = 0.08;
+    controls.rotateSpeed = 0.9;
+    controls.zoomSpeed = 0.9;
+    controls.panSpeed = 0.8;
+    controls.screenSpacePanning = true;
+    controls.minDistance = 10;
+    controls.maxDistance = 2000;
+    controlsRef.current = controls;
 
     const loader = new STLLoader();
 
     loader.load(
-      modelUrl,
+      `/api/file?key=${encodeURIComponent(fileKey)}`,
       (geometry) => {
-        if (disposed) return;
-
         geometry.computeVertexNormals();
         geometry.center();
 
-        const bbox = new THREE.Box3().setFromBufferAttribute(
-          geometry.getAttribute("position") as THREE.BufferAttribute
-        );
+        const material = new THREE.MeshStandardMaterial({
+          color: resolvedColor,
+          metalness: 0.08,
+          roughness: 0.72,
+        });
+
+        const mesh = new THREE.Mesh(geometry, material);
+
+        const scale = scalePct / 100;
+        mesh.scale.set(scale, scale, scale);
+
+        scene.add(mesh);
+        meshRef.current = mesh;
+
+        const box = new THREE.Box3().setFromObject(mesh);
         const size = new THREE.Vector3();
-        bbox.getSize(size);
+        const center = new THREE.Vector3();
+        box.getSize(size);
+        box.getCenter(center);
 
         const maxDim = Math.max(size.x, size.y, size.z) || 1;
-        const targetSize = 120;
-        const scale = targetSize / maxDim;
+        const fitDistance = maxDim * 1.8;
 
-        geometry.scale(scale, scale, scale);
-        geometry.computeBoundingBox();
-        geometry.computeBoundingSphere();
+        camera.position.set(fitDistance, fitDistance * 0.9, fitDistance);
+        camera.near = Math.max(0.1, maxDim / 100);
+        camera.far = Math.max(5000, maxDim * 20);
+        camera.updateProjectionMatrix();
 
-        mesh = new THREE.Mesh(geometry, material);
-        mesh.rotation.x = -Math.PI / 2;
-        scene.add(mesh);
-
-        const sphere = geometry.boundingSphere;
-        const radius = sphere?.radius ?? 50;
-        const distance = radius * 3.2;
-
-        camera.position.set(distance, distance * 0.75, distance);
-        controls.target.set(0, 0, 0);
+        controls.target.copy(center);
+        controls.minDistance = Math.max(5, maxDim * 0.35);
+        controls.maxDistance = Math.max(1000, maxDim * 8);
         controls.update();
 
         setLoading(false);
       },
       undefined,
-      (err) => {
-        console.error("STL LOAD ERROR:", err);
-        if (disposed) return;
+      () => {
         setError("Nepodarilo sa načítať STL.");
         setLoading(false);
       }
     );
 
-    let animationFrame = 0;
+    const handleResize = () => {
+      const el = containerRef.current;
+      const renderer = rendererRef.current;
+      const camera = cameraRef.current;
+
+      if (!el || !renderer || !camera) return;
+
+      const nextWidth = Math.max(el.clientWidth, 320);
+      renderer.setSize(nextWidth, height);
+      camera.aspect = nextWidth / height;
+      camera.updateProjectionMatrix();
+    };
 
     const animate = () => {
-      animationFrame = requestAnimationFrame(animate);
+      frameRef.current = requestAnimationFrame(animate);
       controls.update();
       renderer.render(scene, camera);
     };
+
+    handleResize();
     animate();
-
-    const onResize = () => {
-      if (!mount || !renderer) return;
-      const width = mount.clientWidth || 300;
-      camera.aspect = width / height;
-      camera.updateProjectionMatrix();
-      renderer.setSize(width, height);
-    };
-
-    window.addEventListener("resize", onResize);
+    window.addEventListener("resize", handleResize);
 
     return () => {
-      disposed = true;
-      cancelAnimationFrame(animationFrame);
-      window.removeEventListener("resize", onResize);
+      window.removeEventListener("resize", handleResize);
+
+      if (frameRef.current) {
+        cancelAnimationFrame(frameRef.current);
+      }
+
       controls.dispose();
 
-      if (mesh) {
-        mesh.geometry.dispose();
+      if (meshRef.current) {
+        meshRef.current.geometry.dispose();
+
+        const material = meshRef.current.material;
+        if (Array.isArray(material)) {
+          material.forEach((m) => m.dispose());
+        } else {
+          material.dispose();
+        }
+
+        scene.remove(meshRef.current);
+        meshRef.current = null;
       }
 
-      material.dispose();
       renderer.dispose();
 
-      while (mount.firstChild) {
-        mount.removeChild(mount.firstChild);
+      if (renderer.domElement.parentNode) {
+        renderer.domElement.parentNode.removeChild(renderer.domElement);
       }
+
+      controlsRef.current = null;
+      rendererRef.current = null;
+      sceneRef.current = null;
+      cameraRef.current = null;
     };
-  }, [modelUrl, modelColor, height]);
+  }, [fileKey, height]);
+
+  useEffect(() => {
+    const mesh = meshRef.current;
+    if (!mesh) return;
+
+    const scale = scalePct / 100;
+    mesh.scale.set(scale, scale, scale);
+
+    const box = new THREE.Box3().setFromObject(mesh);
+    const center = new THREE.Vector3();
+    box.getCenter(center);
+
+    if (controlsRef.current) {
+      controlsRef.current.target.copy(center);
+      controlsRef.current.update();
+    }
+  }, [scalePct]);
+
+  useEffect(() => {
+    const mesh = meshRef.current;
+    if (!mesh) return;
+
+    const material = mesh.material;
+    if (Array.isArray(material)) {
+      material.forEach((m) => {
+        if (m instanceof THREE.MeshStandardMaterial) {
+          m.color.set(resolvedColor);
+          m.needsUpdate = true;
+        }
+      });
+    } else if (material instanceof THREE.MeshStandardMaterial) {
+      material.color.set(resolvedColor);
+      material.needsUpdate = true;
+    }
+  }, [resolvedColor]);
 
   return (
     <div className="rounded-3xl border border-neutral-200 bg-white p-4">
-      <div className="mb-4 flex items-center justify-between gap-4">
+      <div className="mb-4 flex items-start justify-between gap-3">
         <div>
-          <div className="text-sm font-semibold text-neutral-500">3D náhľad</div>
-          <div className="text-2xl font-extrabold text-neutral-900">{title}</div>
+          <div className="text-sm text-neutral-500">3D náhľad</div>
+          <div className="text-xl font-extrabold text-neutral-900">{title}</div>
         </div>
 
-        <div className="text-xs font-semibold text-neutral-500">
-          {loading ? "načítavam..." : error ? "chyba" : "pripravené"}
+        <div className="text-xs text-neutral-500">
+          {loading ? "načítavam..." : "otáčanie / zoom"}
         </div>
       </div>
 
       <div
-        ref={mountRef}
-        className="w-full overflow-hidden rounded-3xl border border-neutral-200 bg-[#f5f5f5]"
+        ref={containerRef}
+        className="relative w-full overflow-hidden rounded-2xl bg-neutral-100"
         style={{ height }}
-      />
+      >
+        {loading && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="text-sm text-neutral-500">Načítavam model...</div>
+          </div>
+        )}
 
-      {error ? (
-        <div className="mt-4 text-sm text-red-600">{error}</div>
-      ) : null}
+        {error && !loading && (
+          <div className="absolute inset-0 flex items-center justify-center px-6 text-center">
+            <div className="text-sm text-red-500">{error}</div>
+          </div>
+        )}
+      </div>
+
+      {!loading && !error && (
+        <div className="mt-4 text-sm text-neutral-500">
+          Model sa dá otáčať, približovať a odďaľovať.
+        </div>
+      )}
     </div>
   );
 }

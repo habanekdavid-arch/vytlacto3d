@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import Navbar from "@/components/Navbar";
 import UploadBox from "@/components/UploadBox";
 import Configurator, { ConfigState } from "@/components/Configurator";
@@ -80,6 +80,19 @@ export default function Home() {
     }
   }
 
+  const scaleFactor = (latestConfig?.scalePct ?? 100) / 100;
+
+  const scaledAnalysis = useMemo(() => {
+    if (!uploaded?.analysis) return null;
+
+    return {
+      dimsXmm: uploaded.analysis.dimsXmm * scaleFactor,
+      dimsYmm: uploaded.analysis.dimsYmm * scaleFactor,
+      dimsZmm: uploaded.analysis.dimsZmm * scaleFactor,
+      volumeCm3: uploaded.analysis.volumeCm3 * Math.pow(scaleFactor, 3),
+    };
+  }, [uploaded, scaleFactor]);
+
   const totalWithVat = formatPriceWithVat(latestQuote?.total ?? null);
 
   return (
@@ -156,13 +169,13 @@ export default function Home() {
             ) : null}
           </div>
 
-          {uploaded?.analysis ? (
+          {scaledAnalysis ? (
             <div className="mt-6">
               <ModelSummaryBar
-                dimsX={uploaded.analysis.dimsXmm}
-                dimsY={uploaded.analysis.dimsYmm}
-                dimsZ={uploaded.analysis.dimsZmm}
-                volume={uploaded.analysis.volumeCm3}
+                dimsX={scaledAnalysis.dimsXmm}
+                dimsY={scaledAnalysis.dimsYmm}
+                dimsZ={scaledAnalysis.dimsZmm}
+                volume={scaledAnalysis.volumeCm3}
                 totalWithVat={totalWithVat}
               />
             </div>
@@ -182,16 +195,17 @@ export default function Home() {
 
               <div className="mt-4">
                 <StlViewer
-                  fileKey={uploaded.fileKey}
-                  title="Model sa dá otáčať a zoomovať"
-                  colorId={latestConfig?.color ?? "black"}
-                  height={380}
-                />
+  fileKey={uploaded.fileKey}
+  title="Model sa dá otáčať a zoomovať"
+  colorId={latestConfig?.color ?? "black"}
+  height={380}
+  scalePct={latestConfig?.scalePct ?? 100}
+/>
               </div>
             </div>
           ) : null}
 
-          {uploaded?.analysis ? (
+          {scaledAnalysis ? (
             <div className="mt-6 rounded-3xl border border-neutral-200 bg-white p-5">
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
@@ -211,7 +225,7 @@ export default function Home() {
 
               <div className="mt-4">
                 <Configurator
-                  analysis={{ volumeCm3: uploaded.analysis.volumeCm3 }}
+                  analysis={{ volumeCm3: scaledAnalysis.volumeCm3 }}
                   onQuote={handleQuote}
                 />
               </div>

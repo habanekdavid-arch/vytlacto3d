@@ -33,31 +33,25 @@ export async function POST(req: NextRequest) {
     const body = await req.json().catch(() => null);
 
     if (!body?.uploaded?.fileKey || !body?.uploaded?.fileName) {
-      return NextResponse.json(
-        { error: "Missing uploaded data" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Missing uploaded data" }, { status: 400 });
     }
 
     if (!body?.uploaded?.analysis?.volumeCm3) {
-      return NextResponse.json(
-        { error: "Missing analysis.volumeCm3" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Missing analysis.volumeCm3" }, { status: 400 });
     }
 
     if (!body?.config?.material || !body?.config?.quality) {
-      return NextResponse.json(
-        { error: "Missing config" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Missing config" }, { status: 400 });
     }
 
-    const volumeCm3 = Number(body.uploaded.analysis.volumeCm3);
+    const rawVolumeCm3 = Number(body.uploaded.analysis.volumeCm3);
     const quantity = Number(body.config.quantity ?? 1);
     const infillPct = Number(body.config.infillPct ?? body.config.strength ?? 20);
+    const scalePct = Number(body.config.scalePct ?? 100);
+    const scaleFactor = scalePct / 100;
+    const scaledVolumeCm3 = rawVolumeCm3 * Math.pow(scaleFactor, 3);
 
-    if (!Number.isFinite(volumeCm3) || volumeCm3 <= 0) {
+    if (!Number.isFinite(rawVolumeCm3) || rawVolumeCm3 <= 0) {
       return NextResponse.json({ error: "Invalid volumeCm3" }, { status: 400 });
     }
 
@@ -69,8 +63,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid infillPct" }, { status: 400 });
     }
 
+    if (!Number.isFinite(scalePct) || scalePct < 10 || scalePct > 200) {
+      return NextResponse.json({ error: "Invalid scalePct" }, { status: 400 });
+    }
+
     const pricing = quote({
-      volumeCm3,
+      volumeCm3: scaledVolumeCm3,
       material: body.config.material,
       quality: body.config.quality,
       infillPct,
@@ -82,10 +80,16 @@ export async function POST(req: NextRequest) {
         status: "PENDING",
         fileKey: body.uploaded.fileKey,
         fileName: body.uploaded.fileName,
-        analysis: body.uploaded.analysis,
+        analysis: {
+          ...body.uploaded.analysis,
+          originalVolumeCm3: rawVolumeCm3,
+          scaledVolumeCm3,
+          scalePct,
+        },
         config: {
           ...body.config,
           infillPct,
+          scalePct,
         },
         pricing: pricing as any,
       },
@@ -134,17 +138,19 @@ export async function POST(req: NextRequest) {
             unit_amount: itemAmountCents,
             product_data: {
               name: `3D tlač: ${body.uploaded.fileName}`,
-              description: `${formatEur(totalWithVat)} s DPH`,
+              description: `${formatEur(totalWithVat)} s DPH • mierka ${scalePct}%`,
             },
           },
         },
       ],
       metadata: {
         orderId: order.id,
+        scalePct: String(scalePct),
       },
       payment_intent_data: {
         metadata: {
           orderId: order.id,
+          scalePct: String(scalePct),
         },
       },
       success_url: `${baseUrl}/success?orderId=${order.id}&session_id={CHECKOUT_SESSION_ID}`,

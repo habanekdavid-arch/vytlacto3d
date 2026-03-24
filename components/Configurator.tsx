@@ -21,6 +21,7 @@ export type ConfigState = {
   infillPct: number;
   color: string;
   quantity: number;
+  scalePct: number;
 };
 
 export default function Configurator({
@@ -36,14 +37,28 @@ export default function Configurator({
     infillPct: 20,
     color: "black",
     quantity: 1,
+    scalePct: 100,
   });
 
   const [quote, setQuote] = useState<Quote | null>(null);
   const [loading, setLoading] = useState(false);
 
+  const scaledVolumeCm3 = useMemo(() => {
+    const scaleFactor = config.scalePct / 100;
+    return analysis.volumeCm3 * Math.pow(scaleFactor, 3);
+  }, [analysis.volumeCm3, config.scalePct]);
+
   const payload = useMemo(() => {
-    return { volumeCm3: analysis.volumeCm3, ...config };
-  }, [analysis.volumeCm3, config]);
+    return {
+      volumeCm3: scaledVolumeCm3,
+      material: config.material,
+      quality: config.quality,
+      infillPct: config.infillPct,
+      color: config.color,
+      quantity: config.quantity,
+      scalePct: config.scalePct,
+    };
+  }, [scaledVolumeCm3, config]);
 
   useEffect(() => {
     let alive = true;
@@ -57,13 +72,16 @@ export default function Configurator({
       .then((r) => r.text().then((t) => ({ ok: r.ok, t })))
       .then(({ ok, t }) => {
         if (!alive) return;
+
         let j: any = null;
         try {
           j = JSON.parse(t);
         } catch {
           j = { error: t };
         }
+
         if (!ok) throw new Error(j.error || "Quote error");
+
         setQuote(j);
         onQuote(j, config);
       })
@@ -71,14 +89,17 @@ export default function Configurator({
         if (!alive) return;
         setQuote(null);
       })
-      .finally(() => alive && setLoading(false));
+      .finally(() => {
+        if (alive) setLoading(false);
+      });
 
     return () => {
       alive = false;
     };
-  }, [payload, onQuote]);
+  }, [payload, onQuote, config]);
 
   const infillChips = [10, 20, 35, 50, 70];
+  const scaleChips = [50, 75, 100, 125, 150, 200];
 
   return (
     <div className="mt-6 rounded-2xl border border-zinc-200 bg-white p-6">
@@ -89,7 +110,7 @@ export default function Configurator({
             Nastav parametre tlače
           </div>
           <div className="mt-1 text-sm text-zinc-500">
-            Vyklikaj materiál, kvalitu, pevnosť (infill), farbu a počet kusov.
+            Vyklikaj materiál, kvalitu, veľkosť modelu, pevnosť (infill), farbu a počet kusov.
             Cena sa prepočíta automaticky.
           </div>
         </div>
@@ -153,6 +174,48 @@ export default function Configurator({
         </Field>
 
         <Field
+          label="Veľkosť modelu"
+          hint="Mení model rovnomerne vo všetkých smeroch bez deformácie. 100 % = pôvodná veľkosť."
+        >
+          <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+            <div className="flex items-center justify-between text-xs text-zinc-600">
+              <span className="font-medium text-zinc-800">{config.scalePct}%</span>
+              <span>10% – 200%</span>
+            </div>
+
+            <input
+              className="mt-3 w-full accent-[#FFAE00]"
+              type="range"
+              min={10}
+              max={200}
+              step={1}
+              value={config.scalePct}
+              onChange={(e) =>
+                setConfig((c) => ({ ...c, scalePct: Number(e.target.value) }))
+              }
+            />
+
+            <div className="mt-3 flex flex-wrap gap-2">
+              {scaleChips.map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => setConfig((c) => ({ ...c, scalePct: p }))}
+                  className={[
+                    "rounded-full border px-3 py-1 text-xs",
+                    config.scalePct === p
+                      ? "border-[#FFAE00] bg-[#FFAE00]/20 text-zinc-900"
+                      : "border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50",
+                  ].join(" ")}
+                >
+                  {p}%
+                </button>
+              ))}
+            </div>
+          </div>
+        </Field>
+
+        <Field
           label="Pevnosť (Infill)"
           hint="Vyšší infill = pevnejšie, ale viac materiálu a času."
         >
@@ -167,6 +230,7 @@ export default function Configurator({
               type="range"
               min={5}
               max={70}
+              step={1}
               value={config.infillPct}
               onChange={(e) =>
                 setConfig((c) => ({ ...c, infillPct: Number(e.target.value) }))
@@ -249,6 +313,10 @@ export default function Configurator({
 
             <div className="md:col-span-2">
               Medzisúčet / ks: <b>{formatPriceWithVat(quote.subtotalPerPart)}</b>
+            </div>
+
+            <div className="md:col-span-2">
+              Mierka modelu: <b>{config.scalePct}%</b>
             </div>
 
             <div className="mt-2 md:col-span-2">
