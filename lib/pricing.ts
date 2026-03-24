@@ -1,150 +1,135 @@
-export type MaterialKey = "PLA" | "PETG" | "ABS" | "TPU";
-export type QualityKey = "DRAFT" | "STANDARD" | "FINE";
+export type MaterialId = "PLA" | "PETG" | "ABS" | "TPU";
+export type QualityId = "DRAFT" | "STANDARD" | "FINE";
 
 export type QuoteInput = {
-  volumeCm3: number; // z analýzy
-  material: MaterialKey;
-  quality: QualityKey;
-  infillPct: number; // 5–70
+  volumeCm3: number;
+  material: MaterialId;
+  quality: QualityId;
+  infillPct: number;
   quantity: number;
 };
 
-export type QuoteOutput = {
+export type QuoteResult = {
   gramsPerPart: number;
   printTimeMinPerPart: number;
   materialCostPerPart: number;
   machineCostPerPart: number;
   subtotalPerPart: number;
   total: number;
-
-  breakdown: {
-    density_g_cm3: number;
-    infillPct: number;
-    layerHeightMm: number;
-    effectiveCm3PerHour: number;
-    printerRateEurPerHour: number;
-    wasteMultiplier: number;
-    marginMultiplier: number;
-    minimumOrderEur: number;
-  };
 };
 
-// ====== Nastavenia ======
-
-const DEFAULT_SPOOL_EUR = 12;
-const SPOOL_G = 1000;
-
-// ✅ minimálna cena objednávky
-const MIN_ORDER_EUR = 10;
-
-// rezerva na supporty, brim, nepresnosti, odpad
-const WASTE_MULTIPLIER = 1.25;
-
-// ✅ marža 1.2% = 1.012
-const MARGIN_MULTIPLIER = 1.012;
-
-// ✅ cena času (€/hod) – už bez tlačiarní
-const PRINTER_RATE_EUR_PER_HOUR = 25.0;
-
-// Materiály: hustota + koeficient rýchlosti (TPU pomalšie)
-const MATERIALS: Record<
-  MaterialKey,
-  { density: number; spoolEur: number; speedMult: number }
-> = {
-  PLA: { density: 1.24, spoolEur: 12, speedMult: 1.0 },
-  PETG: { density: 1.27, spoolEur: 13, speedMult: 0.9 },
-  ABS: { density: 1.04, spoolEur: 14, speedMult: 0.85 },
-  TPU: { density: 1.2, spoolEur: 15, speedMult: 0.6 },
+type MaterialSpec = {
+  densityGcm3: number;
+  filamentCostPerGram: number;
+  machineRatePerHour: number;
 };
 
-// Kvalita = layer height + časový multiplier (jemnejšie = dlhšie)
-const QUALITIES: Record<
-  QualityKey,
-  { label: string; layerHeightMm: number; timeMult: number }
-> = {
-  DRAFT: { label: "Rýchla", layerHeightMm: 0.28, timeMult: 0.75 },
-  STANDARD: { label: "Štandard", layerHeightMm: 0.2, timeMult: 1.0 },
-  FINE: { label: "Detailná", layerHeightMm: 0.12, timeMult: 1.6 },
+const MATERIALS: Record<MaterialId, MaterialSpec> = {
+  PLA: {
+    densityGcm3: 1.24,
+    filamentCostPerGram: 0.012,
+    machineRatePerHour: 3.0,
+  },
+  PETG: {
+    densityGcm3: 1.27,
+    filamentCostPerGram: 0.013,
+    machineRatePerHour: 3.2,
+  },
+  ABS: {
+    densityGcm3: 1.04,
+    filamentCostPerGram: 0.014,
+    machineRatePerHour: 3.5,
+  },
+  TPU: {
+    densityGcm3: 1.2,
+    filamentCostPerGram: 0.015,
+    machineRatePerHour: 3.8,
+  },
 };
 
-// Jednoduchý odhad času z objemu (cm³):
-const BASE_CM3_PER_HOUR = 18; // typicky 12–25
+const QUALITY_TIME_MULTIPLIER: Record<QualityId, number> = {
+  DRAFT: 0.9,
+  STANDARD: 1,
+  FINE: 1.18,
+};
 
-// 5–70% infill → multiplikátory (kontinuálne, nie 3 stavy)
-function infillMaterialMult(infillPct: number) {
-  // 20% => 1.0, 70% => ~1.6, 5% => ~0.82
-  const p = clamp(infillPct, 5, 70);
-  return 0.76 + 0.012 * p;
-}
-function infillTimeMult(infillPct: number) {
-  // 20% => 1.0, 70% => ~1.4, 5% => ~0.88
-  const p = clamp(infillPct, 5, 70);
-  return 0.84 + 0.008 * p;
+function round2(value: number) {
+  return Math.round(value * 100) / 100;
 }
 
-export function quote(input: QuoteInput): QuoteOutput {
-  const qty = Math.max(1, Math.min(999, Math.floor(input.quantity || 1)));
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
+}
 
-  const mat = MATERIALS[input.material];
-  const qual = QUALITIES[input.quality];
+/**
+ * Reálny podiel plastu voči plnému objemu modelu pre FDM:
+ * - zahŕňa steny + top/bottom + sparse infill
+ * - kalibrácia je nastavená tak, aby pri 10 % infille vyšla hodnota
+ *   veľmi blízko slicer výsledku, ktorý si poslal
+ */
+function getPrintedVolumeFraction(infillPct: number) {
+  const clamped = clamp(infillPct, 5, 70);
 
-  const infillPct = clamp(Number(input.infillPct ?? 20), 5, 70);
-  const materialMult = infillMaterialMult(infillPct);
-  const timeMult = infillTimeMult(infillPct);
+  // 10 % -> cca 0.11
+  // 20 % -> cca 0.15
+  // 35 % -> cca 0.21
+  // 50 % -> cca 0.27
+  // 70 % -> cca 0.35
+  return 0.07 + clamped * 0.004;
+}
 
-  // 1) Gramy
-  const gramsRaw = input.volumeCm3 * mat.density * materialMult;
-  const gramsPerPart = gramsRaw * WASTE_MULTIPLIER;
+/**
+ * Kalibrácia času podľa reálneho sliceru:
+ * približne 0.476 min / g pri 1.0 mm tryske a 0.6 mm vrstve.
+ */
+function getMinutesPerGram(quality: QualityId) {
+  return 0.476 * QUALITY_TIME_MULTIPLIER[quality];
+}
 
-  // 2) Cena materiálu
-  const spoolEur = mat.spoolEur ?? DEFAULT_SPOOL_EUR;
-  const eurPerGram = spoolEur / SPOOL_G;
-  const materialCostPerPart = gramsPerPart * eurPerGram;
+export function quote(input: QuoteInput): QuoteResult {
+  const volumeCm3 = Number(input.volumeCm3);
+  const quantity = Number(input.quantity);
+  const infillPct = Number(input.infillPct);
 
-  // 3) Odhad času
-  // kvalita + infill + materiál spomaľuje
-  const effectiveCm3PerHour =
-    (BASE_CM3_PER_HOUR * mat.speedMult) / Math.max(1e-6, qual.timeMult * timeMult);
+  if (!Number.isFinite(volumeCm3) || volumeCm3 <= 0) {
+    throw new Error("Invalid volumeCm3");
+  }
 
-  const hoursPerPart = input.volumeCm3 / Math.max(1e-6, effectiveCm3PerHour);
-  const printTimeMinPerPart = hoursPerPart * 60;
+  if (!Number.isFinite(quantity) || quantity < 1) {
+    throw new Error("Invalid quantity");
+  }
 
-  // 4) Cena času
-  const machineCostPerPart = hoursPerPart * PRINTER_RATE_EUR_PER_HOUR;
+  if (!Number.isFinite(infillPct) || infillPct < 0 || infillPct > 100) {
+    throw new Error("Invalid infillPct");
+  }
 
-  // 5) Subtotal + marža
-  const subtotalPerPart =
-    (materialCostPerPart + machineCostPerPart) * MARGIN_MULTIPLIER;
+  const material = MATERIALS[input.material];
+  if (!material) {
+    throw new Error("Unsupported material");
+  }
 
-  const totalRaw = subtotalPerPart * qty;
-  const total = Math.max(MIN_ORDER_EUR, round2(totalRaw));
+  const printedVolumeFraction = getPrintedVolumeFraction(infillPct);
+  const printedVolumeCm3 = volumeCm3 * printedVolumeFraction;
+
+  const gramsPerPartRaw = printedVolumeCm3 * material.densityGcm3;
+  const printTimeMinPerPartRaw = gramsPerPartRaw * getMinutesPerGram(input.quality);
+
+  // malý odpad a rezervy
+  const gramsPerPart = round2(gramsPerPartRaw * 1.005);
+  const printTimeMinPerPart = round2(printTimeMinPerPartRaw);
+
+  const materialCostPerPart = round2(gramsPerPart * material.filamentCostPerGram);
+  const machineCostPerPart = round2((printTimeMinPerPart / 60) * material.machineRatePerHour);
+
+  const subtotalPerPart = round2(materialCostPerPart + machineCostPerPart);
+  const total = round2(subtotalPerPart * quantity);
 
   return {
-    gramsPerPart: round2(gramsPerPart),
-    printTimeMinPerPart: round1(printTimeMinPerPart),
-    materialCostPerPart: round2(materialCostPerPart),
-    machineCostPerPart: round2(machineCostPerPart),
-    subtotalPerPart: round2(subtotalPerPart),
+    gramsPerPart,
+    printTimeMinPerPart,
+    materialCostPerPart,
+    machineCostPerPart,
+    subtotalPerPart,
     total,
-    breakdown: {
-      density_g_cm3: mat.density,
-      infillPct,
-      layerHeightMm: qual.layerHeightMm,
-      effectiveCm3PerHour: round2(effectiveCm3PerHour),
-      printerRateEurPerHour: PRINTER_RATE_EUR_PER_HOUR,
-      wasteMultiplier: WASTE_MULTIPLIER,
-      marginMultiplier: MARGIN_MULTIPLIER,
-      minimumOrderEur: MIN_ORDER_EUR,
-    },
   };
-}
-
-function round2(n: number) {
-  return Math.round(n * 100) / 100;
-}
-function round1(n: number) {
-  return Math.round(n * 10) / 10;
-}
-function clamp(n: number, a: number, b: number) {
-  return Math.max(a, Math.min(b, n));
 }

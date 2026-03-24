@@ -4,26 +4,22 @@ import { quote } from "@/lib/pricing";
 export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
-  const body = await req.json().catch(() => null);
-
-  if (!body?.volumeCm3) {
-    return NextResponse.json({ error: "Chýba volumeCm3." }, { status: 400 });
-  }
-
   try {
-    const out = quote({
+    const body = await req.json();
+
+    const result = quote({
       volumeCm3: Number(body.volumeCm3),
       material: body.material,
       quality: body.quality,
-      infillPct: Number(body.infillPct ?? 20),
+      infillPct: Number(body.infillPct),
       quantity: Number(body.quantity ?? 1),
     });
 
-    return NextResponse.json(out);
-  } catch (e: any) {
+    return NextResponse.json(result);
+  } catch (error: any) {
     return NextResponse.json(
-      { error: e?.message || "Quote failed" },
-      { status: 500 }
+      { error: error?.message || "Quote failed" },
+      { status: 400 }
     );
   }
 }
