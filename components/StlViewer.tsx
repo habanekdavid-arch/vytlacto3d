@@ -48,7 +48,8 @@ export default function StlViewer({
   height = 380,
   scalePct = 100,
 }: Props) {
-  const containerRef = useRef<HTMLDivElement | null>(null);
+  const mountRef = useRef<HTMLDivElement | null>(null);
+
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
@@ -62,26 +63,17 @@ export default function StlViewer({
   const resolvedColor = useMemo(() => getColor(colorId), [colorId]);
 
   useEffect(() => {
-    const container = containerRef.current;
-    if (!container || !fileKey) return;
+    const mount = mountRef.current;
+    if (!mount || !fileKey) return;
 
     setLoading(true);
     setError(null);
-
-    if (rendererRef.current) {
-      rendererRef.current.dispose();
-      rendererRef.current = null;
-    }
-
-    while (container.firstChild) {
-      container.removeChild(container.firstChild);
-    }
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color("#F5F5F5");
     sceneRef.current = scene;
 
-    const width = Math.max(container.clientWidth, 320);
+    const width = Math.max(mount.clientWidth, 320);
 
     const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 5000);
     camera.position.set(140, 110, 140);
@@ -97,9 +89,7 @@ export default function StlViewer({
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     rendererRef.current = renderer;
 
-    if (containerRef.current) {
-      containerRef.current.appendChild(renderer.domElement);
-    }
+    mount.appendChild(renderer.domElement);
 
     const ambientLight = new THREE.AmbientLight(0xffffff, 1.25);
     scene.add(ambientLight);
@@ -151,6 +141,7 @@ export default function StlViewer({
         const box = new THREE.Box3().setFromObject(mesh);
         const size = new THREE.Vector3();
         const center = new THREE.Vector3();
+
         box.getSize(size);
         box.getCenter(center);
 
@@ -177,22 +168,27 @@ export default function StlViewer({
     );
 
     const handleResize = () => {
-      const el = containerRef.current;
-      const renderer = rendererRef.current;
-      const camera = cameraRef.current;
+      const currentMount = mountRef.current;
+      const currentRenderer = rendererRef.current;
+      const currentCamera = cameraRef.current;
 
-      if (!el || !renderer || !camera) return;
+      if (!currentMount || !currentRenderer || !currentCamera) return;
 
-      const nextWidth = Math.max(el.clientWidth, 320);
-      renderer.setSize(nextWidth, height);
-      camera.aspect = nextWidth / height;
-      camera.updateProjectionMatrix();
+      const nextWidth = Math.max(currentMount.clientWidth, 320);
+      currentRenderer.setSize(nextWidth, height);
+      currentCamera.aspect = nextWidth / height;
+      currentCamera.updateProjectionMatrix();
     };
 
     const animate = () => {
       frameRef.current = requestAnimationFrame(animate);
 
-      if (controlsRef.current && rendererRef.current && sceneRef.current && cameraRef.current) {
+      if (
+        rendererRef.current &&
+        sceneRef.current &&
+        cameraRef.current &&
+        controlsRef.current
+      ) {
         controlsRef.current.update();
         rendererRef.current.render(sceneRef.current, cameraRef.current);
       }
@@ -234,13 +230,19 @@ export default function StlViewer({
 
       if (rendererRef.current) {
         rendererRef.current.dispose();
+
+        const canvas = rendererRef.current.domElement;
+        if (canvas.parentNode) {
+          canvas.parentNode.removeChild(canvas);
+        }
+
         rendererRef.current = null;
       }
 
       sceneRef.current = null;
       cameraRef.current = null;
     };
-  }, [fileKey, height, resolvedColor, scalePct]);
+  }, [fileKey, height]);
 
   useEffect(() => {
     const mesh = meshRef.current;
@@ -291,7 +293,7 @@ export default function StlViewer({
       </div>
 
       <div
-        ref={containerRef}
+        ref={mountRef}
         className="relative w-full overflow-hidden rounded-2xl bg-neutral-100"
         style={{ height }}
       >

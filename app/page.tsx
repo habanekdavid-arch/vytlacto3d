@@ -195,6 +195,7 @@ export default function Home() {
 
               <div className="mt-4">
                 <StlViewer
+                  key={`${uploaded.fileKey}-${latestConfig?.scalePct ?? 100}-${latestConfig?.color ?? "black"}`}
                   fileKey={uploaded.fileKey}
                   title="Model sa dá otáčať a zoomovať"
                   colorId={latestConfig?.color ?? "black"}
