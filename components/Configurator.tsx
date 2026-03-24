@@ -126,7 +126,7 @@ export default function Configurator({
             className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm"
             value={config.material}
             onChange={(e) =>
-              setConfig((c) => ({ ...c, material: e.target.value as any }))
+              setConfig((c) => ({ ...c, material: e.target.value as ConfigState["material"] }))
             }
           >
             <option value="PLA">PLA</option>
@@ -175,7 +175,7 @@ export default function Configurator({
 
         <Field
           label="Veľkosť modelu"
-          hint="Mení model rovnomerne vo všetkých smeroch bez deformácie. 100 % = pôvodná veľkosť."
+          hint="Model sa mení rovnomerne vo všetkých smeroch bez deformácie. 100 % = pôvodná veľkosť."
         >
           <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
             <div className="flex items-center justify-between text-xs text-zinc-600">

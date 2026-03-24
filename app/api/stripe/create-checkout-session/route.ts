@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
 
     const rawVolumeCm3 = Number(body.uploaded.analysis.volumeCm3);
     const quantity = Number(body.config.quantity ?? 1);
-    const infillPct = Number(body.config.infillPct ?? body.config.strength ?? 20);
+    const infillPct = Number(body.config.infillPct ?? 20);
     const scalePct = Number(body.config.scalePct ?? 100);
     const scaleFactor = scalePct / 100;
     const scaledVolumeCm3 = rawVolumeCm3 * Math.pow(scaleFactor, 3);

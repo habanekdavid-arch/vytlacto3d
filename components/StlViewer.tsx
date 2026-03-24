@@ -68,6 +68,11 @@ export default function StlViewer({
     setLoading(true);
     setError(null);
 
+    if (rendererRef.current) {
+      rendererRef.current.dispose();
+      rendererRef.current = null;
+    }
+
     while (container.firstChild) {
       container.removeChild(container.firstChild);
     }
@@ -77,9 +82,8 @@ export default function StlViewer({
     sceneRef.current = scene;
 
     const width = Math.max(container.clientWidth, 320);
-    const initialHeight = height;
 
-    const camera = new THREE.PerspectiveCamera(45, width / initialHeight, 0.1, 5000);
+    const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 5000);
     camera.position.set(140, 110, 140);
     cameraRef.current = camera;
 
@@ -89,10 +93,13 @@ export default function StlViewer({
       powerPreference: "high-performance",
     });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.setSize(width, initialHeight);
+    renderer.setSize(width, height);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     rendererRef.current = renderer;
-    container.appendChild(renderer.domElement);
+
+    if (containerRef.current) {
+      containerRef.current.appendChild(renderer.domElement);
+    }
 
     const ambientLight = new THREE.AmbientLight(0xffffff, 1.25);
     scene.add(ambientLight);
@@ -135,7 +142,6 @@ export default function StlViewer({
         });
 
         const mesh = new THREE.Mesh(geometry, material);
-
         const scale = scalePct / 100;
         mesh.scale.set(scale, scale, scale);
 
@@ -185,8 +191,11 @@ export default function StlViewer({
 
     const animate = () => {
       frameRef.current = requestAnimationFrame(animate);
-      controls.update();
-      renderer.render(scene, camera);
+
+      if (controlsRef.current && rendererRef.current && sceneRef.current && cameraRef.current) {
+        controlsRef.current.update();
+        rendererRef.current.render(sceneRef.current, cameraRef.current);
+      }
     };
 
     handleResize();
@@ -198,9 +207,13 @@ export default function StlViewer({
 
       if (frameRef.current) {
         cancelAnimationFrame(frameRef.current);
+        frameRef.current = null;
       }
 
-      controls.dispose();
+      if (controlsRef.current) {
+        controlsRef.current.dispose();
+        controlsRef.current = null;
+      }
 
       if (meshRef.current) {
         meshRef.current.geometry.dispose();
@@ -212,22 +225,22 @@ export default function StlViewer({
           material.dispose();
         }
 
-        scene.remove(meshRef.current);
+        if (sceneRef.current) {
+          sceneRef.current.remove(meshRef.current);
+        }
+
         meshRef.current = null;
       }
 
-      renderer.dispose();
-
-      if (renderer.domElement.parentNode) {
-        renderer.domElement.parentNode.removeChild(renderer.domElement);
+      if (rendererRef.current) {
+        rendererRef.current.dispose();
+        rendererRef.current = null;
       }
 
-      controlsRef.current = null;
-      rendererRef.current = null;
       sceneRef.current = null;
       cameraRef.current = null;
     };
-  }, [fileKey, height]);
+  }, [fileKey, height, resolvedColor, scalePct]);
 
   useEffect(() => {
     const mesh = meshRef.current;
