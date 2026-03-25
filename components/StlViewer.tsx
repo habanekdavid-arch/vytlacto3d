@@ -75,8 +75,8 @@ export default function StlViewer({
 
     const width = Math.max(mount.clientWidth, 320);
 
-    const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 5000);
-    camera.position.set(140, 110, 140);
+    const camera = new THREE.PerspectiveCamera(42, width / height, 0.1, 5000);
+    camera.position.set(220, 160, 220);
     cameraRef.current = camera;
 
     const renderer = new THREE.WebGLRenderer({
@@ -87,34 +87,56 @@ export default function StlViewer({
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setSize(width, height);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     rendererRef.current = renderer;
 
     mount.appendChild(renderer.domElement);
 
-    const ambientLight = new THREE.AmbientLight(0xffffff, 1.25);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 1.15);
     scene.add(ambientLight);
 
-    const dirLight1 = new THREE.DirectionalLight(0xffffff, 1.1);
-    dirLight1.position.set(120, 160, 120);
-    scene.add(dirLight1);
+    const hemiLight = new THREE.HemisphereLight(0xffffff, 0xe5e7eb, 0.95);
+    scene.add(hemiLight);
 
-    const dirLight2 = new THREE.DirectionalLight(0xffffff, 0.7);
-    dirLight2.position.set(-120, 80, -60);
-    scene.add(dirLight2);
+    const keyLight = new THREE.DirectionalLight(0xffffff, 1.65);
+    keyLight.position.set(180, 260, 160);
+    keyLight.castShadow = true;
+    keyLight.shadow.mapSize.width = 1024;
+    keyLight.shadow.mapSize.height = 1024;
+    keyLight.shadow.camera.near = 0.5;
+    keyLight.shadow.camera.far = 2000;
+    scene.add(keyLight);
 
-    const dirLight3 = new THREE.DirectionalLight(0xffffff, 0.45);
-    dirLight3.position.set(0, -80, 80);
-    scene.add(dirLight3);
+    const fillLight = new THREE.DirectionalLight(0xffffff, 0.7);
+    fillLight.position.set(-120, 120, 80);
+    scene.add(fillLight);
+
+    const rimLight = new THREE.DirectionalLight(0xffffff, 0.55);
+    rimLight.position.set(0, 180, -180);
+    scene.add(rimLight);
+
+    const floorGeo = new THREE.PlaneGeometry(3000, 3000);
+    const floorMat = new THREE.ShadowMaterial({
+      color: 0x000000,
+      opacity: 0.12,
+    });
+    const floor = new THREE.Mesh(floorGeo, floorMat);
+    floor.rotation.x = -Math.PI / 2;
+    floor.position.y = 0;
+    floor.receiveShadow = true;
+    scene.add(floor);
 
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.08;
     controls.rotateSpeed = 0.9;
-    controls.zoomSpeed = 0.9;
+    controls.zoomSpeed = 0.95;
     controls.panSpeed = 0.8;
     controls.screenSpacePanning = true;
     controls.minDistance = 10;
-    controls.maxDistance = 2000;
+    controls.maxDistance = 3000;
+    controls.maxPolarAngle = Math.PI / 2.05;
     controlsRef.current = controls;
 
     const loader = new STLLoader();
@@ -123,17 +145,33 @@ export default function StlViewer({
       `/api/file?key=${encodeURIComponent(fileKey)}`,
       (geometry) => {
         geometry.computeVertexNormals();
-        geometry.center();
 
-        const material = new THREE.MeshStandardMaterial({
+        const bbox = new THREE.Box3().setFromBufferAttribute(
+          geometry.getAttribute("position") as THREE.BufferAttribute
+        );
+
+        const centerX = (bbox.min.x + bbox.max.x) / 2;
+        const centerZ = (bbox.min.z + bbox.max.z) / 2;
+        const minY = bbox.min.y;
+
+        geometry.translate(-centerX, -minY, -centerZ);
+        geometry.computeBoundingBox();
+        geometry.computeVertexNormals();
+
+        const material = new THREE.MeshPhysicalMaterial({
           color: resolvedColor,
-          metalness: 0.08,
-          roughness: 0.72,
+          roughness: 0.55,
+          metalness: 0.03,
+          clearcoat: 0.18,
+          clearcoatRoughness: 0.65,
         });
 
         const mesh = new THREE.Mesh(geometry, material);
         const scale = scalePct / 100;
+
         mesh.scale.set(scale, scale, scale);
+        mesh.castShadow = true;
+        mesh.receiveShadow = false;
 
         scene.add(mesh);
         meshRef.current = mesh;
@@ -146,14 +184,14 @@ export default function StlViewer({
         box.getCenter(center);
 
         const maxDim = Math.max(size.x, size.y, size.z) || 1;
-        const fitDistance = maxDim * 1.8;
+        const fitDistance = maxDim * 1.7;
 
         camera.position.set(fitDistance, fitDistance * 0.9, fitDistance);
         camera.near = Math.max(0.1, maxDim / 100);
         camera.far = Math.max(5000, maxDim * 20);
         camera.updateProjectionMatrix();
 
-        controls.target.copy(center);
+        controls.target.set(0, size.y * 0.35, 0);
         controls.minDistance = Math.max(5, maxDim * 0.35);
         controls.maxDistance = Math.max(1000, maxDim * 8);
         controls.update();
@@ -252,11 +290,11 @@ export default function StlViewer({
     mesh.scale.set(scale, scale, scale);
 
     const box = new THREE.Box3().setFromObject(mesh);
-    const center = new THREE.Vector3();
-    box.getCenter(center);
+    const size = new THREE.Vector3();
+    box.getSize(size);
 
     if (controlsRef.current) {
-      controlsRef.current.target.copy(center);
+      controlsRef.current.target.set(0, size.y * 0.35, 0);
       controlsRef.current.update();
     }
   }, [scalePct]);
@@ -268,12 +306,12 @@ export default function StlViewer({
     const material = mesh.material;
     if (Array.isArray(material)) {
       material.forEach((m) => {
-        if (m instanceof THREE.MeshStandardMaterial) {
+        if (m instanceof THREE.MeshPhysicalMaterial) {
           m.color.set(resolvedColor);
           m.needsUpdate = true;
         }
       });
-    } else if (material instanceof THREE.MeshStandardMaterial) {
+    } else if (material instanceof THREE.MeshPhysicalMaterial) {
       material.color.set(resolvedColor);
       material.needsUpdate = true;
     }

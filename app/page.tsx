@@ -30,6 +30,12 @@ type Quote = {
   materialCostPerPart: number;
   machineCostPerPart: number;
   subtotalPerPart: number;
+
+  setupFee: number;
+  productionSubtotal: number;
+  quantityDiscountPct: number;
+  quantityDiscountAmount: number;
+
   total: number;
 };
 

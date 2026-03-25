@@ -12,6 +12,12 @@ type Quote = {
   materialCostPerPart: number;
   machineCostPerPart: number;
   subtotalPerPart: number;
+
+  setupFee: number;
+  productionSubtotal: number;
+  quantityDiscountPct: number;
+  quantityDiscountAmount: number;
+
   total: number;
 };
 
@@ -311,12 +317,25 @@ export default function Configurator({
               Náklad čas / ks: <b>{formatPriceWithVat(quote.machineCostPerPart)}</b>
             </div>
 
-            <div className="md:col-span-2">
-              Medzisúčet / ks: <b>{formatPriceWithVat(quote.subtotalPerPart)}</b>
+            <div>
+              Cena výroby spolu: <b>{formatPriceWithVat(quote.productionSubtotal)}</b>
             </div>
 
-            <div className="md:col-span-2">
+            <div>
+              Základ za model: <b>{formatPriceWithVat(quote.setupFee)}</b>
+            </div>
+
+            <div>
               Mierka modelu: <b>{config.scalePct}%</b>
+            </div>
+
+            <div>
+              Množstevná zľava:{" "}
+              <b>
+                {quote.quantityDiscountPct > 0
+                  ? `-${quote.quantityDiscountPct}% (${formatPriceWithVat(quote.quantityDiscountAmount)})`
+                  : "bez zľavy"}
+              </b>
             </div>
 
             <div className="mt-2 md:col-span-2">

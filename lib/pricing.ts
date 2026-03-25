@@ -15,43 +15,52 @@ export type QuoteResult = {
   materialCostPerPart: number;
   machineCostPerPart: number;
   subtotalPerPart: number;
+
+  setupFee: number;
+  productionSubtotal: number;
+  quantityDiscountPct: number;
+  quantityDiscountAmount: number;
+
   total: number;
 };
 
 type MaterialSpec = {
   densityGcm3: number;
   filamentCostPerGram: number;
-  machineRatePerHour: number;
 };
 
 const MATERIALS: Record<MaterialId, MaterialSpec> = {
   PLA: {
     densityGcm3: 1.24,
     filamentCostPerGram: 0.012,
-    machineRatePerHour: 3.0,
   },
   PETG: {
     densityGcm3: 1.27,
     filamentCostPerGram: 0.013,
-    machineRatePerHour: 3.2,
   },
   ABS: {
     densityGcm3: 1.04,
     filamentCostPerGram: 0.014,
-    machineRatePerHour: 3.5,
   },
   TPU: {
     densityGcm3: 1.2,
     filamentCostPerGram: 0.015,
-    machineRatePerHour: 3.8,
   },
 };
 
+const MACHINE_RATE_PER_HOUR: Record<QualityId, number> = {
+  DRAFT: 2.8,
+  STANDARD: 3.1,
+  FINE: 3.5,
+};
+
 const QUALITY_TIME_MULTIPLIER: Record<QualityId, number> = {
-  DRAFT: 0.9,
+  DRAFT: 0.88,
   STANDARD: 1,
   FINE: 1.18,
 };
+
+const SETUP_FEE_PER_MODEL = 10;
 
 function round2(value: number) {
   return Math.round(value * 100) / 100;
@@ -61,29 +70,20 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
 }
 
-/**
- * Reálny podiel plastu voči plnému objemu modelu pre FDM:
- * - zahŕňa steny + top/bottom + sparse infill
- * - kalibrácia je nastavená tak, aby pri 10 % infille vyšla hodnota
- *   veľmi blízko slicer výsledku, ktorý si poslal
- */
 function getPrintedVolumeFraction(infillPct: number) {
   const clamped = clamp(infillPct, 5, 70);
-
-  // 10 % -> cca 0.11
-  // 20 % -> cca 0.15
-  // 35 % -> cca 0.21
-  // 50 % -> cca 0.27
-  // 70 % -> cca 0.35
-  return 0.07 + clamped * 0.004;
+  return 0.075 + clamped * 0.0035;
 }
 
-/**
- * Kalibrácia času podľa reálneho sliceru:
- * približne 0.476 min / g pri 1.0 mm tryske a 0.6 mm vrstve.
- */
 function getMinutesPerGram(quality: QualityId) {
-  return 0.476 * QUALITY_TIME_MULTIPLIER[quality];
+  return 0.48 * QUALITY_TIME_MULTIPLIER[quality];
+}
+
+function getQuantityDiscountPct(quantity: number) {
+  if (quantity >= 100) return 15;
+  if (quantity >= 50) return 10;
+  if (quantity >= 20) return 5;
+  return 0;
 }
 
 export function quote(input: QuoteInput): QuoteResult {
@@ -114,15 +114,32 @@ export function quote(input: QuoteInput): QuoteResult {
   const gramsPerPartRaw = printedVolumeCm3 * material.densityGcm3;
   const printTimeMinPerPartRaw = gramsPerPartRaw * getMinutesPerGram(input.quality);
 
-  // malý odpad a rezervy
   const gramsPerPart = round2(gramsPerPartRaw * 1.005);
   const printTimeMinPerPart = round2(printTimeMinPerPartRaw);
 
-  const materialCostPerPart = round2(gramsPerPart * material.filamentCostPerGram);
-  const machineCostPerPart = round2((printTimeMinPerPart / 60) * material.machineRatePerHour);
+  const materialCostPerPart = round2(
+    gramsPerPart * material.filamentCostPerGram
+  );
+
+  const machineCostPerPart = round2(
+    (printTimeMinPerPart / 60) * MACHINE_RATE_PER_HOUR[input.quality]
+  );
 
   const subtotalPerPart = round2(materialCostPerPart + machineCostPerPart);
-  const total = round2(subtotalPerPart * quantity);
+
+  const productionSubtotal = round2(subtotalPerPart * quantity);
+
+  const quantityDiscountPct = getQuantityDiscountPct(quantity);
+  const quantityDiscountAmount = round2(
+    productionSubtotal * (quantityDiscountPct / 100)
+  );
+
+  const total = round2(
+    Math.max(
+      SETUP_FEE_PER_MODEL,
+      SETUP_FEE_PER_MODEL + productionSubtotal - quantityDiscountAmount
+    )
+  );
 
   return {
     gramsPerPart,
@@ -130,6 +147,12 @@ export function quote(input: QuoteInput): QuoteResult {
     materialCostPerPart,
     machineCostPerPart,
     subtotalPerPart,
+
+    setupFee: SETUP_FEE_PER_MODEL,
+    productionSubtotal,
+    quantityDiscountPct,
+    quantityDiscountAmount,
+
     total,
   };
 }
