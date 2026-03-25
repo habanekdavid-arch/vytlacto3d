@@ -70,13 +70,13 @@ export default function StlViewer({
     setError(null);
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color("#F5F5F5");
+    scene.background = new THREE.Color("#F3F4F6");
     sceneRef.current = scene;
 
     const width = Math.max(mount.clientWidth, 320);
 
-    const camera = new THREE.PerspectiveCamera(42, width / height, 0.1, 5000);
-    camera.position.set(220, 160, 220);
+    const camera = new THREE.PerspectiveCamera(40, width / height, 0.1, 5000);
+    camera.position.set(180, 140, 180);
     cameraRef.current = camera;
 
     const renderer = new THREE.WebGLRenderer({
@@ -96,27 +96,27 @@ export default function StlViewer({
     const ambientLight = new THREE.AmbientLight(0xffffff, 1.15);
     scene.add(ambientLight);
 
-    const hemiLight = new THREE.HemisphereLight(0xffffff, 0xe5e7eb, 0.95);
+    const hemiLight = new THREE.HemisphereLight(0xffffff, 0xd1d5db, 0.95);
     scene.add(hemiLight);
 
-    const keyLight = new THREE.DirectionalLight(0xffffff, 1.65);
-    keyLight.position.set(180, 260, 160);
+    const keyLight = new THREE.DirectionalLight(0xffffff, 1.45);
+    keyLight.position.set(180, 260, 140);
     keyLight.castShadow = true;
     keyLight.shadow.mapSize.width = 1024;
     keyLight.shadow.mapSize.height = 1024;
     keyLight.shadow.camera.near = 0.5;
-    keyLight.shadow.camera.far = 2000;
+    keyLight.shadow.camera.far = 3000;
     scene.add(keyLight);
 
-    const fillLight = new THREE.DirectionalLight(0xffffff, 0.7);
-    fillLight.position.set(-120, 120, 80);
+    const fillLight = new THREE.DirectionalLight(0xffffff, 0.6);
+    fillLight.position.set(-120, 140, 80);
     scene.add(fillLight);
 
-    const rimLight = new THREE.DirectionalLight(0xffffff, 0.55);
-    rimLight.position.set(0, 180, -180);
+    const rimLight = new THREE.DirectionalLight(0xffffff, 0.4);
+    rimLight.position.set(0, 120, -180);
     scene.add(rimLight);
 
-    const floorGeo = new THREE.PlaneGeometry(3000, 3000);
+    const floorGeo = new THREE.CircleGeometry(1200, 64);
     const floorMat = new THREE.ShadowMaterial({
       color: 0x000000,
       opacity: 0.12,
@@ -136,7 +136,7 @@ export default function StlViewer({
     controls.screenSpacePanning = true;
     controls.minDistance = 10;
     controls.maxDistance = 3000;
-    controls.maxPolarAngle = Math.PI / 2.05;
+    controls.maxPolarAngle = Math.PI / 2.02;
     controlsRef.current = controls;
 
     const loader = new STLLoader();
@@ -145,33 +145,40 @@ export default function StlViewer({
       `/api/file?key=${encodeURIComponent(fileKey)}`,
       (geometry) => {
         geometry.computeVertexNormals();
+        geometry.computeBoundingBox();
 
-        const bbox = new THREE.Box3().setFromBufferAttribute(
-          geometry.getAttribute("position") as THREE.BufferAttribute
-        );
+        if (!geometry.boundingBox) {
+          setError("Nepodarilo sa spracovať STL.");
+          setLoading(false);
+          return;
+        }
 
-        const centerX = (bbox.min.x + bbox.max.x) / 2;
-        const centerZ = (bbox.min.z + bbox.max.z) / 2;
-        const minY = bbox.min.y;
+        // 1) vycentrovanie do stredu X/Z
+        const bbox0 = geometry.boundingBox.clone();
+        const centerX = (bbox0.min.x + bbox0.max.x) / 2;
+        const centerZ = (bbox0.min.z + bbox0.max.z) / 2;
+        geometry.translate(-centerX, 0, -centerZ);
 
-        geometry.translate(-centerX, -minY, -centerZ);
+        // 2) položenie na podložku
+        geometry.computeBoundingBox();
+        const bbox1 = geometry.boundingBox!;
+        geometry.translate(0, -bbox1.min.y, 0);
+
         geometry.computeBoundingBox();
         geometry.computeVertexNormals();
 
         const material = new THREE.MeshPhysicalMaterial({
           color: resolvedColor,
-          roughness: 0.55,
-          metalness: 0.03,
-          clearcoat: 0.18,
-          clearcoatRoughness: 0.65,
+          roughness: 0.58,
+          metalness: 0.02,
+          clearcoat: 0.16,
+          clearcoatRoughness: 0.7,
         });
 
         const mesh = new THREE.Mesh(geometry, material);
         const scale = scalePct / 100;
-
         mesh.scale.set(scale, scale, scale);
         mesh.castShadow = true;
-        mesh.receiveShadow = false;
 
         scene.add(mesh);
         meshRef.current = mesh;
@@ -179,21 +186,22 @@ export default function StlViewer({
         const box = new THREE.Box3().setFromObject(mesh);
         const size = new THREE.Vector3();
         const center = new THREE.Vector3();
-
         box.getSize(size);
         box.getCenter(center);
 
         const maxDim = Math.max(size.x, size.y, size.z) || 1;
-        const fitDistance = maxDim * 1.7;
 
-        camera.position.set(fitDistance, fitDistance * 0.9, fitDistance);
+        // Kamera z "pekneho produktového" uhla
+        const distance = maxDim * 1.9;
+        camera.position.set(distance * 0.95, distance * 0.75, distance * 1.05);
         camera.near = Math.max(0.1, maxDim / 100);
-        camera.far = Math.max(5000, maxDim * 20);
+        camera.far = Math.max(5000, maxDim * 30);
         camera.updateProjectionMatrix();
 
-        controls.target.set(0, size.y * 0.35, 0);
-        controls.minDistance = Math.max(5, maxDim * 0.35);
-        controls.maxDistance = Math.max(1000, maxDim * 8);
+        // cieľ mierne nad stred, nie príliš vysoko
+        controls.target.set(0, size.y * 0.32, 0);
+        controls.minDistance = Math.max(8, maxDim * 0.45);
+        controls.maxDistance = Math.max(1200, maxDim * 10);
         controls.update();
 
         setLoading(false);
@@ -294,7 +302,7 @@ export default function StlViewer({
     box.getSize(size);
 
     if (controlsRef.current) {
-      controlsRef.current.target.set(0, size.y * 0.35, 0);
+      controlsRef.current.target.set(0, size.y * 0.32, 0);
       controlsRef.current.update();
     }
   }, [scalePct]);
