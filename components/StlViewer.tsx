@@ -154,12 +154,20 @@ export default function StlViewer({
             return;
           }
 
-          // Zachová pôvodnú orientáciu zo STL
-          // iba vycentruje model v X/Z a položí ho na podložku
-          const bbox = geometry.boundingBox.clone();
+          // KĽÚČOVÁ OPRAVA:
+          // veľa STL je exportovaných ako Z-up
+          // Three.js scéna je Y-up
+          // preto spravíme jednorazový prevod Z-up -> Y-up
+          geometry.rotateX(-Math.PI / 2);
 
+          geometry.computeBoundingBox();
+          const bbox = geometry.boundingBox!.clone();
+
+          // vycentrovanie v X/Z
           const centerX = (bbox.min.x + bbox.max.x) / 2;
           const centerZ = (bbox.min.z + bbox.max.z) / 2;
+
+          // položenie na podložku
           const minY = bbox.min.y;
 
           geometry.translate(-centerX, -minY, -centerZ);
