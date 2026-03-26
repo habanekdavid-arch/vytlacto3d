@@ -7,6 +7,19 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model User {
+  id           String   @id @default(cuid())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  name         String
+  email        String   @unique
+  passwordHash String
+  phone        String?
+
+  orders       Order[]
+}
+
 model Order {
   id                    String   @id @default(cuid())
   createdAt             DateTime @default(now())
@@ -29,4 +42,11 @@ model Order {
   shippingAddress       Json?
   shippingCost          Json?
   shippingMethod        String?
+
+  userId                String?
+  user                  User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([createdAt])
+  @@index([status])
 }
