@@ -41,145 +41,6 @@ function getColor(colorId: string) {
   }
 }
 
-function cloneGeometry(geometry: THREE.BufferGeometry) {
-  const cloned = geometry.clone();
-  cloned.computeVertexNormals();
-  cloned.computeBoundingBox();
-  return cloned;
-}
-
-function getCandidateRotations() {
-  const deg = THREE.MathUtils.degToRad;
-
-  return [
-    new THREE.Euler(0, 0, 0),
-    new THREE.Euler(deg(90), 0, 0),
-    new THREE.Euler(deg(-90), 0, 0),
-    new THREE.Euler(0, deg(90), 0),
-    new THREE.Euler(0, deg(-90), 0),
-    new THREE.Euler(deg(180), 0, 0),
-
-    new THREE.Euler(0, 0, deg(90)),
-    new THREE.Euler(0, 0, deg(-90)),
-    new THREE.Euler(deg(90), 0, deg(90)),
-    new THREE.Euler(deg(90), 0, deg(-90)),
-    new THREE.Euler(deg(-90), 0, deg(90)),
-    new THREE.Euler(deg(-90), 0, deg(-90)),
-
-    new THREE.Euler(0, deg(180), 0),
-    new THREE.Euler(deg(180), deg(90), 0),
-    new THREE.Euler(deg(180), deg(-90), 0),
-    new THREE.Euler(deg(180), 0, deg(90)),
-    new THREE.Euler(deg(180), 0, deg(-90)),
-    new THREE.Euler(0, deg(90), deg(90)),
-    new THREE.Euler(0, deg(90), deg(-90)),
-    new THREE.Euler(0, deg(-90), deg(90)),
-    new THREE.Euler(0, deg(-90), deg(-90)),
-  ];
-}
-
-function evaluateOrientation(geometry: THREE.BufferGeometry, euler: THREE.Euler) {
-  const g = cloneGeometry(geometry);
-
-  const matrix = new THREE.Matrix4().makeRotationFromEuler(euler);
-  g.applyMatrix4(matrix);
-  g.computeBoundingBox();
-
-  const bbox = g.boundingBox;
-  if (!bbox) {
-    return {
-      score: Number.POSITIVE_INFINITY,
-      geometry: g,
-      height: Number.POSITIVE_INFINITY,
-    };
-  }
-
-  const position = g.getAttribute("position");
-  const yMin = bbox.min.y;
-  const yMax = bbox.max.y;
-  const height = yMax - yMin;
-  const width = bbox.max.x - bbox.min.x;
-  const depth = bbox.max.z - bbox.min.z;
-
-  const tolerance = Math.max(height * 0.015, 0.5);
-
-  let nearBottomCount = 0;
-  let sumX = 0;
-  let sumZ = 0;
-
-  for (let i = 0; i < position.count; i++) {
-    const y = position.getY(i);
-    if (y - yMin <= tolerance) {
-      nearBottomCount++;
-      sumX += position.getX(i);
-      sumZ += position.getZ(i);
-    }
-  }
-
-  const bottomContactRatio = nearBottomCount / position.count;
-
-  const centerX = (bbox.min.x + bbox.max.x) / 2;
-  const centerZ = (bbox.min.z + bbox.max.z) / 2;
-
-  let footprintSpread = 0;
-  if (nearBottomCount > 0) {
-    const avgX = sumX / nearBottomCount;
-    const avgZ = sumZ / nearBottomCount;
-    const dx = avgX - centerX;
-    const dz = avgZ - centerZ;
-    footprintSpread = Math.sqrt(dx * dx + dz * dz);
-  }
-
-  const baseArea = width * depth;
-
-  // skóre:
-  // nižšia výška je lepšia
-  // väčší kontakt so spodkom je lepší
-  // väčšia základňa je lepšia
-  // ak je spodná plocha mimo stredu, je to horšie
-  const score =
-    height * 4 -
-    bottomContactRatio * 600 -
-    baseArea * 0.001 +
-    footprintSpread * 2;
-
-  return {
-    score,
-    geometry: g,
-    height,
-  };
-}
-
-function autoOrientGeometry(original: THREE.BufferGeometry) {
-  const rotations = getCandidateRotations();
-
-  let best = evaluateOrientation(original, rotations[0]);
-
-  for (let i = 1; i < rotations.length; i++) {
-    const candidate = evaluateOrientation(original, rotations[i]);
-    if (candidate.score < best.score) {
-      best.geometry.dispose();
-      best = candidate;
-    } else {
-      candidate.geometry.dispose();
-    }
-  }
-
-  const geometry = best.geometry;
-  geometry.computeBoundingBox();
-
-  const bbox = geometry.boundingBox!;
-  const centerX = (bbox.min.x + bbox.max.x) / 2;
-  const centerZ = (bbox.min.z + bbox.max.z) / 2;
-  const minY = bbox.min.y;
-
-  geometry.translate(-centerX, -minY, -centerZ);
-  geometry.computeBoundingBox();
-  geometry.computeVertexNormals();
-
-  return geometry;
-}
-
 export default function StlViewer({
   fileKey,
   title = "3D náhľad",
@@ -282,12 +143,28 @@ export default function StlViewer({
 
     loader.load(
       `/api/file?key=${encodeURIComponent(fileKey)}`,
-      (loadedGeometry) => {
+      (geometry) => {
         try {
-          loadedGeometry.computeVertexNormals();
-          loadedGeometry.computeBoundingBox();
+          geometry.computeVertexNormals();
+          geometry.computeBoundingBox();
 
-          const orientedGeometry = autoOrientGeometry(loadedGeometry);
+          if (!geometry.boundingBox) {
+            setError("Nepodarilo sa spracovať STL.");
+            setLoading(false);
+            return;
+          }
+
+          // Zachová pôvodnú orientáciu zo STL
+          // iba vycentruje model v X/Z a položí ho na podložku
+          const bbox = geometry.boundingBox.clone();
+
+          const centerX = (bbox.min.x + bbox.max.x) / 2;
+          const centerZ = (bbox.min.z + bbox.max.z) / 2;
+          const minY = bbox.min.y;
+
+          geometry.translate(-centerX, -minY, -centerZ);
+          geometry.computeBoundingBox();
+          geometry.computeVertexNormals();
 
           const material = new THREE.MeshPhysicalMaterial({
             color: resolvedColor,
@@ -297,7 +174,7 @@ export default function StlViewer({
             clearcoatRoughness: 0.7,
           });
 
-          const mesh = new THREE.Mesh(orientedGeometry, material);
+          const mesh = new THREE.Mesh(geometry, material);
           const scale = scalePct / 100;
 
           mesh.scale.set(scale, scale, scale);
