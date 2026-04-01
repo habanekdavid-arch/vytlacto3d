@@ -1,40 +1,54 @@
 "use client";
 
+import Link from "next/link";
+import AccountButton from "@/components/AccountButton";
+
 export default function Navbar() {
   return (
-    <header className="sticky top-0 z-40 border-b border-neutral-200 bg-white/80 backdrop-blur">
+    <header className="sticky top-0 z-50 border-b border-neutral-200 bg-white/90 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-        {/* Logo */}
-        <div className="flex items-center gap-3">
-          <div className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-black text-white font-extrabold">
+        <Link href="/" className="flex items-center gap-3">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-black text-sm font-bold text-white">
             3D
           </div>
-          <div className="leading-tight">
-            <div className="text-sm font-extrabold text-neutral-900">VytlačTo3D</div>
-            <div className="text-xs text-neutral-500">Online konfigurátor 3D tlače</div>
+          <div>
+            <div className="text-sm font-bold text-neutral-900">VytlačTo3D</div>
+            <div className="text-xs text-neutral-500">
+              Online konfigurátor 3D tlače
+            </div>
           </div>
-        </div>
+        </Link>
 
-        {/* Nav */}
-        <nav className="hidden items-center gap-6 text-sm font-semibold text-neutral-700 md:flex">
-          <a href="#kalkulator" className="hover:text-black">
+        <nav className="hidden items-center gap-6 md:flex">
+          <Link
+            href="/#kalkulator"
+            className="text-sm font-medium text-neutral-700 transition hover:text-neutral-900"
+          >
             Kalkulátor
-          </a>
-          <a href="#cennik" className="hover:text-black">
+          </Link>
+          <Link
+            href="/#cennik"
+            className="text-sm font-medium text-neutral-700 transition hover:text-neutral-900"
+          >
             Cenník
-          </a>
-          <a href="#faq" className="hover:text-black">
+          </Link>
+          <Link
+            href="/#faq"
+            className="text-sm font-medium text-neutral-700 transition hover:text-neutral-900"
+          >
             FAQ
-          </a>
+          </Link>
+          <Link
+            href="/blog"
+            className="text-sm font-medium text-neutral-700 transition hover:text-neutral-900"
+          >
+            Blog
+          </Link>
         </nav>
 
-        {/* CTA */}
-        <a
-          href="#kalkulator"
-          className="rounded-2xl bg-[#FFAE00] px-4 py-2 text-sm font-extrabold text-black shadow-sm hover:opacity-90"
-        >
-          Naceniť 3D tlač
-        </a>
+        <div className="flex items-center gap-3">
+          <AccountButton />
+        </div>
       </div>
     </header>
   );

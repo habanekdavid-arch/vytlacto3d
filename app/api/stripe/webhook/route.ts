@@ -26,18 +26,44 @@ function getShippingMethod(session: Stripe.Checkout.Session) {
 }
 
 function getShippingAddress(session: Stripe.Checkout.Session) {
-  const customer = session.customer_details;
+  const sessionWithShipping = session as Stripe.Checkout.Session & {
+    shipping_details?: {
+      name?: string | null;
+      phone?: string | null;
+      address?: {
+        line1?: string | null;
+        line2?: string | null;
+        city?: string | null;
+        postal_code?: string | null;
+        state?: string | null;
+        country?: string | null;
+      } | null;
+    } | null;
+  };
 
-  if (!customer?.address) return null;
+  const shipping = sessionWithShipping.shipping_details;
+
+  if (!shipping?.address) return null;
 
   return {
-    name: customer.name ?? null,
-    line1: customer.address.line1 ?? null,
-    line2: customer.address.line2 ?? null,
-    city: customer.address.city ?? null,
-    postal_code: customer.address.postal_code ?? null,
-    state: customer.address.state ?? null,
-    country: customer.address.country ?? null,
+    name: shipping.name ?? null,
+    phone: shipping.phone ?? null,
+    address: shipping.address.line1 ?? null,
+    line1: shipping.address.line1 ?? null,
+    line2: shipping.address.line2 ?? null,
+    city: shipping.address.city ?? null,
+    postal_code: shipping.address.postal_code ?? null,
+    state: shipping.address.state ?? null,
+    country: shipping.address.country ?? null,
+  };
+}
+
+function getShippingCost(session: Stripe.Checkout.Session) {
+  if (!session.shipping_cost) return null;
+
+  return {
+    amount: session.shipping_cost.amount_total ?? 0,
+    currency: session.currency ?? "eur",
   };
 }
 
@@ -103,12 +129,16 @@ export async function POST(req: NextRequest) {
 
       const shippingMethod = getShippingMethod(fullSession);
       const shippingAddress = getShippingAddress(fullSession);
+      const shippingCost = getShippingCost(fullSession);
 
       const updatedOrder = await prisma.order.update({
         where: { id: orderId },
         data: {
           status: "PAID",
-          customerEmail: fullSession.customer_details?.email ?? null,
+          customerEmail:
+            fullSession.customer_details?.email ??
+            fullSession.customer_email ??
+            null,
           paidTotalEur: amountTotal,
           stripeSessionId: fullSession.id,
           stripePaymentIntentId:
@@ -117,6 +147,7 @@ export async function POST(req: NextRequest) {
               : fullSession.payment_intent?.id ?? null,
           shippingMethod,
           shippingAddress: shippingAddress as any,
+          shippingCost: shippingCost as any,
         },
         select: {
           id: true,

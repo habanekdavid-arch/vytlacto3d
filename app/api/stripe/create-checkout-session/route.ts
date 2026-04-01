@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
+
 import { prisma } from "@/lib/prisma";
 import { quote } from "@/lib/pricing";
 import { addVat, formatEur } from "@/lib/vat";
+import { getSafeServerSession } from "@/lib/session";
 
 export const runtime = "nodejs";
 
@@ -16,6 +18,7 @@ function getBaseUrl(req: NextRequest) {
 
   const host = req.headers.get("host");
   const proto = req.headers.get("x-forwarded-proto") ?? "http";
+
   if (host) return `${proto}://${host}`;
 
   return "http://localhost:3000";
@@ -30,18 +33,35 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const session = await getSafeServerSession();
+    const sessionUser = session?.user as
+      | { id?: string; email?: string | null }
+      | undefined;
+
+    const userId = sessionUser?.id ?? null;
+    const sessionEmail = sessionUser?.email ?? null;
+
     const body = await req.json().catch(() => null);
 
     if (!body?.uploaded?.fileKey || !body?.uploaded?.fileName) {
-      return NextResponse.json({ error: "Missing uploaded data" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Missing uploaded data" },
+        { status: 400 }
+      );
     }
 
     if (!body?.uploaded?.analysis?.volumeCm3) {
-      return NextResponse.json({ error: "Missing analysis.volumeCm3" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Missing analysis.volumeCm3" },
+        { status: 400 }
+      );
     }
 
     if (!body?.config?.material || !body?.config?.quality) {
-      return NextResponse.json({ error: "Missing config" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Missing config" },
+        { status: 400 }
+      );
     }
 
     const rawVolumeCm3 = Number(body.uploaded.analysis.volumeCm3);
@@ -52,19 +72,31 @@ export async function POST(req: NextRequest) {
     const scaledVolumeCm3 = rawVolumeCm3 * Math.pow(scaleFactor, 3);
 
     if (!Number.isFinite(rawVolumeCm3) || rawVolumeCm3 <= 0) {
-      return NextResponse.json({ error: "Invalid volumeCm3" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Invalid volumeCm3" },
+        { status: 400 }
+      );
     }
 
     if (!Number.isFinite(quantity) || quantity < 1) {
-      return NextResponse.json({ error: "Quantity must be >= 1" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Quantity must be >= 1" },
+        { status: 400 }
+      );
     }
 
     if (!Number.isFinite(infillPct) || infillPct < 0 || infillPct > 100) {
-      return NextResponse.json({ error: "Invalid infillPct" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Invalid infillPct" },
+        { status: 400 }
+      );
     }
 
     if (!Number.isFinite(scalePct) || scalePct < 10 || scalePct > 200) {
-      return NextResponse.json({ error: "Invalid scalePct" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Invalid scalePct" },
+        { status: 400 }
+      );
     }
 
     const pricing = quote({
@@ -92,6 +124,8 @@ export async function POST(req: NextRequest) {
           scalePct,
         },
         pricing: pricing as any,
+        userId,
+        customerEmail: sessionEmail,
       },
       select: { id: true },
     });
@@ -100,7 +134,7 @@ export async function POST(req: NextRequest) {
     const totalWithVat = addVat(pricing.total);
     const itemAmountCents = Math.round(totalWithVat * 100);
 
-    const session = await stripe.checkout.sessions.create({
+    const stripeSession = await stripe.checkout.sessions.create({
       mode: "payment",
       billing_address_collection: "auto",
       shipping_address_collection: {
@@ -111,7 +145,10 @@ export async function POST(req: NextRequest) {
           shipping_rate_data: {
             display_name: "Packeta / Zásielkovňa",
             type: "fixed_amount",
-            fixed_amount: { amount: 399, currency: "eur" },
+            fixed_amount: {
+              amount: 399,
+              currency: "eur",
+            },
             delivery_estimate: {
               minimum: { unit: "business_day", value: 1 },
               maximum: { unit: "business_day", value: 3 },
@@ -122,7 +159,10 @@ export async function POST(req: NextRequest) {
           shipping_rate_data: {
             display_name: "Kuriér",
             type: "fixed_amount",
-            fixed_amount: { amount: 599, currency: "eur" },
+            fixed_amount: {
+              amount: 599,
+              currency: "eur",
+            },
             delivery_estimate: {
               minimum: { unit: "business_day", value: 1 },
               maximum: { unit: "business_day", value: 2 },
@@ -130,6 +170,7 @@ export async function POST(req: NextRequest) {
           },
         },
       ],
+      customer_email: sessionEmail ?? undefined,
       line_items: [
         {
           quantity: 1,
@@ -146,11 +187,13 @@ export async function POST(req: NextRequest) {
       metadata: {
         orderId: order.id,
         scalePct: String(scalePct),
+        userId: userId ?? "",
       },
       payment_intent_data: {
         metadata: {
           orderId: order.id,
           scalePct: String(scalePct),
+          userId: userId ?? "",
         },
       },
       success_url: `${baseUrl}/success?orderId=${order.id}&session_id={CHECKOUT_SESSION_ID}`,
@@ -160,17 +203,18 @@ export async function POST(req: NextRequest) {
     await prisma.order.update({
       where: { id: order.id },
       data: {
-        stripeSessionId: session.id,
+        stripeSessionId: stripeSession.id,
       },
     });
 
     return NextResponse.json({
-      url: session.url,
+      url: stripeSession.url,
       orderId: order.id,
-      sessionId: session.id,
+      sessionId: stripeSession.id,
     });
   } catch (e: any) {
     console.error("create-checkout-session error:", e);
+
     return NextResponse.json(
       { error: e?.message || "Checkout failed" },
       { status: 500 }

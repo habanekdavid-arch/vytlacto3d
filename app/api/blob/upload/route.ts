@@ -1,8 +1,6 @@
 import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
 import { NextResponse } from "next/server";
 
-export const runtime = "nodejs";
-
 export async function POST(request: Request): Promise<NextResponse> {
   const body = (await request.json()) as HandleUploadBody;
 
@@ -11,32 +9,24 @@ export async function POST(request: Request): Promise<NextResponse> {
       body,
       request,
       onBeforeGenerateToken: async (pathname) => {
-        const lower = pathname.toLowerCase();
-
-        if (!lower.endsWith(".stl")) {
-          throw new Error("Podporujeme len STL (.stl).");
-        }
-
         return {
-          allowedContentTypes: [
-            "model/stl",
-            "application/sla",
-            "application/octet-stream",
-            "application/vnd.ms-pki.stl",
-          ],
-          maximumSizeInBytes: 1024 * 1024 * 500,
+          allowedContentTypes: ["model/stl", "application/sla", "application/octet-stream"],
           addRandomSuffix: true,
+          tokenPayload: JSON.stringify({
+            pathname,
+          }),
         };
       },
-      onUploadCompleted: async ({ blob }) => {
-        console.log("Blob upload completed:", blob.url);
+      onUploadCompleted: async ({ blob, tokenPayload }) => {
+        console.log("BLOB UPLOADED:", blob, tokenPayload);
       },
     });
 
     return NextResponse.json(jsonResponse);
   } catch (error) {
+    console.error("BLOB TOKEN ERROR:", error);
     return NextResponse.json(
-      { error: (error as Error).message },
+      { error: "Failed to generate client token for upload." },
       { status: 400 }
     );
   }

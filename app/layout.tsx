@@ -1,6 +1,7 @@
 import "./globals.css";
 import Footer from "@/components/Footer";
 import CookieBanner from "@/components/CookieBanner";
+import Providers from "@/app/providers"; // ✅ DÔLEŽITÉ
 
 const baseUrl =
   process.env.NEXT_PUBLIC_BASE_URL || "https://www.vytlacto3d.sk";
@@ -60,7 +61,12 @@ export default function RootLayout({
   return (
     <html lang="sk">
       <body className="min-h-screen flex flex-col bg-white text-neutral-900 antialiased">
-        <div className="flex-1">{children}</div>
+        
+        {/* ✅ KĽÚČOVÝ FIX PRE AUTH */}
+        <Providers>
+          <div className="flex-1">{children}</div>
+        </Providers>
+
         <Footer />
         <CookieBanner />
       </body>
