@@ -1,11 +1,33 @@
 "use client";
 
 import Link from "next/link";
+import { Suspense, FormEvent, useMemo, useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { FormEvent, useMemo, useState } from "react";
 
 export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-neutral-50 px-4 py-12">
+          <div className="mx-auto max-w-md rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm">
+            <div className="text-sm font-semibold text-neutral-500">
+              Zákaznícka zóna
+            </div>
+            <h1 className="mt-2 text-3xl font-extrabold tracking-tight text-neutral-900">
+              Prihlásenie
+            </h1>
+            <p className="mt-2 text-sm text-neutral-600">Načítavam…</p>
+          </div>
+        </div>
+      }
+    >
+      <LoginPageInner />
+    </Suspense>
+  );
+}
+
+function LoginPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -15,14 +37,12 @@ export default function LoginPage() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function handleLogin(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-
     if (loading) return;
 
     setLoading(true);

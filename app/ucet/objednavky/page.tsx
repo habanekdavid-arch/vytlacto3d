@@ -1,7 +1,10 @@
+export const dynamic = "force-dynamic";
+
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { formatPriceWithVat } from "@/lib/vat";
 import { getSafeServerSession } from "@/lib/session";
+
 
 export default async function OrdersPage() {
   const session = await getSafeServerSession();

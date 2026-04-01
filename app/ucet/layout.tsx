@@ -1,8 +1,11 @@
+export const dynamic = "force-dynamic";
+
 import { ReactNode } from "react";
 import { redirect } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import AccountNav from "@/components/AccountNav";
 import { getSafeServerSession } from "@/lib/session";
+
 
 export default async function AccountLayout({
   children,
