@@ -36,3 +36,58 @@ body {
   background: white;
   color: #171717;
 }
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: #ffffff;
+  color: #18181b;
+}
+
+.article-content h2 {
+  margin-top: 3.5rem;
+  margin-bottom: 1rem;
+  font-size: 1.75rem;
+  line-height: 1.2;
+  font-weight: 700;
+  color: #18181b;
+}
+
+.article-content h3 {
+  margin-top: 2rem;
+  margin-bottom: 0.75rem;
+  font-size: 1.25rem;
+  line-height: 1.3;
+  font-weight: 700;
+  color: #18181b;
+}
+
+.article-content p {
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+  font-size: 1.0625rem;
+  line-height: 2;
+  color: #3f3f46;
+}
+
+.article-content ul {
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+  padding-left: 1.25rem;
+  list-style: disc;
+}
+
+.article-content li {
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+  font-size: 1.0625rem;
+  line-height: 2;
+  color: #3f3f46;
+}
+
+.article-content strong {
+  color: #18181b;
+  font-weight: 700;
+}
