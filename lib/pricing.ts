@@ -38,16 +38,20 @@ const MATERIAL_DENSITY_G_PER_CM3: Record<Material, number> = {
   TPU: 1.21,
 };
 
-// hodinové sadzby bez DPH
 const MACHINE_RATE_PER_HOUR: Record<Quality, number> = {
   DRAFT: 2.8,
   STANDARD: 3.1,
   FINE: 3.5,
 };
 
+const QUALITY_TIME_MULTIPLIER: Record<Quality, number> = {
+  DRAFT: 0.88,
+  STANDARD: 1,
+  FINE: 1.18,
+};
+
 const SETUP_FEE = 10;
 
-// zľavy presne podľa tvojho zadania
 function getQuantityDiscountPct(quantity: number): number {
   if (quantity >= 100) return 15;
   if (quantity >= 50) return 10;
@@ -55,46 +59,59 @@ function getQuantityDiscountPct(quantity: number): number {
   return 0;
 }
 
-// realistický odhad hmotnosti modelu
+function round2(value: number): number {
+  return Math.round(value * 100) / 100;
+}
+
+/**
+ * Kalibrácia podľa sliceru:
+ * - nechceme počítať plný objem modelu
+ * - chceme sa priblížiť reálnemu spotrebovanému filamentu
+ *
+ * Táto formula je nastavená tak, aby pri veľkých modeloch
+ * a 10 % infille bola výrazne bližšie sliceru než pôvodná verzia.
+ */
+function estimateMaterialUsageRatio(infillPct: number): number {
+  // základný pomer materiálu + rast podľa infillu
+  const baseRatio = 0.05 + infillPct * 0.005;
+
+  // korekcia na steny / top-bottom / realitu FDM tlače
+  const calibratedRatio = baseRatio * 1.15;
+
+  // bezpečnostné minimum, aby malé modely nepadali príliš nízko
+  return Math.max(0.06, calibratedRatio);
+}
+
 function estimateGramsPerPart(
   volumeCm3: number,
   infillPct: number,
   material: Material
 ): number {
   const density = MATERIAL_DENSITY_G_PER_CM3[material];
+  const usageRatio = estimateMaterialUsageRatio(infillPct);
 
-  // efektívne percento výplne + obvodové steny/top/bottom
-  const effectiveFillFactor = 0.18 + (infillPct / 100) * 0.42;
-  const shellFactor = 1.08;
-
-  const grams = volumeCm3 * density * effectiveFillFactor * shellFactor;
+  const grams = volumeCm3 * density * usageRatio;
 
   return Math.max(1, grams);
 }
 
-// realistický odhad času tlače
+/**
+ * Kalibrácia času podľa reálneho sliceru:
+ * - čas viažeme hlavne na hmotnosť
+ * - nie na objem samotný
+ *
+ * 0.46 min / g vychádza výrazne bližšie k sliceru z tvojho príkladu.
+ */
 function estimatePrintTimeMinPerPart(
   gramsPerPart: number,
-  quality: Quality,
-  infillPct: number
+  quality: Quality
 ): number {
-  // základ podľa hmotnosti
-  const baseMinutes = gramsPerPart * 1.9;
+  const baseMinPerGram = 0.46;
+  const qualityMultiplier = QUALITY_TIME_MULTIPLIER[quality];
 
-  // vyšší infill = trochu viac času
-  const infillFactor = 0.92 + infillPct / 1000;
+  const minutes = gramsPerPart * baseMinPerGram * qualityMultiplier;
 
-  // kvalita vplýva na čas
-  const qualityFactor =
-    quality === "DRAFT" ? 0.9 : quality === "STANDARD" ? 1 : 1.15;
-
-  const minutes = baseMinutes * infillFactor * qualityFactor;
-
-  return Math.max(8, minutes);
-}
-
-function round2(value: number): number {
-  return Math.round(value * 100) / 100;
+  return Math.max(5, minutes);
 }
 
 export function quote(input: QuoteInput): QuoteResult {
@@ -107,8 +124,7 @@ export function quote(input: QuoteInput): QuoteResult {
   const gramsPerPartRaw = estimateGramsPerPart(volumeCm3, infillPct, material);
   const printTimeMinPerPartRaw = estimatePrintTimeMinPerPart(
     gramsPerPartRaw,
-    quality,
-    infillPct
+    quality
   );
 
   const materialCostPerPartRaw =
@@ -120,8 +136,6 @@ export function quote(input: QuoteInput): QuoteResult {
   const subtotalPerPartRaw =
     materialCostPerPartRaw + machineCostPerPartRaw;
 
-  // tu je hlavná oprava:
-  // cena za 1 kus sa normálne násobí počtom kusov
   const productionSubtotalRaw = subtotalPerPartRaw * quantity;
 
   const quantityDiscountPct = getQuantityDiscountPct(quantity);
