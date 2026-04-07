@@ -1,0 +1,188 @@
+export type BlogSection = {
+  heading: string;
+  paragraphs?: string[];
+  bullets?: string[];
+};
+
+export type BlogPost = {
+  slug: string;
+  title: string;
+  subtitle: string;
+  description: string;
+  image: string;
+  publishedAt: string;
+  readingTime: string;
+  featured?: boolean;
+  sections: BlogSection[];
+  cta?: string;
+};
+
+export const blogPosts: BlogPost[] = [
+  {
+    slug: "kolko-stoji-3d-tlac",
+    title: "Koľko stojí 3D tlač?",
+    subtitle: "Kompletný prehľad cien, faktorov a možností",
+    description:
+      "Zistite, koľko stojí 3D tlač na mieru, čo ovplyvňuje cenu 3D tlače a aké sú reálne ceny za 3D tlač modelov, prototypov a náhradných dielov.",
+    image: "/blog/kolko-stoji-3d-tlac.jpg",
+    publishedAt: "2026-04-01",
+    readingTime: "6 min",
+    featured: true,
+    sections: [
+      {
+        heading: "3D tlač je dnes dostupnejšia ako kedykoľvek predtým",
+        paragraphs: [
+          "3D tlač sa za posledné roky stala jednou z najdostupnejších technológií výroby. To, čo bolo kedysi možné len vo veľkých fabrikách, dnes zvládne moderná 3D tlačiareň rýchlo, presne a za rozumnú cenu.",
+          "Aj preto sa čoraz viac ľudí pýta: koľko stojí 3D tlač na mieru? Odpoveď nie je úplne jednoduchá, ale v tomto článku vám vysvetlíme, čo všetko cenu 3D tlače ovplyvňuje a ako si spraviť reálnu predstavu o rozpočte.",
+        ],
+      },
+      {
+        heading: "Prečo neexistuje jedna univerzálna cena",
+        paragraphs: [
+          "Na rozdiel od bežných produktov nemá 3D tlač fixnú cenu. Každý výrobok je unikát – a práve to je jej najväčšia výhoda.",
+          "Cena 3D tlače sa vždy počíta individuálne podľa konkrétneho modelu, materiálu, veľkosti, času tlače a požadovaného výsledku. Jednoducho povedané: platíte len za to, čo si necháte vyrobiť.",
+        ],
+      },
+      {
+        heading: "5 hlavných faktorov, ktoré ovplyvňujú cenu 3D tlače",
+        bullets: [
+          "Veľkosť a objem modelu – viac materiálu znamená vyššiu cenu.",
+          "Typ materiálu – PLA, PETG, ABS alebo TPU majú rozdielne vlastnosti aj cenu.",
+          "Čas tlače – čím dlhšie sa model tlačí, tým viac rastie cena výroby.",
+          "Zložitosť modelu – detaily, presnosť a podpery zvyšujú náročnosť výroby.",
+          "Post-processing – brúsenie, lepenie, lakovanie alebo finálne úpravy zvyšujú hodnotu hotového produktu.",
+        ],
+      },
+      {
+        heading: "Reálne príklady cien 3D tlače",
+        bullets: [
+          "malý držiak alebo jednoduchý diel: 5 – 15 €",
+          "väčší technický diel: 20 – 60 €",
+          "dekorácia alebo darček: 15 – 50 €",
+          "komplexný model alebo prototyp: 50 – 150 €+",
+        ],
+      },
+      {
+        heading: "Zhrnutie",
+        paragraphs: [
+          "3D tlač je flexibilná, rýchla a dostupná forma výroby. Cena 3D tlače závisí od konkrétneho projektu, ale možnosti sú takmer neobmedzené.",
+          "Ak chcete zistiť presnú cenu 3D tlače pre váš model, najlepšie je nahrať model alebo poslať zadanie a nechať si pripraviť konkrétnu ponuku.",
+        ],
+      },
+    ],
+    cta: "Máte model, nápad alebo problém, ktorý treba vyriešiť? Nahrajte ho do konfigurátora a zistite cenu 3D tlače.",
+  },
+  {
+    slug: "materialy-na-3d-tlac-pla-petg-abs-tpu",
+    title: "Aký materiál vybrať na 3D tlač?",
+    subtitle: "PLA, PETG, ABS a TPU – výhody, nevýhody a použitie",
+    description:
+      "Neviete, aký materiál zvoliť na 3D tlač? Porovnanie PLA, PETG, ABS a TPU – vlastnosti, použitie, odolnosť a vhodnosť pre rôzne 3D modely a náhradné diely.",
+    image: "/blog/materialy-na-3d-tlac-pla-petg-abs-tpu.jpg",
+    publishedAt: "2026-04-02",
+    readingTime: "7 min",
+    sections: [
+      {
+        heading: "Výber materiálu rozhoduje o výsledku",
+        paragraphs: [
+          "Pri 3D tlači nerozhoduje len tvar modelu, ale aj správny materiál. To, aký filament vyberiete, ovplyvní pevnosť, vzhľad, odolnosť voči teplu, pružnosť aj celkovú cenu 3D tlače.",
+          "Najčastejšie používané materiály na FDM 3D tlač sú PLA, PETG, ABS a TPU. Každý z nich sa hodí na iný typ výrobku.",
+        ],
+      },
+      {
+        heading: "PLA – najlepšia voľba pre bežnú 3D tlač",
+        bullets: [
+          "výhody: jednoduchá tlač, pekný vzhľad, priaznivá cena",
+          "nevýhody: nižšia odolnosť voči teplu a nárazu",
+          "vhodné použitie: dekorácie, držiaky, prototypy, menšie funkčné diely",
+        ],
+      },
+      {
+        heading: "PETG – pevnejší a odolnejší materiál",
+        bullets: [
+          "výhody: vyššia pevnosť, odolnosť, dobrá životnosť",
+          "nevýhody: o niečo náročnejšia tlač než PLA",
+          "vhodné použitie: technické diely, držiaky, kryty, funkčné komponenty",
+        ],
+      },
+      {
+        heading: "ABS – technický materiál pre náročnejšie použitie",
+        bullets: [
+          "výhody: vyššia tepelná odolnosť, technické využitie",
+          "nevýhody: náročnejšia tlač, citlivosť na deformácie pri tlači",
+          "vhodné použitie: technické diely, súčiastky, robustnejšie komponenty",
+        ],
+      },
+      {
+        heading: "TPU – pružný filament",
+        bullets: [
+          "výhody: flexibilita, pružnosť, odolnosť proti opotrebeniu",
+          "nevýhody: pomalšia a náročnejšia tlač",
+          "vhodné použitie: pružné diely, krytky, ochranné prvky, tesnenia",
+        ],
+      },
+      {
+        heading: "Ktorý materiál je najlepší na 3D tlač?",
+        paragraphs: [
+          "Neexistuje jeden univerzálne najlepší materiál. Najlepší materiál na 3D tlač závisí od toho, čo potrebujete vyrobiť.",
+          "Ak chcete pekný a cenovo dostupný výtlačok, voľte PLA. Ak potrebujete odolnejší funkčný diel, siahnite po PETG. Ak riešite technickú súčiastku s vyššími nárokmi, zaujímavý môže byť ABS. A ak musí byť model pružný, správna voľba je TPU.",
+        ],
+      },
+    ],
+    cta: "Neviete, ktorý materiál je pre váš model najlepší? Nahrajte model a vyberieme vhodný filament podľa použitia.",
+  },
+  {
+    slug: "priprava-stl-suboru-na-3d-tlac",
+    title: "Ako pripraviť STL súbor na 3D tlač",
+    subtitle: "7 najčastejších chýb pri STL modeli a ako sa im vyhnúť",
+    description:
+      "Pripravujete STL súbor na 3D tlač? Zistite, ako pripraviť 3D model správne, aké chyby spôsobujú problémy pri tlači a ako získať kvalitný výsledok bez zbytočných komplikácií.",
+    image: "/blog/priprava-stl-suboru-na-3d-tlac.jpg",
+    publishedAt: "2026-04-03",
+    readingTime: "8 min",
+    sections: [
+      {
+        heading: "Prečo je kvalitný STL súbor taký dôležitý",
+        paragraphs: [
+          "Aj najlepšia 3D tlačiareň potrebuje dobrý vstup. Ak je STL súbor zle pripravený, môže dôjsť k chybám v tlači, nepresnostiam, zlej kvalite povrchu alebo dokonca k zlyhaniu celej objednávky.",
+          "Preto sa oplatí vedieť, ako pripraviť STL model na 3D tlač správne ešte pred nahraním do konfigurátora.",
+        ],
+      },
+      {
+        heading: "Najčastejšie chyby v STL súbore",
+        bullets: [
+          "nesprávna mierka modelu",
+          "neuzavretý model alebo poškodená mesh sieť",
+          "príliš tenké steny",
+          "zbytočne komplikovaná geometria",
+          "zlá orientácia modelu",
+          "zbytočne ťažký model",
+          "export bez kontroly rozmerov a objemu",
+        ],
+      },
+      {
+        heading: "Ako pripraviť 3D model správne",
+        bullets: [
+          "pracovať v milimetroch",
+          "skontrolovať rozmery modelu",
+          "overiť uzavretú geometriu",
+          "vyhnúť sa príliš tenkým stenám",
+          "myslieť na orientáciu a použitie modelu",
+          "pred exportom skontrolovať finálny STL súbor",
+        ],
+      },
+      {
+        heading: "Zhrnutie",
+        paragraphs: [
+          "Správne pripravený STL súbor znamená menej problémov, presnejší výpočet ceny a lepší finálny výsledok.",
+          "Ak si nie ste istí, či je váš model pripravený správne, radi sa naň pozrieme a odporučíme najvhodnejšie riešenie.",
+        ],
+      },
+    ],
+    cta: "Máte STL súbor a neviete, či je pripravený správne? Nahrajte ho do konfigurátora a overte si rozmery, objem aj cenu výroby.",
+  },
+];
+
+export function getBlogPost(slug: string) {
+  return blogPosts.find((post) => post.slug === slug);
+}

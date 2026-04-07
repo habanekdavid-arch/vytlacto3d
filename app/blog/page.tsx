@@ -1,74 +1,114 @@
-import Image from "next/image";
 import Link from "next/link";
-
-const articles = [
-  {
-    slug: "kolko-stoji-3d-tlac",
-    title: "Koľko stojí 3D tlač?",
-    subtitle: "Kompletný prehľad cien, faktorov a možností",
-    excerpt:
-      "Pozrite si, čo ovplyvňuje cenu 3D tlače, aké sú hlavné faktory pri nacenení a aké orientačné ceny môžete očakávať.",
-    image: "/images/blog/3d-print-price.jpg",
-    alt: "3D tlačené modely a cenový prehľad 3D tlače",
-  },
-];
+import Image from "next/image";
+import { blogPosts } from "@/lib/blog-posts";
 
 export const metadata = {
-  title: "Blog | Vytlač3D",
-  description: "Články, návody a informácie zo sveta 3D tlače.",
+  title: "Blog o 3D tlači",
+  description:
+    "Články o 3D tlači, cenách 3D tlače, materiáloch, STL súboroch a možnostiach výroby na mieru.",
 };
 
 export default function BlogPage() {
-  return (
-    <main className="bg-white px-4 py-14 md:py-20">
-      <div className="mx-auto max-w-6xl">
-        <div className="mx-auto max-w-3xl text-center">
-          <h1 className="text-4xl font-bold tracking-tight text-zinc-900 md:text-5xl">
-            Blog o 3D tlači
-          </h1>
-          <p className="mt-4 text-lg leading-8 text-zinc-600">
-            Praktické články, návody a dôležité informácie o 3D tlači, materiáloch,
-            cenách a možnostiach výroby na mieru.
-          </p>
-        </div>
+  const featuredPost = blogPosts.find((post) => post.featured) ?? blogPosts[0];
+  const otherPosts = blogPosts.filter((post) => post.slug !== featuredPost.slug);
 
-        <div className="mt-14 grid gap-8 md:grid-cols-2 xl:grid-cols-3">
-          {articles.map((article) => (
+  return (
+    <main className="mx-auto max-w-6xl px-6 py-12">
+      <section className="mb-14">
+        <div className="mb-3 text-sm font-semibold text-neutral-500">Blog</div>
+        <h1 className="text-4xl font-extrabold tracking-tight text-neutral-900 md:text-5xl">
+          Blog o 3D tlači
+        </h1>
+        <p className="mt-4 max-w-3xl text-base leading-relaxed text-neutral-600">
+          Praktické články o 3D tlači, cenách, materiáloch, STL modeloch,
+          prototypovaní a výrobe na mieru.
+        </p>
+      </section>
+
+      <section className="mb-16">
+        <Link
+          href={`/blog/${featuredPost.slug}`}
+          className="grid overflow-hidden rounded-3xl border border-neutral-200 bg-white shadow-sm transition hover:shadow-md md:grid-cols-2"
+        >
+          <div className="relative min-h-[280px]">
+            <Image
+              src={featuredPost.image}
+              alt={featuredPost.title}
+              fill
+              className="object-cover"
+              priority
+            />
+          </div>
+
+          <div className="flex flex-col justify-center p-8">
+            <div className="text-sm font-semibold text-[#FFAE00]">
+              Hlavný článok
+            </div>
+            <h2 className="mt-3 text-3xl font-extrabold tracking-tight text-neutral-900">
+              {featuredPost.title}
+            </h2>
+            <p className="mt-2 text-lg font-medium text-neutral-700">
+              {featuredPost.subtitle}
+            </p>
+            <p className="mt-4 text-sm leading-relaxed text-neutral-600">
+              {featuredPost.description}
+            </p>
+
+            <div className="mt-6 flex items-center gap-4 text-sm text-neutral-500">
+              <span>{featuredPost.readingTime}</span>
+              <span>•</span>
+              <span>{featuredPost.publishedAt}</span>
+            </div>
+
+            <div className="mt-6 inline-flex w-fit rounded-xl bg-[#FFAE00] px-5 py-3 text-sm font-semibold text-black">
+              Prečítať článok
+            </div>
+          </div>
+        </Link>
+      </section>
+
+      <section>
+        <h2 className="mb-6 text-2xl font-bold text-neutral-900">
+          Ďalšie články
+        </h2>
+
+        <div className="grid gap-6 md:grid-cols-2">
+          {otherPosts.map((post) => (
             <Link
-              key={article.slug}
-              href={`/blog/${article.slug}`}
-              className="group overflow-hidden rounded-2xl border border-zinc-200 bg-white transition hover:-translate-y-1 hover:shadow-lg"
+              key={post.slug}
+              href={`/blog/${post.slug}`}
+              className="overflow-hidden rounded-3xl border border-neutral-200 bg-white shadow-sm transition hover:shadow-md"
             >
-              <div className="relative aspect-[16/9] w-full overflow-hidden">
+              <div className="relative h-56">
                 <Image
-                  src={article.image}
-                  alt={article.alt}
+                  src={post.image}
+                  alt={post.title}
                   fill
-                  className="object-cover transition duration-500 group-hover:scale-105"
+                  className="object-cover"
                 />
               </div>
 
               <div className="p-6">
-                <h2 className="text-xl font-bold leading-snug text-zinc-900 transition group-hover:text-zinc-700">
-                  {article.title}
-                </h2>
-
-                <p className="mt-2 text-sm font-medium text-zinc-500">
-                  {article.subtitle}
+                <h3 className="text-xl font-bold text-neutral-900">
+                  {post.title}
+                </h3>
+                <p className="mt-2 text-sm font-medium text-neutral-700">
+                  {post.subtitle}
+                </p>
+                <p className="mt-3 text-sm leading-relaxed text-neutral-600">
+                  {post.description}
                 </p>
 
-                <p className="mt-4 text-sm leading-7 text-zinc-600">
-                  {article.excerpt}
-                </p>
-
-                <span className="mt-5 inline-flex text-sm font-semibold text-zinc-900">
-                  Čítať viac →
-                </span>
+                <div className="mt-5 flex items-center gap-4 text-xs text-neutral-500">
+                  <span>{post.readingTime}</span>
+                  <span>•</span>
+                  <span>{post.publishedAt}</span>
+                </div>
               </div>
             </Link>
           ))}
         </div>
-      </div>
+      </section>
     </main>
   );
 }
