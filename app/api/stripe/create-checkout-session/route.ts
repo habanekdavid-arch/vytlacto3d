@@ -132,7 +132,16 @@ export async function POST(req: NextRequest) {
 
     const baseUrl = getBaseUrl(req);
     const totalWithVat = addVat(pricing.total);
-    const itemAmountCents = Math.round(totalWithVat * 100);
+
+    // DOČASNÝ TESTOVACÍ REŽIM
+    const FORCE_TEST_PRICE = true;
+    const TEST_PRICE_EUR = 1;
+
+    const checkoutTotalWithVat = FORCE_TEST_PRICE
+      ? TEST_PRICE_EUR
+      : totalWithVat;
+
+    const itemAmountCents = Math.round(checkoutTotalWithVat * 100);
 
     const stripeSession = await stripe.checkout.sessions.create({
       mode: "payment",
@@ -179,7 +188,9 @@ export async function POST(req: NextRequest) {
             unit_amount: itemAmountCents,
             product_data: {
               name: `3D tlač: ${body.uploaded.fileName}`,
-              description: `${formatEur(totalWithVat)} s DPH • mierka ${scalePct}%`,
+              description: FORCE_TEST_PRICE
+                ? `Test objednávka • ${formatEur(checkoutTotalWithVat)} s DPH`
+                : `${formatEur(totalWithVat)} s DPH • mierka ${scalePct}%`,
             },
           },
         },
@@ -188,12 +199,14 @@ export async function POST(req: NextRequest) {
         orderId: order.id,
         scalePct: String(scalePct),
         userId: userId ?? "",
+        isTestOrder: FORCE_TEST_PRICE ? "true" : "false",
       },
       payment_intent_data: {
         metadata: {
           orderId: order.id,
           scalePct: String(scalePct),
           userId: userId ?? "",
+          isTestOrder: FORCE_TEST_PRICE ? "true" : "false",
         },
       },
       success_url: `${baseUrl}/success?orderId=${order.id}&session_id={CHECKOUT_SESSION_ID}`,
@@ -211,6 +224,9 @@ export async function POST(req: NextRequest) {
       url: stripeSession.url,
       orderId: order.id,
       sessionId: stripeSession.id,
+      isTestOrder: FORCE_TEST_PRICE,
+      checkoutTotalWithVat,
+      originalTotalWithVat: totalWithVat,
     });
   } catch (e: any) {
     console.error("create-checkout-session error:", e);
