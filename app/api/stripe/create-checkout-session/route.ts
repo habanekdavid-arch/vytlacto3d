@@ -155,7 +155,7 @@ export async function POST(req: NextRequest) {
             display_name: "Packeta / Zásielkovňa",
             type: "fixed_amount",
             fixed_amount: {
-              amount: 399,
+              amount: 0,
               currency: "eur",
             },
             delivery_estimate: {
