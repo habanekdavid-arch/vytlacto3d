@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // Nikdy nepresmerovávaj Stripe webhook ani verejné API
+  // Nikdy nepresmerovávaj Stripe webhook ani verejné API routy
   if (
     pathname.startsWith("/api/stripe/webhook") ||
     pathname.startsWith("/api/stripe/create-checkout-session") ||
