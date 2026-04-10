@@ -130,6 +130,12 @@ export async function POST(req: NextRequest) {
       select: { id: true },
     });
 
+    console.log("ORDER CREATED BEFORE CHECKOUT:", {
+      orderId: order.id,
+      userId,
+      sessionEmail,
+    });
+
     const baseUrl = getBaseUrl(req);
     const totalWithVat = addVat(pricing.total);
 
@@ -145,6 +151,7 @@ export async function POST(req: NextRequest) {
 
     const stripeSession = await stripe.checkout.sessions.create({
       mode: "payment",
+      client_reference_id: order.id,
       billing_address_collection: "auto",
       shipping_address_collection: {
         allowed_countries: ["SK", "CZ"],
@@ -199,6 +206,7 @@ export async function POST(req: NextRequest) {
         orderId: order.id,
         scalePct: String(scalePct),
         userId: userId ?? "",
+        customerEmail: sessionEmail ?? "",
         isTestOrder: FORCE_TEST_PRICE ? "true" : "false",
       },
       payment_intent_data: {
@@ -206,11 +214,18 @@ export async function POST(req: NextRequest) {
           orderId: order.id,
           scalePct: String(scalePct),
           userId: userId ?? "",
+          customerEmail: sessionEmail ?? "",
           isTestOrder: FORCE_TEST_PRICE ? "true" : "false",
         },
       },
       success_url: `${baseUrl}/success?orderId=${order.id}&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${baseUrl}/cancel?orderId=${order.id}`,
+    });
+
+    console.log("STRIPE SESSION CREATED:", {
+      orderId: order.id,
+      sessionId: stripeSession.id,
+      customerEmail: sessionEmail,
     });
 
     await prisma.order.update({

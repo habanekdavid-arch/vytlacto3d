@@ -1,60 +1,48 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getToken } from "next-auth/jwt";
 
-function unauthorized() {
-  return new NextResponse("Authentication required", {
-    status: 401,
-    headers: {
-      "WWW-Authenticate": 'Basic realm="Admin Area"',
-      "Cache-Control": "no-store",
-    },
-  });
-}
-
-export function proxy(req: NextRequest) {
+export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  if (!pathname.startsWith("/admin")) {
+  // Nikdy nepresmerovávaj Stripe webhook ani verejné API
+  if (
+    pathname.startsWith("/api/stripe/webhook") ||
+    pathname.startsWith("/api/stripe/create-checkout-session") ||
+    pathname.startsWith("/api/auth") ||
+    pathname.startsWith("/api/analyze") ||
+    pathname.startsWith("/api/quote") ||
+    pathname.startsWith("/api/upload") ||
+    pathname.startsWith("/api/blob") ||
+    pathname.startsWith("/api/file") ||
+    pathname.startsWith("/_next") ||
+    pathname === "/favicon.ico" ||
+    pathname === "/robots.txt" ||
+    pathname === "/sitemap.xml"
+  ) {
     return NextResponse.next();
   }
 
-  const adminUser = process.env.ADMIN_USER;
-  const adminPassword = process.env.ADMIN_PASSWORD;
+  const isProtectedRoute =
+    pathname.startsWith("/ucet") || pathname.startsWith("/admin");
 
-  if (!adminUser || !adminPassword) {
-    return new NextResponse(
-      "Missing ADMIN_USER or ADMIN_PASSWORD in environment variables.",
-      { status: 500 }
-    );
-  }
-
-  const authHeader = req.headers.get("authorization");
-
-  if (!authHeader || !authHeader.startsWith("Basic ")) {
-    return unauthorized();
-  }
-
-  try {
-    const base64Credentials = authHeader.split(" ")[1] || "";
-    const credentials = Buffer.from(base64Credentials, "base64").toString("utf-8");
-
-    const separatorIndex = credentials.indexOf(":");
-    if (separatorIndex === -1) {
-      return unauthorized();
-    }
-
-    const user = credentials.slice(0, separatorIndex);
-    const password = credentials.slice(separatorIndex + 1);
-
-    if (user !== adminUser || password !== adminPassword) {
-      return unauthorized();
-    }
-
+  if (!isProtectedRoute) {
     return NextResponse.next();
-  } catch {
-    return unauthorized();
   }
+
+  const token = await getToken({
+    req,
+    secret: process.env.NEXTAUTH_SECRET,
+  });
+
+  if (!token) {
+    const loginUrl = new URL("/prihlasenie", req.url);
+    loginUrl.searchParams.set("callbackUrl", pathname);
+    return NextResponse.redirect(loginUrl);
+  }
+
+  return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/admin/:path*"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
 };

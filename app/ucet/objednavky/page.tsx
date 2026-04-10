@@ -1,22 +1,33 @@
-export const dynamic = "force-dynamic";
-
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { formatPriceWithVat } from "@/lib/vat";
 import { getSafeServerSession } from "@/lib/session";
 
+export const dynamic = "force-dynamic";
 
 export default async function OrdersPage() {
   const session = await getSafeServerSession();
-  const sessionUser = session?.user as { id?: string } | undefined;
+  const sessionUser = session?.user as
+    | { id?: string; email?: string | null }
+    | undefined;
 
-  if (!sessionUser?.id) {
+  if (!sessionUser?.id && !sessionUser?.email) {
     return null;
+  }
+
+  const whereClauses: any[] = [];
+
+  if (sessionUser?.id) {
+    whereClauses.push({ userId: sessionUser.id });
+  }
+
+  if (sessionUser?.email) {
+    whereClauses.push({ customerEmail: sessionUser.email });
   }
 
   const orders = await prisma.order.findMany({
     where: {
-      userId: sessionUser.id,
+      OR: whereClauses,
     },
     orderBy: {
       createdAt: "desc",

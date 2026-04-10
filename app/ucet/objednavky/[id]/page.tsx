@@ -1,9 +1,9 @@
-export const dynamic = "force-dynamic";
-
 import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { formatPriceWithVat } from "@/lib/vat";
 import { getSafeServerSession } from "@/lib/session";
+
+export const dynamic = "force-dynamic";
 
 export default async function OrderDetailPage({
   params,
@@ -15,16 +15,20 @@ export default async function OrderDetailPage({
     | { id?: string; email?: string | null }
     | undefined;
 
-  if (!sessionUser?.id) {
+  if (!sessionUser?.id && !sessionUser?.email) {
     redirect("/prihlasenie");
   }
 
   const { id } = await params;
 
+  const orClauses: any[] = [];
+  if (sessionUser?.id) orClauses.push({ userId: sessionUser.id });
+  if (sessionUser?.email) orClauses.push({ customerEmail: sessionUser.email });
+
   const order = await prisma.order.findFirst({
     where: {
       id,
-      userId: sessionUser.id,
+      OR: orClauses,
     },
     select: {
       id: true,
@@ -101,10 +105,7 @@ export default async function OrderDetailPage({
             label="Cena spolu"
             value={total !== null ? formatPriceWithVat(total) : "—"}
           />
-          <DetailCard
-            label="Doprava"
-            value={order.shippingMethod ?? "—"}
-          />
+          <DetailCard label="Doprava" value={order.shippingMethod ?? "—"} />
           <DetailCard
             label="Cena dopravy"
             value={
@@ -131,27 +132,19 @@ export default async function OrderDetailPage({
         <div className="mt-4 grid gap-4 md:grid-cols-2">
           <DetailCard
             label="Rozmer X"
-            value={
-              analysis.dimsXmm !== undefined ? `${analysis.dimsXmm} mm` : "—"
-            }
+            value={analysis.dimsXmm !== undefined ? `${analysis.dimsXmm} mm` : "—"}
           />
           <DetailCard
             label="Rozmer Y"
-            value={
-              analysis.dimsYmm !== undefined ? `${analysis.dimsYmm} mm` : "—"
-            }
+            value={analysis.dimsYmm !== undefined ? `${analysis.dimsYmm} mm` : "—"}
           />
           <DetailCard
             label="Rozmer Z"
-            value={
-              analysis.dimsZmm !== undefined ? `${analysis.dimsZmm} mm` : "—"
-            }
+            value={analysis.dimsZmm !== undefined ? `${analysis.dimsZmm} mm` : "—"}
           />
           <DetailCard
             label="Objem"
-            value={
-              analysis.volumeCm3 !== undefined ? `${analysis.volumeCm3} cm³` : "—"
-            }
+            value={analysis.volumeCm3 !== undefined ? `${analysis.volumeCm3} cm³` : "—"}
           />
         </div>
       </section>
@@ -199,16 +192,10 @@ export default async function OrderDetailPage({
         <div className="mt-4 grid gap-4 md:grid-cols-2">
           <DetailCard
             label="Email zákazníka"
-            value={order.customerEmail ?? sessionUser.email ?? "—"}
+            value={order.customerEmail ?? sessionUser?.email ?? "—"}
           />
-          <DetailCard
-            label="Meno"
-            value={String(shippingAddress.name ?? "—")}
-          />
-          <DetailCard
-            label="Telefón"
-            value={String(shippingAddress.phone ?? "—")}
-          />
+          <DetailCard label="Meno" value={String(shippingAddress.name ?? "—")} />
+          <DetailCard label="Telefón" value={String(shippingAddress.phone ?? "—")} />
           <DetailCard
             label="Adresa"
             value={String(shippingAddress.address ?? shippingAddress.line1 ?? "—")}
@@ -217,18 +204,9 @@ export default async function OrderDetailPage({
             label="Druhý riadok adresy"
             value={String(shippingAddress.line2 ?? "—")}
           />
-          <DetailCard
-            label="Mesto"
-            value={String(shippingAddress.city ?? "—")}
-          />
-          <DetailCard
-            label="PSČ"
-            value={String(shippingAddress.postal_code ?? "—")}
-          />
-          <DetailCard
-            label="Krajina"
-            value={String(shippingAddress.country ?? "—")}
-          />
+          <DetailCard label="Mesto" value={String(shippingAddress.city ?? "—")} />
+          <DetailCard label="PSČ" value={String(shippingAddress.postal_code ?? "—")} />
+          <DetailCard label="Krajina" value={String(shippingAddress.country ?? "—")} />
         </div>
       </section>
     </div>

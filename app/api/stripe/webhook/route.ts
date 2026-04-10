@@ -112,7 +112,11 @@ export async function POST(req: NextRequest) {
     if (event.type === "checkout.session.completed") {
       const session = event.data.object as Stripe.Checkout.Session;
 
-      const orderId = session.metadata?.orderId;
+      const orderId =
+        session.metadata?.orderId ??
+        session.client_reference_id ??
+        null;
+
       if (!orderId) {
         console.error("Webhook missing orderId in metadata");
         return NextResponse.json({ received: true });
@@ -131,14 +135,32 @@ export async function POST(req: NextRequest) {
       const shippingAddress = getShippingAddress(fullSession);
       const shippingCost = getShippingCost(fullSession);
 
+      const customerEmail =
+        fullSession.customer_details?.email ??
+        fullSession.customer_email ??
+        session.metadata?.customerEmail ??
+        null;
+
+      const matchedUser = customerEmail
+        ? await prisma.user.findUnique({
+            where: { email: customerEmail },
+            select: { id: true },
+          })
+        : null;
+
+      console.log("WEBHOOK SESSION DATA:", {
+        orderId,
+        customerEmail,
+        matchedUserId: matchedUser?.id ?? null,
+        shippingMethod,
+        amountTotal,
+      });
+
       const updatedOrder = await prisma.order.update({
         where: { id: orderId },
         data: {
           status: "PAID",
-          customerEmail:
-            fullSession.customer_details?.email ??
-            fullSession.customer_email ??
-            null,
+          customerEmail,
           paidTotalEur: amountTotal,
           stripeSessionId: fullSession.id,
           stripePaymentIntentId:
@@ -148,6 +170,7 @@ export async function POST(req: NextRequest) {
           shippingMethod,
           shippingAddress: shippingAddress as any,
           shippingCost: shippingCost as any,
+          userId: matchedUser?.id ?? undefined,
         },
         select: {
           id: true,
@@ -155,6 +178,7 @@ export async function POST(req: NextRequest) {
           customerEmail: true,
           paidTotalEur: true,
           shippingMethod: true,
+          userId: true,
         },
       });
 
@@ -172,7 +196,10 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      console.log("Order marked as PAID:", orderId);
+      console.log("Order marked as PAID:", {
+        orderId,
+        userId: updatedOrder.userId,
+      });
     }
 
     return NextResponse.json({ received: true });
