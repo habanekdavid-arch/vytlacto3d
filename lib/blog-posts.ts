@@ -181,6 +181,108 @@ export const blogPosts: BlogPost[] = [
     ],
     cta: "Máte STL súbor a neviete, či je pripravený správne? Nahrajte ho do konfigurátora a overte si rozmery, objem aj cenu výroby.",
   },
+  {
+    slug: "3d-tlac-pre-vyrobu-prototypy",
+    title: "3D tlač pre výrobu: prečo riešiť prototypy cez 3D tlač",
+    subtitle: "Rýchle prototypovanie, technické diely a výroba bez zbytočných nákladov",
+    description:
+      "3D tlač pre firmy a výrobu: prečo riešiť prototypy cez 3D tlač, kedy sa oplatí výroba plastových dielov na mieru a prečo je 3D tlač ideálna pre vývoj produktov a technické riešenia.",
+    image: "/blog/3d-tlac-pre-vyrobu-prototypy.jpg",
+    publishedAt: "2026-04-08",
+    readingTime: "7 min",
+    sections: [
+      {
+        heading: "Prečo firmy riešia prototypy cez 3D tlač",
+        paragraphs: [
+          "Ak firma vyvíja nový produkt alebo rieši technický problém vo výrobe, väčšinou narazí na rovnakú bariéru: potrebuje niečo otestovať, ale výroba je pomalá, drahá alebo nepružná.",
+          "A práve tu vzniká priestor pre 3D tlač prototypov. Rýchle prototypovanie cez 3D tlač umožňuje otestovať riešenie bez zbytočných investícií do nástrojov, foriem alebo zdĺhavej externej výroby.",
+        ],
+      },
+      {
+        heading: "Prototyp nie je cieľ. Je to nástroj na rozhodnutie.",
+        paragraphs: [
+          "Najväčšia chyba, ktorú pri firmách vidíme, je v tom, že prototyp berú len ako medzikrok. V realite je to však jeden z najdôležitejších momentov celého vývoja produktu.",
+          "Ak máte prototyp v ruke, viete ho fyzicky posúdiť, viete ho otestovať v reálnych podmienkach a viete odhaliť chyby skôr, než budú stáť tisíce eur. Bez prototypu len odhadujete. S prototypom sa rozhodujete podľa reality.",
+        ],
+        bullets: [
+          "viete ho chytiť do ruky",
+          "viete ho otestovať v reálnych podmienkach",
+          "viete odhaliť chyby skôr, než budú drahé",
+        ],
+      },
+      {
+        heading: "Prečo 3D tlač a nie klasická výroba prototypov",
+        paragraphs: [
+          "Klasická výroba prototypov cez CNC, formy alebo externé dielne býva nastavená skôr na finálny produkt než na rýchly vývoj. To znamená vyššie vstupné náklady, dlhšie dodacie lehoty a menšiu flexibilitu pri zmenách.",
+          "Pri 3D tlači fungujete úplne inak. Upravíte model, vytlačíte ho znova, otestujete, zmeníte a pokračujete ďalej. Bez nákladov na nástroje, bez zbytočných prestojov a s oveľa väčšou kontrolou nad vývojom.",
+        ],
+        bullets: [
+          "nižšie vstupné náklady",
+          "rýchlejšie iterácie",
+          "žiadne formy a minimálne fixné náklady",
+          "vhodné pre vývoj, nie len finálnu sériu",
+        ],
+      },
+      {
+        heading: "Keď prototyp prechádza do reality",
+        paragraphs: [
+          "Veľkou výhodou je, že 3D tlač pre výrobu dnes nie je len o vizuálnych modeloch. V mnohých prípadoch ide o funkčné technické diely, komponenty, prípravky, držiaky alebo interné výrobné pomôcky.",
+          "To znamená, že to, čo dnes testujete ako prototyp, môžete zajtra reálne používať vo výrobe. 3D tlač technických dielov tak nie je len vývojový nástroj, ale často aj reálne nasaditeľné riešenie.",
+        ],
+      },
+      {
+        heading: "Výroba plastových dielov na mieru bez zbytočných investícií",
+        paragraphs: [
+          "Nie každý diel potrebuje formu. Pri menších sériách, interných technických riešeniach alebo špecifických komponentoch býva výroba plastových dielov na mieru cez 3D tlač efektívnejšia než klasické vstrekovanie alebo obrábanie.",
+          "To platí najmä vtedy, keď potrebujete vyrobiť jeden kus, pár kusov alebo priebežne upravovať dizajn podľa testovania a reálnej prevádzky.",
+        ],
+        bullets: [
+          "nulové náklady na formy",
+          "výroba už od 1 kusu",
+          "rýchla úprava dizajnu",
+          "ideálne pre údržbu výroby a náhradné diely",
+        ],
+      },
+      {
+        heading: "3D tlač produktového dizajnu: keď rozhoduje aj vizuál",
+        paragraphs: [
+          "Pri vývoji produktu nestačí, že funguje. Musí aj dobre vyzerať, sedieť v priestore, byť ergonomický a prezentovateľný. 3D tlač produktového dizajnu umožňuje overiť proporcie, varianty a vzhľad ešte pred finálnou výrobou.",
+          "Rozdiel medzi tým, čo dobre vyzerá na obrazovke, a tým, čo funguje v realite, býva zásadný. Preto je fyzický prototyp dôležitý nielen technicky, ale aj obchodne a dizajnovo.",
+        ],
+      },
+      {
+        heading: "Prečo spolupracovať práve s nami",
+        paragraphs: [
+          "Na trhu nie je problém nájsť niekoho, kto vám niečo vytlačí. Skutočný rozdiel je v tom, či vám to pomôže vyriešiť problém. My nerozmýšľame len nad tlačou, ale nad použitím dielu, jeho pevnosťou, slabými miestami a reálnym nasadením.",
+          "Nie sme len hobby dielňa. Sme výrobná firma a pracujeme s reálnymi technológiami, materiálmi a projektmi. Vieme navrhnúť riešenie, optimalizovať diel a pomôcť vám s prepojením na ďalšie výrobné kroky.",
+        ],
+        bullets: [
+          "rozumieme výrobe, nie len tlači",
+          "pomáhame optimalizovať diely a náklady",
+          "upozorníme na slabé miesta riešenia",
+          "vieme nadviazať ďalšími technológiami",
+        ],
+      },
+      {
+        heading: "Kedy sa vám 3D tlač oplatí najviac",
+        bullets: [
+          "vyvíjate nový produkt",
+          "potrebujete rýchlo otestovať riešenie",
+          "chýba vám technický diel",
+          "optimalizujete výrobný proces",
+          "nechcete investovať do foriem",
+        ],
+      },
+      {
+        heading: "Zhrnutie",
+        paragraphs: [
+          "3D tlač pre firmy dáva zmysel všade tam, kde potrebujete rýchlosť, flexibilitu a funkčný výsledok. Pri prototypoch, technických dieloch, interných komponentoch aj vývoji produktov ide často o najefektívnejší spôsob, ako sa posunúť z návrhu do reality.",
+          "Ak potrebujete prototyp, technický diel alebo výrobu plastových dielov na mieru, radi vám pomôžeme nájsť riešenie, ktoré nebude len vytlačené, ale aj použiteľné v praxi.",
+        ],
+      },
+    ],
+    cta: "Vyvíjate produkt, testujete diel alebo riešite problém vo výrobe? Pošlite nám zadanie a pripravíme vám prototyp alebo technické riešenie na mieru.",
+  },
 ];
 
 export function getBlogPost(slug: string) {
