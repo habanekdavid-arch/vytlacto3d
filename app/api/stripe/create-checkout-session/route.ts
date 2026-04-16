@@ -134,11 +134,22 @@ export async function POST(req: NextRequest) {
       orderId: order.id,
       userId,
       sessionEmail,
+      pricingTotalWithoutVat: pricing.total,
     });
 
     const baseUrl = getBaseUrl(req);
     const totalWithVat = addVat(pricing.total);
     const itemAmountCents = Math.round(totalWithVat * 100);
+
+    console.log("CHECKOUT PRICE DEBUG:", {
+      orderId: order.id,
+      totalWithoutVat: pricing.total,
+      totalWithVat,
+      itemAmountCents,
+      quantity,
+      scalePct,
+      infillPct,
+    });
 
     const stripeSession = await stripe.checkout.sessions.create({
       mode: "payment",
@@ -218,6 +229,7 @@ export async function POST(req: NextRequest) {
       orderId: order.id,
       sessionId: stripeSession.id,
       customerEmail: sessionEmail,
+      totalWithVat,
     });
 
     await prisma.order.update({
