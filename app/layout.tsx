@@ -2,6 +2,7 @@ import "./globals.css";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import CookieBanner from "@/components/CookieBanner";
+import Providers from "@/components/Providers";
 
 const baseUrl =
   process.env.NEXT_PUBLIC_BASE_URL || "https://www.vytlacto3d.sk";
@@ -61,10 +62,12 @@ export default function RootLayout({
   return (
     <html lang="sk">
       <body className="min-h-screen flex flex-col bg-white text-neutral-900 antialiased">
-        <Navbar />
-        <main className="flex-1">{children}</main>
-        <Footer />
-        <CookieBanner />
+        <Providers>
+          <Navbar />
+          <main className="flex-1">{children}</main>
+          <Footer />
+          <CookieBanner />
+        </Providers>
       </body>
     </html>
   );

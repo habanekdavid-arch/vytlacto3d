@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import Navbar from "@/components/Navbar";
 import UploadBox from "@/components/UploadBox";
 import Configurator, { ConfigState } from "@/components/Configurator";
 import StlViewer from "@/components/StlViewer";
@@ -103,7 +102,6 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-white text-neutral-900">
-      <Navbar />
       <FloatingCta />
 
       <main className="mx-auto max-w-6xl px-6 pb-20 pt-10">
