@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { getSafeServerSession } from "@/lib/session";
 import { revalidatePath } from "next/cache";
 import { formatPricePair, formatEur, addVat } from "@/lib/vat";
 
@@ -78,6 +80,20 @@ function getStatusClasses(status: string) {
 export const dynamic = "force-dynamic";
 
 export default async function AdminOrdersPage() {
+  const session = await getSafeServerSession();
+  const sessionUser = session?.user as { email?: string | null } | undefined;
+
+  const adminEmails = (process.env.ADMIN_EMAILS ?? "")
+    .split(",")
+    .map((email) => email.trim().toLowerCase())
+    .filter(Boolean);
+
+  const userEmail = String(sessionUser?.email ?? "").toLowerCase();
+
+  if (!userEmail || !adminEmails.includes(userEmail)) {
+    redirect("/");
+  }
+
   const ordersRaw = await prisma.order.findMany({
     orderBy: {
       createdAt: "desc",

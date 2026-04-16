@@ -138,21 +138,15 @@ export async function POST(req: NextRequest) {
 
     const baseUrl = getBaseUrl(req);
     const totalWithVat = addVat(pricing.total);
-
-    // DOČASNÝ TESTOVACÍ REŽIM
-    const FORCE_TEST_PRICE = true;
-    const TEST_PRICE_EUR = 1;
-
-    const checkoutTotalWithVat = FORCE_TEST_PRICE
-      ? TEST_PRICE_EUR
-      : totalWithVat;
-
-    const itemAmountCents = Math.round(checkoutTotalWithVat * 100);
+    const itemAmountCents = Math.round(totalWithVat * 100);
 
     const stripeSession = await stripe.checkout.sessions.create({
       mode: "payment",
       client_reference_id: order.id,
       billing_address_collection: "auto",
+      phone_number_collection: {
+        enabled: true,
+      },
       shipping_address_collection: {
         allowed_countries: ["SK", "CZ"],
       },
@@ -162,7 +156,7 @@ export async function POST(req: NextRequest) {
             display_name: "Packeta / Zásielkovňa",
             type: "fixed_amount",
             fixed_amount: {
-              amount: 0,
+              amount: 399,
               currency: "eur",
             },
             delivery_estimate: {
@@ -195,9 +189,7 @@ export async function POST(req: NextRequest) {
             unit_amount: itemAmountCents,
             product_data: {
               name: `3D tlač: ${body.uploaded.fileName}`,
-              description: FORCE_TEST_PRICE
-                ? `Test objednávka • ${formatEur(checkoutTotalWithVat)} s DPH`
-                : `${formatEur(totalWithVat)} s DPH • mierka ${scalePct}%`,
+              description: `${formatEur(totalWithVat)} s DPH • mierka ${scalePct}%`,
             },
           },
         },
@@ -207,7 +199,7 @@ export async function POST(req: NextRequest) {
         scalePct: String(scalePct),
         userId: userId ?? "",
         customerEmail: sessionEmail ?? "",
-        isTestOrder: FORCE_TEST_PRICE ? "true" : "false",
+        isTestOrder: "false",
       },
       payment_intent_data: {
         metadata: {
@@ -215,7 +207,7 @@ export async function POST(req: NextRequest) {
           scalePct: String(scalePct),
           userId: userId ?? "",
           customerEmail: sessionEmail ?? "",
-          isTestOrder: FORCE_TEST_PRICE ? "true" : "false",
+          isTestOrder: "false",
         },
       },
       success_url: `${baseUrl}/success?orderId=${order.id}&session_id={CHECKOUT_SESSION_ID}`,
@@ -239,8 +231,8 @@ export async function POST(req: NextRequest) {
       url: stripeSession.url,
       orderId: order.id,
       sessionId: stripeSession.id,
-      isTestOrder: FORCE_TEST_PRICE,
-      checkoutTotalWithVat,
+      isTestOrder: false,
+      checkoutTotalWithVat: totalWithVat,
       originalTotalWithVat: totalWithVat,
     });
   } catch (e: any) {

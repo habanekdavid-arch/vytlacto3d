@@ -1,13 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 
+function getAdminEmails() {
+  return (process.env.ADMIN_EMAILS ?? "")
+    .split(",")
+    .map((email) => email.trim().toLowerCase())
+    .filter(Boolean);
+}
+
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // Nikdy nepresmerovávaj Stripe webhook ani verejné API routy
   if (
+    pathname === "/api/stripe/webhook" ||
     pathname.startsWith("/api/stripe/webhook") ||
-    pathname.startsWith("/api/stripe/create-checkout-session") ||
+    pathname === "/api/stripe/create-checkout-session" ||
     pathname.startsWith("/api/auth") ||
     pathname.startsWith("/api/analyze") ||
     pathname.startsWith("/api/quote") ||
@@ -22,22 +29,34 @@ export async function proxy(req: NextRequest) {
     return NextResponse.next();
   }
 
-  const isProtectedRoute =
-    pathname.startsWith("/ucet") || pathname.startsWith("/admin");
-
-  if (!isProtectedRoute) {
-    return NextResponse.next();
-  }
-
   const token = await getToken({
     req,
     secret: process.env.NEXTAUTH_SECRET,
   });
 
-  if (!token) {
-    const loginUrl = new URL("/prihlasenie", req.url);
-    loginUrl.searchParams.set("callbackUrl", pathname);
-    return NextResponse.redirect(loginUrl);
+  if (pathname.startsWith("/admin")) {
+    if (!token) {
+      const loginUrl = new URL("/prihlasenie", req.url);
+      loginUrl.searchParams.set("callbackUrl", pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+
+    const userEmail = String(token.email ?? "").toLowerCase();
+    const adminEmails = getAdminEmails();
+
+    if (!userEmail || !adminEmails.includes(userEmail)) {
+      return NextResponse.redirect(new URL("/", req.url));
+    }
+
+    return NextResponse.next();
+  }
+
+  if (pathname.startsWith("/ucet")) {
+    if (!token) {
+      const loginUrl = new URL("/prihlasenie", req.url);
+      loginUrl.searchParams.set("callbackUrl", pathname);
+      return NextResponse.redirect(loginUrl);
+    }
   }
 
   return NextResponse.next();
