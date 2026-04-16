@@ -26,18 +26,21 @@ export default function Navbar() {
           >
             Kalkulátor
           </Link>
+
           <Link
             href="/#cennik"
             className="text-sm font-medium text-neutral-700 transition hover:text-neutral-900"
           >
             Cenník
           </Link>
+
           <Link
             href="/#faq"
             className="text-sm font-medium text-neutral-700 transition hover:text-neutral-900"
           >
             FAQ
           </Link>
+
           <Link
             href="/blog"
             className="text-sm font-medium text-neutral-700 transition hover:text-neutral-900"
