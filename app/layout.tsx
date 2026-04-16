@@ -1,4 +1,5 @@
 import "./globals.css";
+import Script from "next/script";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import CookieBanner from "@/components/CookieBanner";
@@ -26,6 +27,10 @@ export const metadata = {
     "3D printing Slovakia",
     "3D model tlač",
   ],
+
+  verification: {
+    google: "N3KPmt1kWah9CIVFQz1gvt1MnfmYAj6oVVTTtvJ-zzs",
+  },
 
   openGraph: {
     title: "VytlačTo3D – Online konfigurátor 3D tlače",
@@ -62,6 +67,19 @@ export default function RootLayout({
   return (
     <html lang="sk">
       <body className="min-h-screen flex flex-col bg-white text-neutral-900 antialiased">
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-FPVFGRHLWJ"
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-FPVFGRHLWJ');
+          `}
+        </Script>
+
         <Providers>
           <Navbar />
           <main className="flex-1">{children}</main>
