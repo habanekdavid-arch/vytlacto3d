@@ -17,6 +17,26 @@ model User {
   passwordHash String
   phone        String?
 
+  accountType  String   @default("PERSON") // PERSON alebo COMPANY
+
+  companyName  String?
+  ico          String?
+  dic          String?
+  icDph        String?
+  contactPerson String?
+
+  billingStreet  String?
+  billingCity    String?
+  billingZip     String?
+  billingCountry String?
+
+  shippingName    String?
+  shippingContact String?
+  shippingStreet  String?
+  shippingCity    String?
+  shippingZip     String?
+  shippingCountry String?
+
   orders       Order[]
 }
 
@@ -42,6 +62,18 @@ model Order {
   shippingAddress       Json?
   shippingCost          Json?
   shippingMethod        String?
+
+  accountType           String?
+  phone                 String?
+
+  companyName           String?
+  ico                   String?
+  dic                   String?
+  icDph                 String?
+  contactPerson         String?
+
+  billingAddress        Json?
+  deliveryAddress       Json?
 
   userId                String?
   user                  User?    @relation(fields: [userId], references: [id], onDelete: SetNull)

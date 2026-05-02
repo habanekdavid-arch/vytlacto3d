@@ -1,141 +1,182 @@
 "use client";
 
-import Link from "next/link";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { FormEvent, useState } from "react";
+import Link from "next/link";
 
 export default function RegisterPage() {
   const router = useRouter();
-
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-
-  const [showPassword, setShowPassword] = useState(false);
+  const [accountType, setAccountType] = useState<"PERSON" | "COMPANY">("PERSON");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  async function handleRegister(e: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
-    setError(null);
 
-    const res = await fetch("/api/auth/register", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, password }),
-    });
+    const form = new FormData(e.currentTarget);
 
-    const data = await res.json().catch(() => null);
+    const payload = {
+      accountType,
+      name: String(form.get("name") || ""),
+      email: String(form.get("email") || ""),
+      password: String(form.get("password") || ""),
+      phone: String(form.get("phone") || ""),
 
-    setLoading(false);
+      companyName: String(form.get("companyName") || ""),
+      ico: String(form.get("ico") || ""),
+      dic: String(form.get("dic") || ""),
+      icDph: String(form.get("icDph") || ""),
+      contactPerson: String(form.get("contactPerson") || ""),
 
-    if (!res.ok) {
-      setError(data?.error || "Registrácia zlyhala.");
-      return;
+      billingStreet: String(form.get("billingStreet") || ""),
+      billingCity: String(form.get("billingCity") || ""),
+      billingZip: String(form.get("billingZip") || ""),
+      billingCountry: String(form.get("billingCountry") || "Slovensko"),
+
+      shippingName: String(form.get("shippingName") || ""),
+      shippingContact: String(form.get("shippingContact") || ""),
+      shippingStreet: String(form.get("shippingStreet") || ""),
+      shippingCity: String(form.get("shippingCity") || ""),
+      shippingZip: String(form.get("shippingZip") || ""),
+      shippingCountry: String(form.get("shippingCountry") || "Slovensko"),
+    };
+
+    try {
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.error || "Registrácia zlyhala.");
+        return;
+      }
+
+      router.push("/prihlasenie");
+    } finally {
+      setLoading(false);
     }
-
-    router.push("/prihlasenie");
   }
 
   return (
-    <div className="min-h-screen bg-neutral-50 px-4 py-12">
-      <div className="mx-auto max-w-md rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm">
-        <div className="mb-6">
-          <div className="text-sm font-semibold text-neutral-500">
-            Zákaznícka zóna
-          </div>
-          <h1 className="mt-2 text-3xl font-extrabold tracking-tight text-neutral-900">
-            Registrácia
-          </h1>
-          <p className="mt-2 text-sm text-neutral-600">
-            Vytvorte si účet a získajte prístup k svojim objednávkam.
-          </p>
-        </div>
+    <main className="mx-auto max-w-3xl px-6 py-12">
+      <div className="rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm">
+        <div className="text-sm font-semibold text-neutral-500">Registrácia</div>
 
-        <form onSubmit={handleRegister} className="space-y-4">
-          <div>
-            <label className="mb-1 block text-sm font-medium text-neutral-800">
-              Meno
+        <h1 className="mt-2 text-3xl font-extrabold tracking-tight">
+          Vytvoriť účet
+        </h1>
+
+        <p className="mt-2 text-sm text-neutral-600">
+          Vyberte, či sa registrujete ako súkromná osoba alebo firma.
+        </p>
+
+        <form onSubmit={handleSubmit} className="mt-8 space-y-8">
+          <section>
+            <label className="text-sm font-semibold text-neutral-800">
+              Typ účtu
             </label>
-            <input
-              type="text"
-              required
-              autoComplete="name"
-              className="w-full rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-[#FFAE00]"
-              placeholder="Vaše meno"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-          </div>
+            <select
+              value={accountType}
+              onChange={(e) =>
+                setAccountType(e.target.value as "PERSON" | "COMPANY")
+              }
+              className="mt-2 w-full rounded-2xl border border-neutral-200 px-4 py-3 text-sm"
+            >
+              <option value="PERSON">Súkromná osoba</option>
+              <option value="COMPANY">Firma</option>
+            </select>
+          </section>
 
-          <div>
-            <label className="mb-1 block text-sm font-medium text-neutral-800">
-              Email
-            </label>
-            <input
-              type="email"
-              required
-              autoComplete="email"
-              className="w-full rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-[#FFAE00]"
-              placeholder="vas@email.sk"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-          </div>
+          <section className="grid gap-4 md:grid-cols-2">
+            <Input name="name" label="Meno a priezvisko" required />
+            <Input name="email" label="E-mail" type="email" required />
+            <Input name="phone" label="Telefónne číslo" required />
+            <Input name="password" label="Heslo" type="password" required />
+          </section>
 
-          <div>
-            <label className="mb-1 block text-sm font-medium text-neutral-800">
-              Heslo
-            </label>
+          {accountType === "COMPANY" ? (
+            <>
+              <section>
+                <h2 className="text-xl font-bold">Firemné údaje</h2>
+                <div className="mt-4 grid gap-4 md:grid-cols-2">
+                  <Input name="companyName" label="Názov spoločnosti" required />
+                  <Input name="contactPerson" label="Kontaktná osoba" required />
+                  <Input name="ico" label="IČO" required />
+                  <Input name="dic" label="DIČ" />
+                  <Input name="icDph" label="IČ DPH" />
+                </div>
+              </section>
 
-            <div className="relative">
-              <input
-                type={showPassword ? "text" : "password"}
-                required
-                minLength={6}
-                autoComplete="new-password"
-                className="w-full rounded-2xl border border-neutral-200 bg-white px-4 py-3 pr-20 text-sm outline-none transition focus:border-[#FFAE00]"
-                placeholder="Minimálne 6 znakov"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
+              <section>
+                <h2 className="text-xl font-bold">Fakturačná adresa</h2>
+                <div className="mt-4 grid gap-4 md:grid-cols-2">
+                  <Input name="billingStreet" label="Ulica" />
+                  <Input name="billingCity" label="Mesto" />
+                  <Input name="billingZip" label="PSČ" />
+                  <Input name="billingCountry" label="Krajina" defaultValue="Slovensko" />
+                </div>
+              </section>
 
-              <button
-                type="button"
-                onClick={() => setShowPassword((s) => !s)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-neutral-500 transition hover:text-neutral-800"
-              >
-                {showPassword ? "Skryť" : "Zobraziť"}
-              </button>
-            </div>
-          </div>
-
-          {error ? (
-            <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
-              {error}
-            </div>
+              <section>
+                <h2 className="text-xl font-bold">Dodacia adresa</h2>
+                <div className="mt-4 grid gap-4 md:grid-cols-2">
+                  <Input name="shippingName" label="Názov / firma" />
+                  <Input name="shippingContact" label="Kontaktná osoba" />
+                  <Input name="shippingStreet" label="Ulica" />
+                  <Input name="shippingCity" label="Mesto" />
+                  <Input name="shippingZip" label="PSČ" />
+                  <Input name="shippingCountry" label="Krajina" defaultValue="Slovensko" />
+                </div>
+              </section>
+            </>
           ) : null}
 
           <button
-            type="submit"
             disabled={loading}
-            className="w-full rounded-2xl bg-[#FFAE00] px-4 py-3 text-sm font-semibold text-black transition hover:opacity-90 disabled:opacity-50"
+            className="w-full rounded-2xl bg-[#FFAE00] px-5 py-3 text-sm font-bold text-black disabled:opacity-50"
           >
-            {loading ? "Vytváram účet..." : "Vytvoriť účet"}
+            {loading ? "Vytváram účet…" : "Registrovať sa"}
           </button>
-        </form>
 
-        <div className="mt-5 text-sm text-neutral-600">
-          Už máte účet?{" "}
-          <Link
-            href="/prihlasenie"
-            className="font-semibold text-neutral-900 underline underline-offset-4"
-          >
-            Prihlásiť sa
-          </Link>
-        </div>
+          <p className="text-center text-sm text-neutral-600">
+            Už máte účet?{" "}
+            <Link href="/prihlasenie" className="font-semibold underline">
+              Prihláste sa
+            </Link>
+          </p>
+        </form>
       </div>
-    </div>
+    </main>
+  );
+}
+
+function Input({
+  name,
+  label,
+  type = "text",
+  required = false,
+  defaultValue = "",
+}: {
+  name: string;
+  label: string;
+  type?: string;
+  required?: boolean;
+  defaultValue?: string;
+}) {
+  return (
+    <label className="block">
+      <div className="mb-2 text-sm font-semibold text-neutral-800">{label}</div>
+      <input
+        name={name}
+        type={type}
+        required={required}
+        defaultValue={defaultValue}
+        className="w-full rounded-2xl border border-neutral-200 px-4 py-3 text-sm outline-none focus:border-[#FFAE00]"
+      />
+    </label>
   );
 }
