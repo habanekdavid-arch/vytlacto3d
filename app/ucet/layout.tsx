@@ -2,10 +2,8 @@ export const dynamic = "force-dynamic";
 
 import { ReactNode } from "react";
 import { redirect } from "next/navigation";
-import Navbar from "@/components/Navbar";
 import AccountNav from "@/components/AccountNav";
 import { getSafeServerSession } from "@/lib/session";
-
 
 export default async function AccountLayout({
   children,
@@ -21,8 +19,6 @@ export default async function AccountLayout({
 
   return (
     <div className="min-h-screen bg-white text-neutral-900">
-      <Navbar />
-
       <main className="mx-auto max-w-6xl px-6 pb-20 pt-10">
         <div className="mb-8">
           <div className="inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-3 py-1 text-sm text-neutral-700 shadow-sm">
