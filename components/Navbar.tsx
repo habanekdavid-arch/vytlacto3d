@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import AccountButton from "@/components/AccountButton";
 
 export default function Navbar() {
@@ -11,8 +12,12 @@ export default function Navbar() {
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-black text-sm font-bold text-white">
             3D
           </div>
+
           <div>
-            <div className="text-sm font-bold text-neutral-900">VytlačTo3D</div>
+            <div className="text-sm font-bold text-neutral-900">
+              VytlačTo3D
+            </div>
+
             <div className="text-xs text-neutral-500">
               Online konfigurátor 3D tlače
             </div>
@@ -49,7 +54,22 @@ export default function Navbar() {
           </Link>
         </nav>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-4">
+          <a
+            href="https://www.4from.media/?gad_source=1&gad_campaignid=19807682290&gbraid=0AAAAADyxKkmMGj88OWosPHyErFm4ryOiJ"
+            target="_blank"
+            rel="noreferrer"
+            className="hidden opacity-70 transition hover:opacity-100 lg:block"
+          >
+            <Image
+              src="/4from-media.png"
+              alt="4from media"
+              width={110}
+              height={32}
+              className="h-auto w-[110px]"
+            />
+          </a>
+
           <AccountButton />
         </div>
       </div>
