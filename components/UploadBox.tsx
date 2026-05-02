@@ -31,8 +31,11 @@ export default function UploadBox({
     onUploadingChange?.(true);
 
     try {
-      if (!file.name.toLowerCase().endsWith(".stl")) {
-        throw new Error("Podporujeme len STL (.stl).");
+      const fileName = file.name.toLowerCase();
+      const isAllowed = fileName.endsWith(".stl") || fileName.endsWith(".obj");
+
+      if (!isAllowed) {
+        throw new Error("Podporujeme len STL (.stl) a OBJ (.obj) súbory.");
       }
 
       const blob = await upload(file.name, file, {
@@ -44,8 +47,6 @@ export default function UploadBox({
           console.log(`Upload progress: ${percentage}%`);
         },
       });
-
-      console.log("BLOB UPLOAD OK:", blob);
 
       const analyzeRes = await fetch("/api/analyze", {
         method: "POST",
@@ -67,9 +68,6 @@ export default function UploadBox({
       } catch {
         analyzeData = { error: analyzeText };
       }
-
-      console.log("ANALYZE STATUS:", analyzeRes.status);
-      console.log("ANALYZE DATA:", analyzeData);
 
       if (!analyzeRes.ok) {
         throw new Error(analyzeData?.error || "Analýza zlyhala.");
@@ -98,9 +96,7 @@ export default function UploadBox({
     setDragging(false);
 
     const file = e.dataTransfer.files?.[0];
-    if (file) {
-      handleFile(file);
-    }
+    if (file) handleFile(file);
   }
 
   return (
@@ -152,27 +148,27 @@ export default function UploadBox({
         </div>
 
         <h3 className="mt-4 text-xl font-extrabold text-neutral-900">
-          Nahrajte STL súbor
+          Nahrajte STL alebo OBJ súbor
         </h3>
 
         <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-neutral-600">
-          Pretiahnite súbor sem alebo kliknite a vyberte STL model z počítača.
+          Pretiahnite súbor sem alebo kliknite a vyberte STL/OBJ model z počítača.
           Po nahratí automaticky prebehne analýza modelu.
         </p>
 
         <div className="mt-5 inline-flex rounded-2xl bg-[#FFAE00] px-5 py-3 text-sm font-semibold text-black shadow-sm">
-          Vybrať STL súbor
+          Vybrať súbor
         </div>
 
         <p className="mt-3 text-xs text-neutral-500">
-          Podporovaný formát: .STL
+          Podporované formáty: .STL, .OBJ
         </p>
       </div>
 
       <input
         ref={inputRef}
         type="file"
-        accept=".stl"
+        accept=".stl,.obj"
         className="hidden"
         onChange={(e) => {
           const file = e.target.files?.[0];

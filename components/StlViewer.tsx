@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { STLLoader } from "three/examples/jsm/loaders/STLLoader.js";
+import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader.js";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 
 type Props = {
@@ -41,6 +42,25 @@ function getColor(colorId: string) {
   }
 }
 
+function isObjFile(fileKey: string) {
+  return fileKey.toLowerCase().split("?")[0].endsWith(".obj");
+}
+
+function disposeObject(object: THREE.Object3D) {
+  object.traverse((child) => {
+    if (child instanceof THREE.Mesh) {
+      child.geometry?.dispose();
+
+      const material = child.material;
+      if (Array.isArray(material)) {
+        material.forEach((m) => m.dispose());
+      } else {
+        material?.dispose();
+      }
+    }
+  });
+}
+
 export default function StlViewer({
   fileKey,
   title = "3D náhľad",
@@ -54,7 +74,7 @@ export default function StlViewer({
   const sceneRef = useRef<THREE.Scene | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const controlsRef = useRef<OrbitControls | null>(null);
-  const meshRef = useRef<THREE.Mesh | null>(null);
+  const modelRef = useRef<THREE.Object3D | null>(null);
   const frameRef = useRef<number | null>(null);
 
   const [loading, setLoading] = useState(true);
@@ -84,6 +104,7 @@ export default function StlViewer({
       alpha: false,
       powerPreference: "high-performance",
     });
+
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setSize(width, height);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -139,87 +160,117 @@ export default function StlViewer({
     controls.maxPolarAngle = Math.PI / 2.02;
     controlsRef.current = controls;
 
-    const loader = new STLLoader();
+    const modelUrl = `/api/file?key=${encodeURIComponent(fileKey)}`;
+    const material = new THREE.MeshPhysicalMaterial({
+      color: resolvedColor,
+      roughness: 0.58,
+      metalness: 0.02,
+      clearcoat: 0.16,
+      clearcoatRoughness: 0.7,
+    });
 
-    loader.load(
-      `/api/file?key=${encodeURIComponent(fileKey)}`,
-      (geometry) => {
-        try {
-          geometry.computeVertexNormals();
-          geometry.computeBoundingBox();
-
-          if (!geometry.boundingBox) {
-            setError("Nepodarilo sa spracovať STL.");
-            setLoading(false);
-            return;
-          }
-
-          // KĽÚČOVÁ OPRAVA:
-          // veľa STL je exportovaných ako Z-up
-          // Three.js scéna je Y-up
-          // preto spravíme jednorazový prevod Z-up -> Y-up
-          geometry.rotateX(-Math.PI / 2);
-
-          geometry.computeBoundingBox();
-          const bbox = geometry.boundingBox!.clone();
-
-          // vycentrovanie v X/Z
-          const centerX = (bbox.min.x + bbox.max.x) / 2;
-          const centerZ = (bbox.min.z + bbox.max.z) / 2;
-
-          // položenie na podložku
-          const minY = bbox.min.y;
-
-          geometry.translate(-centerX, -minY, -centerZ);
-          geometry.computeBoundingBox();
-          geometry.computeVertexNormals();
-
-          const material = new THREE.MeshPhysicalMaterial({
-            color: resolvedColor,
-            roughness: 0.58,
-            metalness: 0.02,
-            clearcoat: 0.16,
-            clearcoatRoughness: 0.7,
-          });
-
-          const mesh = new THREE.Mesh(geometry, material);
-          const scale = scalePct / 100;
-
-          mesh.scale.set(scale, scale, scale);
-          mesh.castShadow = true;
-
-          scene.add(mesh);
-          meshRef.current = mesh;
-
-          const box = new THREE.Box3().setFromObject(mesh);
-          const size = new THREE.Vector3();
-          box.getSize(size);
-
-          const maxDim = Math.max(size.x, size.y, size.z) || 1;
-          const distance = maxDim * 1.9;
-
-          camera.position.set(distance * 0.95, distance * 0.72, distance * 1.05);
-          camera.near = Math.max(0.1, maxDim / 100);
-          camera.far = Math.max(5000, maxDim * 30);
-          camera.updateProjectionMatrix();
-
-          controls.target.set(0, size.y * 0.28, 0);
-          controls.minDistance = Math.max(8, maxDim * 0.45);
-          controls.maxDistance = Math.max(1200, maxDim * 10);
-          controls.update();
-
-          setLoading(false);
-        } catch {
-          setError("Nepodarilo sa spracovať STL.");
-          setLoading(false);
+    function prepareAndAddModel(model: THREE.Object3D, rotateStl = false) {
+      try {
+        if (rotateStl) {
+          model.rotation.x = -Math.PI / 2;
         }
-      },
-      undefined,
-      () => {
-        setError("Nepodarilo sa načítať STL.");
+
+        model.traverse((child) => {
+          if (child instanceof THREE.Mesh) {
+            child.material = material;
+            child.castShadow = true;
+            child.receiveShadow = false;
+
+            if (child.geometry) {
+              child.geometry.computeVertexNormals();
+              child.geometry.computeBoundingBox();
+            }
+          }
+        });
+
+        const preBox = new THREE.Box3().setFromObject(model);
+        const center = new THREE.Vector3();
+        preBox.getCenter(center);
+
+        model.position.x -= center.x;
+        model.position.z -= center.z;
+        model.position.y -= preBox.min.y;
+
+        const scale = scalePct / 100;
+        model.scale.set(scale, scale, scale);
+
+        scene.add(model);
+        modelRef.current = model;
+
+        const box = new THREE.Box3().setFromObject(model);
+        const size = new THREE.Vector3();
+        box.getSize(size);
+
+        const maxDim = Math.max(size.x, size.y, size.z) || 1;
+        const distance = maxDim * 1.9;
+
+        camera.position.set(distance * 0.95, distance * 0.72, distance * 1.05);
+        camera.near = Math.max(0.1, maxDim / 100);
+        camera.far = Math.max(5000, maxDim * 30);
+        camera.updateProjectionMatrix();
+
+        controls.target.set(0, size.y * 0.28, 0);
+        controls.minDistance = Math.max(8, maxDim * 0.45);
+        controls.maxDistance = Math.max(1200, maxDim * 10);
+        controls.update();
+
+        setLoading(false);
+      } catch (e) {
+        console.error("MODEL PREPARE ERROR:", e);
+        setError("Nepodarilo sa spracovať model.");
         setLoading(false);
       }
-    );
+    }
+
+    if (isObjFile(fileKey)) {
+      const objLoader = new OBJLoader();
+
+      objLoader.load(
+        modelUrl,
+        (object) => {
+          prepareAndAddModel(object, false);
+        },
+        undefined,
+        () => {
+          setError("Nepodarilo sa načítať OBJ.");
+          setLoading(false);
+        }
+      );
+    } else {
+      const stlLoader = new STLLoader();
+
+      stlLoader.load(
+        modelUrl,
+        (geometry) => {
+          try {
+            geometry.computeVertexNormals();
+            geometry.computeBoundingBox();
+
+            if (!geometry.boundingBox) {
+              setError("Nepodarilo sa spracovať STL.");
+              setLoading(false);
+              return;
+            }
+
+            const mesh = new THREE.Mesh(geometry, material);
+            prepareAndAddModel(mesh, true);
+          } catch {
+            setError("Nepodarilo sa spracovať STL.");
+            setLoading(false);
+          }
+        },
+        undefined,
+        () => {
+          setError("Nepodarilo sa načítať STL.");
+          setLoading(false);
+        }
+      );
+    }
 
     const handleResize = () => {
       const currentMount = mountRef.current;
@@ -265,22 +316,17 @@ export default function StlViewer({
         controlsRef.current = null;
       }
 
-      if (meshRef.current) {
-        meshRef.current.geometry.dispose();
-
-        const material = meshRef.current.material;
-        if (Array.isArray(material)) {
-          material.forEach((m) => m.dispose());
-        } else {
-          material.dispose();
-        }
+      if (modelRef.current) {
+        disposeObject(modelRef.current);
 
         if (sceneRef.current) {
-          sceneRef.current.remove(meshRef.current);
+          sceneRef.current.remove(modelRef.current);
         }
 
-        meshRef.current = null;
+        modelRef.current = null;
       }
+
+      material.dispose();
 
       if (rendererRef.current) {
         rendererRef.current.dispose();
@@ -299,13 +345,13 @@ export default function StlViewer({
   }, [fileKey, height]);
 
   useEffect(() => {
-    const mesh = meshRef.current;
-    if (!mesh) return;
+    const model = modelRef.current;
+    if (!model) return;
 
     const scale = scalePct / 100;
-    mesh.scale.set(scale, scale, scale);
+    model.scale.set(scale, scale, scale);
 
-    const box = new THREE.Box3().setFromObject(mesh);
+    const box = new THREE.Box3().setFromObject(model);
     const size = new THREE.Vector3();
     box.getSize(size);
 
@@ -316,21 +362,26 @@ export default function StlViewer({
   }, [scalePct]);
 
   useEffect(() => {
-    const mesh = meshRef.current;
-    if (!mesh) return;
+    const model = modelRef.current;
+    if (!model) return;
 
-    const material = mesh.material;
-    if (Array.isArray(material)) {
-      material.forEach((m) => {
-        if (m instanceof THREE.MeshPhysicalMaterial) {
-          m.color.set(resolvedColor);
-          m.needsUpdate = true;
+    model.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        const material = child.material;
+
+        if (Array.isArray(material)) {
+          material.forEach((m) => {
+            if (m instanceof THREE.MeshPhysicalMaterial) {
+              m.color.set(resolvedColor);
+              m.needsUpdate = true;
+            }
+          });
+        } else if (material instanceof THREE.MeshPhysicalMaterial) {
+          material.color.set(resolvedColor);
+          material.needsUpdate = true;
         }
-      });
-    } else if (material instanceof THREE.MeshPhysicalMaterial) {
-      material.color.set(resolvedColor);
-      material.needsUpdate = true;
-    }
+      }
+    });
   }, [resolvedColor]);
 
   return (
@@ -367,6 +418,9 @@ export default function StlViewer({
       {!loading && !error && (
         <div className="mt-4 text-sm text-neutral-500">
           Model sa dá otáčať, približovať a odďaľovať.
+          {isObjFile(fileKey)
+            ? " Pri OBJ súboroch odporúčame skontrolovať rozmery modelu."
+            : ""}
         </div>
       )}
     </div>

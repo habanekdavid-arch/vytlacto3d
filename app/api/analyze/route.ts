@@ -11,16 +11,20 @@ type Vec3 = {
   z: number;
 };
 
-function parseBinaryStl(buffer: Buffer) {
-  if (buffer.length < 84) {
-    throw new Error("STL súbor je príliš krátky.");
-  }
+function triangleVolume(v1: Vec3, v2: Vec3, v3: Vec3) {
+  return (
+    v1.x * v2.y * v3.z +
+    v2.x * v3.y * v1.z +
+    v3.x * v1.y * v2.z -
+    v1.x * v3.y * v2.z -
+    v2.x * v1.y * v3.z -
+    v3.x * v2.y * v1.z
+  ) / 6;
+}
 
-  const triangleCount = buffer.readUInt32LE(80);
-  const expectedLength = 84 + triangleCount * 50;
-
-  if (buffer.length < expectedLength) {
-    throw new Error("Neplatný binárny STL súbor.");
+function buildAnalysis(vertices: Vec3[], faces?: number[][]) {
+  if (vertices.length < 3) {
+    throw new Error("Model neobsahuje dostatok vrcholov.");
   }
 
   let minX = Infinity;
@@ -30,44 +34,43 @@ function parseBinaryStl(buffer: Buffer) {
   let maxY = -Infinity;
   let maxZ = -Infinity;
 
+  for (const v of vertices) {
+    minX = Math.min(minX, v.x);
+    minY = Math.min(minY, v.y);
+    minZ = Math.min(minZ, v.z);
+
+    maxX = Math.max(maxX, v.x);
+    maxY = Math.max(maxY, v.y);
+    maxZ = Math.max(maxZ, v.z);
+  }
+
   let signedVolume = 0;
 
-  for (let i = 0; i < triangleCount; i++) {
-    const offset = 84 + i * 50;
+  if (faces?.length) {
+    for (const face of faces) {
+      if (face.length < 3) continue;
 
-    const v1: Vec3 = {
-      x: buffer.readFloatLE(offset + 12),
-      y: buffer.readFloatLE(offset + 16),
-      z: buffer.readFloatLE(offset + 20),
-    };
+      const first = vertices[face[0]];
 
-    const v2: Vec3 = {
-      x: buffer.readFloatLE(offset + 24),
-      y: buffer.readFloatLE(offset + 28),
-      z: buffer.readFloatLE(offset + 32),
-    };
+      for (let i = 1; i < face.length - 1; i++) {
+        const v2 = vertices[face[i]];
+        const v3 = vertices[face[i + 1]];
 
-    const v3: Vec3 = {
-      x: buffer.readFloatLE(offset + 36),
-      y: buffer.readFloatLE(offset + 40),
-      z: buffer.readFloatLE(offset + 44),
-    };
+        if (first && v2 && v3) {
+          signedVolume += triangleVolume(first, v2, v3);
+        }
+      }
+    }
+  } else {
+    for (let i = 0; i < vertices.length; i += 3) {
+      const v1 = vertices[i];
+      const v2 = vertices[i + 1];
+      const v3 = vertices[i + 2];
 
-    minX = Math.min(minX, v1.x, v2.x, v3.x);
-    minY = Math.min(minY, v1.y, v2.y, v3.y);
-    minZ = Math.min(minZ, v1.z, v2.z, v3.z);
-
-    maxX = Math.max(maxX, v1.x, v2.x, v3.x);
-    maxY = Math.max(maxY, v1.y, v2.y, v3.y);
-    maxZ = Math.max(maxZ, v1.z, v2.z, v3.z);
-
-    signedVolume +=
-      (v1.x * v2.y * v3.z +
-        v2.x * v3.y * v1.z +
-        v3.x * v1.y * v2.z -
-        v1.x * v3.y * v2.z -
-        v2.x * v1.y * v3.z -
-        v3.x * v2.y * v1.z) / 6;
+      if (v1 && v2 && v3) {
+        signedVolume += triangleVolume(v1, v2, v3);
+      }
+    }
   }
 
   const dimsXmm = Number((maxX - minX).toFixed(2));
@@ -83,6 +86,45 @@ function parseBinaryStl(buffer: Buffer) {
     dimsZmm,
     volumeCm3,
   };
+}
+
+function parseBinaryStl(buffer: Buffer) {
+  if (buffer.length < 84) {
+    throw new Error("STL súbor je príliš krátky.");
+  }
+
+  const triangleCount = buffer.readUInt32LE(80);
+  const expectedLength = 84 + triangleCount * 50;
+
+  if (buffer.length < expectedLength) {
+    throw new Error("Neplatný binárny STL súbor.");
+  }
+
+  const vertices: Vec3[] = [];
+
+  for (let i = 0; i < triangleCount; i++) {
+    const offset = 84 + i * 50;
+
+    vertices.push(
+      {
+        x: buffer.readFloatLE(offset + 12),
+        y: buffer.readFloatLE(offset + 16),
+        z: buffer.readFloatLE(offset + 20),
+      },
+      {
+        x: buffer.readFloatLE(offset + 24),
+        y: buffer.readFloatLE(offset + 28),
+        z: buffer.readFloatLE(offset + 32),
+      },
+      {
+        x: buffer.readFloatLE(offset + 36),
+        y: buffer.readFloatLE(offset + 40),
+        z: buffer.readFloatLE(offset + 44),
+      }
+    );
+  }
+
+  return buildAnalysis(vertices);
 }
 
 function parseAsciiStl(text: string) {
@@ -104,50 +146,63 @@ function parseAsciiStl(text: string) {
     throw new Error("Neplatný ASCII STL súbor.");
   }
 
-  let minX = Infinity;
-  let minY = Infinity;
-  let minZ = Infinity;
-  let maxX = -Infinity;
-  let maxY = -Infinity;
-  let maxZ = -Infinity;
+  return buildAnalysis(vertices);
+}
 
-  let signedVolume = 0;
+function parseObj(text: string) {
+  const vertices: Vec3[] = [];
+  const faces: number[][] = [];
 
-  for (let i = 0; i < vertices.length; i += 3) {
-    const v1 = vertices[i];
-    const v2 = vertices[i + 1];
-    const v3 = vertices[i + 2];
+  const lines = text.split(/\r?\n/);
 
-    minX = Math.min(minX, v1.x, v2.x, v3.x);
-    minY = Math.min(minY, v1.y, v2.y, v3.y);
-    minZ = Math.min(minZ, v1.z, v2.z, v3.z);
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
 
-    maxX = Math.max(maxX, v1.x, v2.x, v3.x);
-    maxY = Math.max(maxY, v1.y, v2.y, v3.y);
-    maxZ = Math.max(maxZ, v1.z, v2.z, v3.z);
+    if (!line || line.startsWith("#")) continue;
 
-    signedVolume +=
-      (v1.x * v2.y * v3.z +
-        v2.x * v3.y * v1.z +
-        v3.x * v1.y * v2.z -
-        v1.x * v3.y * v2.z -
-        v2.x * v1.y * v3.z -
-        v3.x * v2.y * v1.z) / 6;
+    if (line.startsWith("v ")) {
+      const parts = line.split(/\s+/);
+
+      const x = Number(parts[1]);
+      const y = Number(parts[2]);
+      const z = Number(parts[3]);
+
+      if (Number.isFinite(x) && Number.isFinite(y) && Number.isFinite(z)) {
+        vertices.push({ x, y, z });
+      }
+    }
+
+    if (line.startsWith("f ")) {
+      const parts = line.split(/\s+/).slice(1);
+
+      const face = parts
+        .map((part) => {
+          const vertexIndexRaw = part.split("/")[0];
+          const vertexIndex = Number(vertexIndexRaw);
+
+          if (!Number.isFinite(vertexIndex) || vertexIndex === 0) return null;
+
+          return vertexIndex > 0
+            ? vertexIndex - 1
+            : vertices.length + vertexIndex;
+        })
+        .filter((index): index is number => index !== null);
+
+      if (face.length >= 3) {
+        faces.push(face);
+      }
+    }
   }
 
-  const dimsXmm = Number((maxX - minX).toFixed(2));
-  const dimsYmm = Number((maxY - minY).toFixed(2));
-  const dimsZmm = Number((maxZ - minZ).toFixed(2));
+  if (vertices.length < 3) {
+    throw new Error("OBJ súbor neobsahuje platné vrcholy.");
+  }
 
-  const volumeMm3 = Math.abs(signedVolume);
-  const volumeCm3 = Number((volumeMm3 / 1000).toFixed(2));
+  if (faces.length === 0) {
+    throw new Error("OBJ súbor neobsahuje platné plochy.");
+  }
 
-  return {
-    dimsXmm,
-    dimsYmm,
-    dimsZmm,
-    volumeCm3,
-  };
+  return buildAnalysis(vertices, faces);
 }
 
 function detectAsciiStl(buffer: Buffer) {
@@ -155,12 +210,12 @@ function detectAsciiStl(buffer: Buffer) {
   return head.trimStart().startsWith("solid");
 }
 
-async function loadStlBuffer(fileKey: string) {
+async function loadModelBuffer(fileKey: string) {
   if (fileKey.startsWith("http://") || fileKey.startsWith("https://")) {
     const res = await fetch(fileKey, { cache: "no-store" });
 
     if (!res.ok) {
-      throw new Error(`Nepodarilo sa načítať vzdialený STL súbor (${res.status}).`);
+      throw new Error(`Nepodarilo sa načítať vzdialený súbor (${res.status}).`);
     }
 
     const arr = await res.arrayBuffer();
@@ -174,11 +229,17 @@ async function loadStlBuffer(fileKey: string) {
   }
 
   const stat = fs.statSync(filePath);
+
   if (!stat.isFile()) {
     throw new Error("Invalid file path");
   }
 
   return fs.readFileSync(filePath);
+}
+
+function getExtension(fileNameOrKey: string) {
+  const clean = fileNameOrKey.split("?")[0].toLowerCase();
+  return path.extname(clean);
 }
 
 export async function POST(req: NextRequest) {
@@ -189,7 +250,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing fileKey" }, { status: 400 });
     }
 
-    const buffer = await loadStlBuffer(body.fileKey);
+    const fileName = String(body.fileName ?? path.basename(body.fileKey));
+    const ext = getExtension(fileName || body.fileKey);
+
+    if (ext !== ".stl" && ext !== ".obj") {
+      return NextResponse.json(
+        { error: "Podporované sú iba STL a OBJ súbory." },
+        { status: 400 }
+      );
+    }
+
+    const buffer = await loadModelBuffer(body.fileKey);
 
     let analysis: {
       dimsXmm: number;
@@ -198,7 +269,9 @@ export async function POST(req: NextRequest) {
       volumeCm3: number;
     };
 
-    if (detectAsciiStl(buffer)) {
+    if (ext === ".obj") {
+      analysis = parseObj(buffer.toString("utf8"));
+    } else if (detectAsciiStl(buffer)) {
       analysis = parseAsciiStl(buffer.toString("utf8"));
     } else {
       analysis = parseBinaryStl(buffer);
@@ -208,10 +281,16 @@ export async function POST(req: NextRequest) {
       ok: true,
       analysis,
       fileKey: body.fileKey,
-      fileName: body.fileName ?? path.basename(body.fileKey),
+      fileName,
+      fileType: ext.replace(".", "").toUpperCase(),
+      warning:
+        ext === ".obj"
+          ? "Pri OBJ súboroch odporúčame skontrolovať rozmery modelu, pretože formát nemusí vždy obsahovať správnu mierku."
+          : null,
     });
   } catch (e: any) {
     console.error("Analyze API error:", e);
+
     return NextResponse.json(
       { error: e?.message || "Analyze failed" },
       { status: 500 }
