@@ -11,16 +11,9 @@ function getAdminEmails() {
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
+  // API a systémové routy nechaj bez ochrany proxy
   if (
-    pathname === "/api/stripe/webhook" ||
-    pathname.startsWith("/api/stripe/webhook") ||
-    pathname === "/api/stripe/create-checkout-session" ||
-    pathname.startsWith("/api/auth") ||
-    pathname.startsWith("/api/analyze") ||
-    pathname.startsWith("/api/quote") ||
-    pathname.startsWith("/api/upload") ||
-    pathname.startsWith("/api/blob") ||
-    pathname.startsWith("/api/file") ||
+    pathname.startsWith("/api") ||
     pathname.startsWith("/_next") ||
     pathname === "/favicon.ico" ||
     pathname === "/robots.txt" ||
@@ -34,6 +27,7 @@ export async function proxy(req: NextRequest) {
     secret: process.env.NEXTAUTH_SECRET,
   });
 
+  // ADMIN ochrana iba pre povolené emaily
   if (pathname.startsWith("/admin")) {
     if (!token) {
       const loginUrl = new URL("/prihlasenie", req.url);
@@ -41,7 +35,7 @@ export async function proxy(req: NextRequest) {
       return NextResponse.redirect(loginUrl);
     }
 
-    const userEmail = String(token.email ?? "").toLowerCase();
+    const userEmail = String(token.email ?? "").trim().toLowerCase();
     const adminEmails = getAdminEmails();
 
     if (!userEmail || !adminEmails.includes(userEmail)) {
@@ -51,6 +45,7 @@ export async function proxy(req: NextRequest) {
     return NextResponse.next();
   }
 
+  // Klientská zóna
   if (pathname.startsWith("/ucet")) {
     if (!token) {
       const loginUrl = new URL("/prihlasenie", req.url);
