@@ -24,53 +24,55 @@ export default function Navbar() {
           </div>
         </Link>
 
-        <nav className="hidden items-center gap-6 md:flex">
-          <Link
-            href="/#kalkulator"
-            className="text-sm font-medium text-neutral-700 transition hover:text-neutral-900"
-          >
-            Kalkulátor
-          </Link>
+        <div className="flex items-center gap-8">
+          <nav className="hidden items-center gap-6 md:flex">
+            <Link
+              href="/#kalkulator"
+              className="text-sm font-medium text-neutral-700 transition hover:text-neutral-900"
+            >
+              Kalkulátor
+            </Link>
 
-          <Link
-            href="/#cennik"
-            className="text-sm font-medium text-neutral-700 transition hover:text-neutral-900"
-          >
-            Cenník
-          </Link>
+            <Link
+              href="/#cennik"
+              className="text-sm font-medium text-neutral-700 transition hover:text-neutral-900"
+            >
+              Cenník
+            </Link>
 
-          <Link
-            href="/#faq"
-            className="text-sm font-medium text-neutral-700 transition hover:text-neutral-900"
-          >
-            FAQ
-          </Link>
+            <Link
+              href="/#faq"
+              className="text-sm font-medium text-neutral-700 transition hover:text-neutral-900"
+            >
+              FAQ
+            </Link>
 
-          <Link
-            href="/blog"
-            className="text-sm font-medium text-neutral-700 transition hover:text-neutral-900"
-          >
-            Blog
-          </Link>
-        </nav>
+            <Link
+              href="/blog"
+              className="text-sm font-medium text-neutral-700 transition hover:text-neutral-900"
+            >
+              Blog
+            </Link>
+          </nav>
 
-        <div className="flex items-center gap-4">
-          <a
-            href="https://www.4from.media/?gad_source=1&gad_campaignid=19807682290&gbraid=0AAAAADyxKkmMGj88OWosPHyErFm4ryOiJ"
-            target="_blank"
-            rel="noreferrer"
-            className="hidden opacity-70 transition hover:opacity-100 lg:block"
-          >
-            <Image
-              src="/4from-media.png"
-              alt="4from media"
-              width={110}
-              height={32}
-              className="h-auto w-[110px]"
-            />
-          </a>
+          <div className="flex items-center gap-5">
+            <AccountButton />
 
-          <AccountButton />
+            <a
+              href="https://www.4from.media/?gad_source=1&gad_campaignid=19807682290&gbraid=0AAAAADyxKkmMGj88OWosPHyErFm4ryOiJ"
+              target="_blank"
+              rel="noreferrer"
+              className="hidden opacity-80 transition hover:opacity-100 lg:block"
+            >
+              <Image
+                src="/4from-media.png"
+                alt="4from media"
+                width={150}
+                height={42}
+                className="h-auto w-[150px]"
+              />
+            </a>
+          </div>
         </div>
       </div>
     </header>
