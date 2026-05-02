@@ -52,16 +52,7 @@ export default function MaterialPricing() {
               <thead className="border-b border-neutral-200 bg-neutral-50">
                 <tr className="text-sm font-semibold text-neutral-600">
                   <th className="px-6 py-4">Materiál</th>
-
-                  <th className="px-6 py-4">
-                    <div className="flex flex-col">
-                      <span>Cena/gram</span>
-                      <span className="mt-1 text-[11px] font-normal text-neutral-500">
-                        všetky ceny sú s DPH
-                      </span>
-                    </div>
-                  </th>
-
+                  <th className="px-6 py-4">Cena/gram</th>
                   <th className="px-6 py-4">Hustota</th>
                   <th className="px-6 py-4">Aplikácie</th>
                 </tr>
@@ -76,6 +67,7 @@ export default function MaterialPricing() {
                     <td className="px-6 py-5">
                       <div className="flex items-center gap-3">
                         <span className={`h-3 w-3 rounded-full ${m.dot}`} />
+
                         <div className="font-semibold text-neutral-900">
                           {m.name}
                         </div>
@@ -90,7 +82,9 @@ export default function MaterialPricing() {
                       {m.density}
                     </td>
 
-                    <td className="px-6 py-5 text-neutral-600">{m.use}</td>
+                    <td className="px-6 py-5 text-neutral-600">
+                      {m.use}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -98,8 +92,14 @@ export default function MaterialPricing() {
           </div>
         </div>
 
-        <div className="mt-6 text-sm text-neutral-500">
-          Poznámka: Cena/gram vychádza z ceny rolky (1 kg) nastavenej v kalkulácii.
+        <div className="mt-6 flex flex-col gap-1 text-sm text-neutral-500">
+          <div>
+            Poznámka: Cena/gram vychádza z ceny rolky (1 kg) nastavenej v kalkulácii.
+          </div>
+
+          <div>
+            Všetky uvedené ceny sú vrátane DPH.
+          </div>
         </div>
       </div>
     </section>
