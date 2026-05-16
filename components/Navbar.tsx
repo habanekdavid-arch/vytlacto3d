@@ -51,15 +51,13 @@ export default function Navbar() {
           >
             Blog
           </Link>
+<Link
+  href="/realizacie"
+  className="text-sm font-medium text-neutral-700 transition hover:text-neutral-900"
+>
+  Realizácie
+</Link>
 
-          <a
-            href="https://www.4from.media/?gad_source=1&gad_campaignid=21391373681&gbraid=0AAAAADyxKkl3uOWw6VN6UM8ekC4FAegi_"
-            target="_blank"
-            rel="noreferrer"
-            className="text-sm font-semibold text-neutral-500 transition hover:text-neutral-900"
-          >
-            4from media
-          </a>
         </div>
 
         <div className="flex items-center">
