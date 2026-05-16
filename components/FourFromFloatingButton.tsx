@@ -9,7 +9,7 @@ export default function FourFromFloatingButton() {
       target="_blank"
       rel="noreferrer"
       aria-label="4from media"
-      className="fixed bottom-5 right-5 z-50 hidden rounded-2xl border border-neutral-200 bg-white/90 p-3 shadow-lg backdrop-blur transition hover:-translate-y-1 hover:shadow-xl md:block"
+      className="fixed bottom-5 left-5 z-50 hidden rounded-2xl border border-neutral-200 bg-white/90 p-3 shadow-lg backdrop-blur transition hover:-translate-y-1 hover:shadow-xl md:block"
     >
       <Image
         src="/4from-media.png"
