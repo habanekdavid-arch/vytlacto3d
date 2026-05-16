@@ -17,7 +17,8 @@ model User {
   passwordHash String
   phone        String?
 
-  accountType  String   @default("PERSON") // PERSON alebo COMPANY
+  accountType  String   @default("PERSON")
+  vatPayer     Boolean  @default(false)
 
   companyName  String?
   ico          String?
@@ -65,6 +66,7 @@ model Order {
 
   accountType           String?
   phone                 String?
+  vatPayer     Boolean  @default(false)
 
   companyName           String?
   ico                   String?
