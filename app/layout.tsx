@@ -4,6 +4,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import CookieBanner from "@/components/CookieBanner";
 import Providers from "@/components/Providers";
+import FourFromFloatingButton from "@/components/FourFromFloatingButton";
 
 const baseUrl =
   process.env.NEXT_PUBLIC_BASE_URL || "https://www.vytlacto3d.sk";
@@ -15,6 +16,7 @@ export const metadata = {
     default: "VytlačTo3D – Online konfigurátor 3D tlače",
     template: "%s | VytlačTo3D",
   },
+  
 
   description:
     "Nahrajte STL model, vyberte materiál, kvalitu a parametre tlače. Okamžite vypočítame cenu a doručíme hotový 3D výtlačok priamo k vám.",
@@ -85,6 +87,7 @@ export default function RootLayout({
           <main className="flex-1">{children}</main>
           <Footer />
           <CookieBanner />
+          <FourFromFloatingButton />
         </Providers>
       </body>
     </html>
