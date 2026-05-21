@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
 import { sendOrderPaidEmail } from "@/lib/email";
+import { sendAdminOrderNotificationEmail } from "@/lib/email-admin";
 
 export const runtime = "nodejs";
 
@@ -174,26 +175,40 @@ export async function POST(req: NextRequest) {
         },
         select: {
           id: true,
-          fileName: true,
-          customerEmail: true,
-          paidTotalEur: true,
-          shippingMethod: true,
-          userId: true,
+  fileName: true,
+  customerEmail: true,
+  paidTotalEur: true,
+  shippingMethod: true,
+  phone: true,
+  accountType: true,
+  companyName: true,
+  ico: true,
+  dic: true,
+  icDph: true,
+  contactPerson: true,
+  userId: true,
         },
       });
 
       if (updatedOrder.customerEmail) {
         try {
-          await sendOrderPaidEmail({
-            to: updatedOrder.customerEmail,
-            orderId: updatedOrder.id,
-            fileName: updatedOrder.fileName,
-            totalEur: updatedOrder.paidTotalEur,
-            shippingMethod: updatedOrder.shippingMethod,
-          });
-        } catch (emailError) {
-          console.error("Failed to send order email:", emailError);
-        }
+  await sendAdminOrderNotificationEmail({
+    orderId: updatedOrder.id,
+    fileName: updatedOrder.fileName,
+    customerEmail: updatedOrder.customerEmail,
+    totalEur: updatedOrder.paidTotalEur,
+    shippingMethod: updatedOrder.shippingMethod,
+    phone: updatedOrder.phone,
+    accountType: updatedOrder.accountType,
+    companyName: updatedOrder.companyName,
+    ico: updatedOrder.ico,
+    dic: updatedOrder.dic,
+    icDph: updatedOrder.icDph,
+    contactPerson: updatedOrder.contactPerson,
+  });
+} catch (adminEmailError) {
+  console.error("Failed to send admin order email:", adminEmailError);
+}
       }
 
       console.log("Order marked as PAID:", {
