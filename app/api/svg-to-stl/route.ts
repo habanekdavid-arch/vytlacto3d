@@ -27,7 +27,6 @@ function parseSvgLengthToMm(value: string | null): number | null {
   if (unit === "in") return number * 25.4;
   if (unit === "pt") return number * 0.352777778;
 
-  // SVG/CSS default: 96 px = 1 inch
   return (number / 96) * 25.4;
 }
 
@@ -56,7 +55,6 @@ function getSvgScaleToMm(svgText: string) {
     }
   }
 
-  // fallback: 1 SVG unit = 1 mm
   return 1;
 }
 
@@ -97,15 +95,12 @@ function geometryToAsciiStl(geometry: THREE.BufferGeometry, name: string) {
   return stl;
 }
 
-function normalizeGeometryToGround(geometry: THREE.BufferGeometry) {
+function placeGeometryOnGround(geometry: THREE.BufferGeometry) {
   geometry.computeBoundingBox();
-
   if (!geometry.boundingBox) return;
 
   const box = geometry.boundingBox;
 
-  // Položenie modelu na podložku:
-  // X a Y začínajú od 0, Z je hrúbka modelu.
   geometry.translate(-box.min.x, -box.min.y, -box.min.z);
 
   geometry.computeBoundingBox();
@@ -159,19 +154,21 @@ export async function POST(req: NextRequest) {
         });
 
         /**
-         * SVG má Y os smerom dole.
-         * Preto Y otočíme cez záporné scaleToMm.
-         * Tým sa odstráni zrkadlenie textov/loga.
-         *
-         * Z ostáva hrúbka v mm.
+         * Zachová pôvodný tvar SVG.
+         * Nezrkadlíme žiadnu os.
          */
-        geometry.scale(scaleToMm, -scaleToMm, 1);
+        geometry.scale(scaleToMm, scaleToMm, 1);
 
         /**
-         * Po otočení Y osi posunieme geometriu späť na kladné súradnice
-         * a položíme ju na Z = 0.
+         * Len otočíme hotový model o 180 stupňov okolo Z osi.
+         * Tým sa model otočí, ale nezmení sa jeho tvar.
          */
-        normalizeGeometryToGround(geometry);
+        geometry.rotateZ(Math.PI);
+
+        /**
+         * Položíme model na podložku a posunieme do kladných súradníc.
+         */
+        placeGeometryOnGround(geometry);
 
         stlParts.push(geometryToAsciiStl(geometry, file.name));
 
