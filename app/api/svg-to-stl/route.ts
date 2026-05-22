@@ -40,10 +40,7 @@ function getSvgScaleToMm(svgText: string) {
   const heightMm = parseSvgLengthToMm(heightMatch?.[1] ?? null);
 
   if (viewBoxMatch && (widthMm || heightMm)) {
-    const parts = viewBoxMatch[1]
-      .trim()
-      .split(/[\s,]+/)
-      .map(Number);
+    const parts = viewBoxMatch[1].trim().split(/[\s,]+/).map(Number);
 
     if (parts.length === 4) {
       const viewBoxWidth = parts[2];
@@ -100,6 +97,21 @@ function geometryToAsciiStl(geometry: THREE.BufferGeometry, name: string) {
   return stl;
 }
 
+function normalizeGeometryToGround(geometry: THREE.BufferGeometry) {
+  geometry.computeBoundingBox();
+
+  if (!geometry.boundingBox) return;
+
+  const box = geometry.boundingBox;
+
+  // Položenie modelu na podložku:
+  // X a Y začínajú od 0, Z je hrúbka modelu.
+  geometry.translate(-box.min.x, -box.min.y, -box.min.z);
+
+  geometry.computeBoundingBox();
+  geometry.computeVertexNormals();
+}
+
 export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
@@ -130,12 +142,15 @@ export async function POST(req: NextRequest) {
     const loader = new SVGLoader();
     const svgData = loader.parse(svgText);
 
-    const geometries: THREE.BufferGeometry[] = [];
+    const stlParts: string[] = [];
+    let createdShapes = 0;
 
     for (const path of svgData.paths) {
       const shapes = SVGLoader.createShapes(path);
 
       for (const shape of shapes) {
+        createdShapes++;
+
         const geometry = new THREE.ExtrudeGeometry(shape, {
           depth: thicknessMm,
           bevelEnabled: false,
@@ -143,16 +158,28 @@ export async function POST(req: NextRequest) {
           steps: 1,
         });
 
-        geometry.scale(scaleToMm, scaleToMm, 1);
+        /**
+         * SVG má Y os smerom dole.
+         * Preto Y otočíme cez záporné scaleToMm.
+         * Tým sa odstráni zrkadlenie textov/loga.
+         *
+         * Z ostáva hrúbka v mm.
+         */
+        geometry.scale(scaleToMm, -scaleToMm, 1);
 
-        geometry.computeBoundingBox();
-        geometry.computeVertexNormals();
+        /**
+         * Po otočení Y osi posunieme geometriu späť na kladné súradnice
+         * a položíme ju na Z = 0.
+         */
+        normalizeGeometryToGround(geometry);
 
-        geometries.push(geometry);
+        stlParts.push(geometryToAsciiStl(geometry, file.name));
+
+        geometry.dispose();
       }
     }
 
-    if (geometries.length === 0) {
+    if (createdShapes === 0 || stlParts.length === 0) {
       return NextResponse.json(
         {
           error:
@@ -162,33 +189,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const group = new THREE.Group();
-
-    for (const geometry of geometries) {
-      group.add(new THREE.Mesh(geometry));
-    }
-
-    const box = new THREE.Box3().setFromObject(group);
-
-    const allStlParts: string[] = [];
-
-    group.traverse((child) => {
-      if (child instanceof THREE.Mesh) {
-        const geometry = child.geometry.clone();
-
-        geometry.translate(-box.min.x, -box.min.y, -box.min.z);
-
-        allStlParts.push(geometryToAsciiStl(geometry, file.name));
-
-        geometry.dispose();
-      }
-    });
-
-    for (const geometry of geometries) {
-      geometry.dispose();
-    }
-
-    const stlText = allStlParts.join("\n");
+    const stlText = stlParts.join("\n");
     const outputFileName = file.name.replace(/\.svg$/i, ".stl");
 
     return new NextResponse(stlText, {
