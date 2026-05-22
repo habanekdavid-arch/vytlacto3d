@@ -5,7 +5,7 @@ import AccountButton from "@/components/AccountButton";
 
 export default function Navbar() {
   return (
-    <header className="sticky top-0 z-50 border-b border-neutral-200 bg-white/90 backdrop-blur">
+    <header className="sticky top-0 z-50 bg-white/90 shadow-[0_8px_30px_rgba(0,0,0,0.04)] backdrop-blur">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
         {/* LEFT */}
         <Link href="/" className="flex items-center gap-3">
