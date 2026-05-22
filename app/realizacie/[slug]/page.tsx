@@ -24,14 +24,15 @@ export async function generateMetadata({
   }
 
   return {
-    title: `${project.title} | Realizácie VytlačTo3D`,
+  title: `${project.title} | Realizácie VytlačTo3D`,
+  description: project.description,
+  keywords: project.seoKeywords,
+  openGraph: {
+    title: project.title,
     description: project.description,
-    openGraph: {
-      title: project.title,
-      description: project.description,
-      images: [project.image],
-    },
-  };
+    images: [project.image],
+  },
+};
 }
 
 export default async function RealizationDetailPage({
