@@ -95,18 +95,6 @@ function geometryToAsciiStl(geometry: THREE.BufferGeometry, name: string) {
   return stl;
 }
 
-function placeGeometryOnGround(geometry: THREE.BufferGeometry) {
-  geometry.computeBoundingBox();
-  if (!geometry.boundingBox) return;
-
-  const box = geometry.boundingBox;
-
-  geometry.translate(-box.min.x, -box.min.y, -box.min.z);
-
-  geometry.computeBoundingBox();
-  geometry.computeVertexNormals();
-}
-
 export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
@@ -137,15 +125,12 @@ export async function POST(req: NextRequest) {
     const loader = new SVGLoader();
     const svgData = loader.parse(svgText);
 
-    const stlParts: string[] = [];
-    let createdShapes = 0;
+    const geometries: THREE.BufferGeometry[] = [];
 
     for (const path of svgData.paths) {
       const shapes = SVGLoader.createShapes(path);
 
       for (const shape of shapes) {
-        createdShapes++;
-
         const geometry = new THREE.ExtrudeGeometry(shape, {
           depth: thicknessMm,
           bevelEnabled: false,
@@ -153,30 +138,17 @@ export async function POST(req: NextRequest) {
           steps: 1,
         });
 
-        /**
-         * Zachová pôvodný tvar SVG.
-         * Nezrkadlíme žiadnu os.
-         */
+        // Zachová pôvodný tvar aj pozíciu SVG.
+        // Žiadne zrkadlenie, žiadna rotácia.
         geometry.scale(scaleToMm, scaleToMm, 1);
+        geometry.computeBoundingBox();
+        geometry.computeVertexNormals();
 
-        /**
-         * Len otočíme hotový model o 180 stupňov okolo Z osi.
-         * Tým sa model otočí, ale nezmení sa jeho tvar.
-         */
-        geometry.rotateZ(Math.PI);
-
-        /**
-         * Položíme model na podložku a posunieme do kladných súradníc.
-         */
-        placeGeometryOnGround(geometry);
-
-        stlParts.push(geometryToAsciiStl(geometry, file.name));
-
-        geometry.dispose();
+        geometries.push(geometry);
       }
     }
 
-    if (createdShapes === 0 || stlParts.length === 0) {
+    if (geometries.length === 0) {
       return NextResponse.json(
         {
           error:
@@ -184,6 +156,29 @@ export async function POST(req: NextRequest) {
         },
         { status: 400 }
       );
+    }
+
+    const globalBox = new THREE.Box3();
+
+    for (const geometry of geometries) {
+      geometry.computeBoundingBox();
+
+      if (geometry.boundingBox) {
+        globalBox.union(geometry.boundingBox);
+      }
+    }
+
+    const stlParts: string[] = [];
+
+    for (const geometry of geometries) {
+      // Všetky prvky posúvame rovnako podľa globálneho boxu.
+      // Tým sa nerozhádžu pozície SVG prvkov.
+      geometry.translate(-globalBox.min.x, -globalBox.min.y, -globalBox.min.z);
+      geometry.computeBoundingBox();
+      geometry.computeVertexNormals();
+
+      stlParts.push(geometryToAsciiStl(geometry, file.name));
+      geometry.dispose();
     }
 
     const stlText = stlParts.join("\n");
