@@ -5,6 +5,7 @@ import Footer from "@/components/Footer";
 import CookieBanner from "@/components/CookieBanner";
 import Providers from "@/components/Providers";
 import FourFromFloatingButton from "@/components/FourFromFloatingButton";
+import PromoTipPopup from "@/components/PromoTipPopup";
 
 const baseUrl =
   process.env.NEXT_PUBLIC_BASE_URL || "https://www.vytlacto3d.sk";
@@ -88,6 +89,7 @@ export default function RootLayout({
           <Footer />
           <CookieBanner />
           <FourFromFloatingButton />
+          <PromoTipPopup />
         </Providers>
       </body>
     </html>
