@@ -11,6 +11,58 @@ function safeName(name: string) {
   return name.replace(/[^a-z0-9-_]/gi, "_");
 }
 
+function parseSvgLengthToMm(value: string | null): number | null {
+  if (!value) return null;
+
+  const match = value.trim().match(/^([\d.]+)\s*(mm|cm|in|px|pt)?$/i);
+  if (!match) return null;
+
+  const number = Number(match[1]);
+  const unit = (match[2] || "px").toLowerCase();
+
+  if (!Number.isFinite(number)) return null;
+
+  if (unit === "mm") return number;
+  if (unit === "cm") return number * 10;
+  if (unit === "in") return number * 25.4;
+  if (unit === "pt") return number * 0.352777778;
+
+  // SVG/CSS default: 96 px = 1 inch
+  return (number / 96) * 25.4;
+}
+
+function getSvgScaleToMm(svgText: string) {
+  const widthMatch = svgText.match(/<svg[^>]*\swidth=["']([^"']+)["']/i);
+  const heightMatch = svgText.match(/<svg[^>]*\sheight=["']([^"']+)["']/i);
+  const viewBoxMatch = svgText.match(/<svg[^>]*\sviewBox=["']([^"']+)["']/i);
+
+  const widthMm = parseSvgLengthToMm(widthMatch?.[1] ?? null);
+  const heightMm = parseSvgLengthToMm(heightMatch?.[1] ?? null);
+
+  if (viewBoxMatch && (widthMm || heightMm)) {
+    const parts = viewBoxMatch[1]
+      .trim()
+      .split(/[\s,]+/)
+      .map(Number);
+
+    if (parts.length === 4) {
+      const viewBoxWidth = parts[2];
+      const viewBoxHeight = parts[3];
+
+      if (widthMm && Number.isFinite(viewBoxWidth) && viewBoxWidth > 0) {
+        return widthMm / viewBoxWidth;
+      }
+
+      if (heightMm && Number.isFinite(viewBoxHeight) && viewBoxHeight > 0) {
+        return heightMm / viewBoxHeight;
+      }
+    }
+  }
+
+  // fallback: 1 SVG unit = 1 mm
+  return 1;
+}
+
 function triangleNormal(a: THREE.Vector3, b: THREE.Vector3, c: THREE.Vector3) {
   const cb = new THREE.Vector3().subVectors(c, b);
   const ab = new THREE.Vector3().subVectors(a, b);
@@ -73,6 +125,7 @@ export async function POST(req: NextRequest) {
     }
 
     const svgText = await file.text();
+    const scaleToMm = getSvgScaleToMm(svgText);
 
     const loader = new SVGLoader();
     const svgData = loader.parse(svgText);
@@ -86,9 +139,11 @@ export async function POST(req: NextRequest) {
         const geometry = new THREE.ExtrudeGeometry(shape, {
           depth: thicknessMm,
           bevelEnabled: false,
-          curveSegments: 12,
+          curveSegments: 16,
           steps: 1,
         });
+
+        geometry.scale(scaleToMm, scaleToMm, 1);
 
         geometry.computeBoundingBox();
         geometry.computeVertexNormals();
@@ -110,13 +165,10 @@ export async function POST(req: NextRequest) {
     const group = new THREE.Group();
 
     for (const geometry of geometries) {
-      const mesh = new THREE.Mesh(geometry);
-      group.add(mesh);
+      group.add(new THREE.Mesh(geometry));
     }
 
     const box = new THREE.Box3().setFromObject(group);
-    const center = new THREE.Vector3();
-    box.getCenter(center);
 
     const allStlParts: string[] = [];
 
@@ -124,8 +176,7 @@ export async function POST(req: NextRequest) {
       if (child instanceof THREE.Mesh) {
         const geometry = child.geometry.clone();
 
-        geometry.translate(-center.x, -box.min.y, -center.z);
-        geometry.rotateX(-Math.PI / 2);
+        geometry.translate(-box.min.x, -box.min.y, -box.min.z);
 
         allStlParts.push(geometryToAsciiStl(geometry, file.name));
 
@@ -138,7 +189,6 @@ export async function POST(req: NextRequest) {
     }
 
     const stlText = allStlParts.join("\n");
-
     const outputFileName = file.name.replace(/\.svg$/i, ".stl");
 
     return new NextResponse(stlText, {
