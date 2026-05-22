@@ -104,6 +104,8 @@ export async function POST(req: NextRequest) {
         id: true,
         email: true,
         name: true,
+        accountType: true,
+        companyName: true,
       },
     });
 
@@ -111,6 +113,8 @@ export async function POST(req: NextRequest) {
       await sendWelcomeEmail({
         to: user.email,
         name: user.name,
+        accountType: user.accountType,
+        companyName: user.companyName,
       });
     } catch (emailError) {
       console.error("Welcome email failed:", emailError);
