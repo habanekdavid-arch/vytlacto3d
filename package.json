@@ -21,7 +21,8 @@
     "resend": "^6.9.3",
     "stripe": "^20.4.0",
     "three": "^0.182.0",
-    "three-stdlib": "^2.36.1"
+    "three-stdlib": "^2.36.1",
+    "xmldom": "^0.6.0"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
@@ -29,6 +30,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/three": "^0.182.0",
+    "@types/xmldom": "^0.1.34",
     "autoprefixer": "^10.4.20",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",

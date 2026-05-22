@@ -25,18 +25,58 @@ export default function UploadBox({
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [dragging, setDragging] = useState(false);
   const [error, setError] = useState<string>("");
+  const [svgThicknessMm, setSvgThicknessMm] = useState(10);
 
-  async function handleFile(file: File) {
+  async function convertSvgToStl(file: File) {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("thicknessMm", String(svgThicknessMm));
+
+    const res = await fetch("/api/svg-to-stl", {
+      method: "POST",
+      body: formData,
+    });
+
+    if (!res.ok) {
+      const text = await res.text();
+
+      let data: any = null;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        data = { error: text };
+      }
+
+      throw new Error(data?.error || "SVG konverzia zlyhala.");
+    }
+
+    const blob = await res.blob();
+    const stlFileName = file.name.replace(/\.svg$/i, ".stl");
+
+    return new File([blob], stlFileName, {
+      type: "model/stl",
+    });
+  }
+
+  async function handleFile(originalFile: File) {
     setError("");
     onUploadingChange?.(true);
 
     try {
-      const fileName = file.name.toLowerCase();
-      const isAllowed = fileName.endsWith(".stl") || fileName.endsWith(".obj");
+      const originalFileName = originalFile.name.toLowerCase();
+
+      const isAllowed =
+        originalFileName.endsWith(".stl") ||
+        originalFileName.endsWith(".obj") ||
+        originalFileName.endsWith(".svg");
 
       if (!isAllowed) {
-        throw new Error("Podporujeme len STL (.stl) a OBJ (.obj) súbory.");
+        throw new Error("Podporujeme len STL, OBJ a SVG súbory.");
       }
+
+      const file = originalFileName.endsWith(".svg")
+        ? await convertSvgToStl(originalFile)
+        : originalFile;
 
       const blob = await upload(file.name, file, {
         access: "public",
@@ -148,12 +188,12 @@ export default function UploadBox({
         </div>
 
         <h3 className="mt-4 text-xl font-extrabold text-neutral-900">
-          Nahrajte STL alebo OBJ súbor
+          Nahrajte STL, OBJ alebo SVG súbor
         </h3>
 
         <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-neutral-600">
-          Pretiahnite súbor sem alebo kliknite a vyberte STL/OBJ model z počítača.
-          Po nahratí automaticky prebehne analýza modelu.
+          SVG súbor automaticky prevedieme na 3D model s nastavenou hrúbkou.
+          STL a OBJ súbory sa spracujú priamo.
         </p>
 
         <div className="mt-5 inline-flex rounded-2xl bg-[#FFAE00] px-5 py-3 text-sm font-semibold text-black shadow-sm">
@@ -161,14 +201,40 @@ export default function UploadBox({
         </div>
 
         <p className="mt-3 text-xs text-neutral-500">
-          Podporované formáty: .STL, .OBJ
+          Podporované formáty: .STL, .OBJ, .SVG
         </p>
+      </div>
+
+      <div className="mt-4 rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
+        <label className="block">
+          <div className="text-sm font-semibold text-neutral-800">
+            Hrúbka SVG modelu
+          </div>
+
+          <div className="mt-1 text-xs text-neutral-500">
+            Používa sa iba pri SVG súboroch. Odporúčaná hodnota je 10 mm.
+          </div>
+
+          <div className="mt-3 flex items-center gap-3">
+            <input
+              type="number"
+              min={1}
+              max={100}
+              step={1}
+              value={svgThicknessMm}
+              onChange={(e) => setSvgThicknessMm(Number(e.target.value || 10))}
+              className="w-32 rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm outline-none focus:border-[#FFAE00]"
+            />
+
+            <span className="text-sm text-neutral-600">mm</span>
+          </div>
+        </label>
       </div>
 
       <input
         ref={inputRef}
         type="file"
-        accept=".stl,.obj"
+        accept=".stl,.obj,.svg"
         className="hidden"
         onChange={(e) => {
           const file = e.target.files?.[0];
