@@ -95,6 +95,20 @@ function geometryToAsciiStl(geometry: THREE.BufferGeometry, name: string) {
   return stl;
 }
 
+function getGlobalBox(geometries: THREE.BufferGeometry[]) {
+  const globalBox = new THREE.Box3();
+
+  for (const geometry of geometries) {
+    geometry.computeBoundingBox();
+
+    if (geometry.boundingBox) {
+      globalBox.union(geometry.boundingBox);
+    }
+  }
+
+  return globalBox;
+}
+
 export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
@@ -138,8 +152,6 @@ export async function POST(req: NextRequest) {
           steps: 1,
         });
 
-        // Zachová pôvodný tvar aj pozíciu SVG.
-        // Žiadne zrkadlenie, žiadna rotácia.
         geometry.scale(scaleToMm, scaleToMm, 1);
         geometry.computeBoundingBox();
         geometry.computeVertexNormals();
@@ -158,22 +170,39 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const globalBox = new THREE.Box3();
-
-    for (const geometry of geometries) {
-      geometry.computeBoundingBox();
-
-      if (geometry.boundingBox) {
-        globalBox.union(geometry.boundingBox);
-      }
-    }
+    const globalBox = getGlobalBox(geometries);
+    const centerX = (globalBox.min.x + globalBox.max.x) / 2;
 
     const stlParts: string[] = [];
 
     for (const geometry of geometries) {
-      // Všetky prvky posúvame rovnako podľa globálneho boxu.
-      // Tým sa nerozhádžu pozície SVG prvkov.
-      geometry.translate(-globalBox.min.x, -globalBox.min.y, -globalBox.min.z);
+      /**
+       * Odstránenie zrkadlenia bez rozhádzania SVG:
+       * - všetky tvary sa najprv preklopia podľa spoločného stredu celého SVG,
+       * - nepoužíva sa lokálny bounding box jednotlivého tvaru,
+       * - preto ostane celé logo/model pohromade.
+       */
+      geometry.translate(-centerX, 0, 0);
+      geometry.scale(-1, 1, 1);
+      geometry.translate(centerX, 0, 0);
+
+      geometry.computeBoundingBox();
+      geometry.computeVertexNormals();
+    }
+
+    const fixedGlobalBox = getGlobalBox(geometries);
+
+    for (const geometry of geometries) {
+      /**
+       * Spoločné položenie celého modelu do kladných súradníc.
+       * Všetky časti sa posúvajú rovnakou hodnotou, takže ostanú pokope.
+       */
+      geometry.translate(
+        -fixedGlobalBox.min.x,
+        -fixedGlobalBox.min.y,
+        -fixedGlobalBox.min.z
+      );
+
       geometry.computeBoundingBox();
       geometry.computeVertexNormals();
 
