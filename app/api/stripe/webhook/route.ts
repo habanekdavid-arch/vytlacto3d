@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
+
 import { prisma } from "@/lib/prisma";
 import { sendOrderPaidEmail } from "@/lib/email";
 import { sendAdminOrderNotificationEmail } from "@/lib/email-admin";
@@ -11,38 +12,16 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
 });
 
 function getShippingMethod(session: Stripe.Checkout.Session) {
-  const shippingRate = session.shipping_cost?.shipping_rate;
+  const shippingRate = session.shipping_cost?.shipping_rate as any;
 
   if (!shippingRate) return null;
+  if (typeof shippingRate === "string") return shippingRate;
 
-  if (typeof shippingRate === "string") {
-    return shippingRate;
-  }
-
-  if ("display_name" in shippingRate && shippingRate.display_name) {
-    return shippingRate.display_name;
-  }
-
-  return shippingRate.id ?? null;
+  return shippingRate.display_name ?? shippingRate.id ?? null;
 }
 
 function getShippingAddress(session: Stripe.Checkout.Session) {
-  const sessionWithShipping = session as Stripe.Checkout.Session & {
-    shipping_details?: {
-      name?: string | null;
-      phone?: string | null;
-      address?: {
-        line1?: string | null;
-        line2?: string | null;
-        city?: string | null;
-        postal_code?: string | null;
-        state?: string | null;
-        country?: string | null;
-      } | null;
-    } | null;
-  };
-
-  const shipping = sessionWithShipping.shipping_details;
+  const shipping = (session as any).shipping_details;
 
   if (!shipping?.address) return null;
 
@@ -59,6 +38,24 @@ function getShippingAddress(session: Stripe.Checkout.Session) {
   };
 }
 
+function getBillingAddress(session: Stripe.Checkout.Session) {
+  const customer = session.customer_details;
+
+  if (!customer?.address) return null;
+
+  return {
+    name: customer.name ?? null,
+    email: customer.email ?? null,
+    phone: customer.phone ?? null,
+    line1: customer.address.line1 ?? null,
+    line2: customer.address.line2 ?? null,
+    city: customer.address.city ?? null,
+    postal_code: customer.address.postal_code ?? null,
+    state: customer.address.state ?? null,
+    country: customer.address.country ?? null,
+  };
+}
+
 function getShippingCost(session: Stripe.Checkout.Session) {
   if (!session.shipping_cost) return null;
 
@@ -66,6 +63,14 @@ function getShippingCost(session: Stripe.Checkout.Session) {
     amount: session.shipping_cost.amount_total ?? 0,
     currency: session.currency ?? "eur",
   };
+}
+
+function getCustomerPhone(session: Stripe.Checkout.Session) {
+  return (
+    session.customer_details?.phone ??
+    (session as any).shipping_details?.phone ??
+    null
+  );
 }
 
 export async function POST(req: NextRequest) {
@@ -85,6 +90,7 @@ export async function POST(req: NextRequest) {
     }
 
     const signature = req.headers.get("stripe-signature");
+
     if (!signature) {
       return NextResponse.json(
         { error: "Missing stripe-signature header" },
@@ -104,6 +110,7 @@ export async function POST(req: NextRequest) {
       );
     } catch (err: any) {
       console.error("Webhook signature verification failed:", err?.message);
+
       return NextResponse.json(
         { error: `Webhook Error: ${err?.message}` },
         { status: 400 }
@@ -114,9 +121,7 @@ export async function POST(req: NextRequest) {
       const session = event.data.object as Stripe.Checkout.Session;
 
       const orderId =
-        session.metadata?.orderId ??
-        session.client_reference_id ??
-        null;
+        session.metadata?.orderId ?? session.client_reference_id ?? null;
 
       if (!orderId) {
         console.error("Webhook missing orderId in metadata");
@@ -132,94 +137,158 @@ export async function POST(req: NextRequest) {
           ? fullSession.amount_total / 100
           : null;
 
-      const shippingMethod = getShippingMethod(fullSession);
-      const shippingAddress = getShippingAddress(fullSession);
-      const shippingCost = getShippingCost(fullSession);
-
       const customerEmail =
         fullSession.customer_details?.email ??
         fullSession.customer_email ??
         session.metadata?.customerEmail ??
         null;
 
+      const customerPhone = getCustomerPhone(fullSession);
+      const shippingMethod = getShippingMethod(fullSession);
+      const shippingAddress = getShippingAddress(fullSession);
+      const billingAddress = getBillingAddress(fullSession);
+      const shippingCost = getShippingCost(fullSession);
+
       const matchedUser = customerEmail
         ? await prisma.user.findUnique({
             where: { email: customerEmail },
-            select: { id: true },
+            select: {
+              id: true,
+              accountType: true,
+              phone: true,
+              companyName: true,
+              ico: true,
+              dic: true,
+              icDph: true,
+              contactPerson: true,
+              billingStreet: true,
+              billingCity: true,
+              billingZip: true,
+              billingCountry: true,
+              shippingName: true,
+              shippingContact: true,
+              shippingStreet: true,
+              shippingCity: true,
+              shippingZip: true,
+              shippingCountry: true,
+            },
           })
         : null;
 
-      console.log("WEBHOOK SESSION DATA:", {
-        orderId,
-        customerEmail,
-        matchedUserId: matchedUser?.id ?? null,
-        shippingMethod,
-        amountTotal,
-      });
+      const accountBillingAddress = matchedUser
+        ? {
+            street: matchedUser.billingStreet ?? null,
+            city: matchedUser.billingCity ?? null,
+            zip: matchedUser.billingZip ?? null,
+            country: matchedUser.billingCountry ?? null,
+          }
+        : null;
+
+      const accountDeliveryAddress = matchedUser
+        ? {
+            name: matchedUser.shippingName ?? null,
+            contact: matchedUser.shippingContact ?? null,
+            street: matchedUser.shippingStreet ?? null,
+            city: matchedUser.shippingCity ?? null,
+            zip: matchedUser.shippingZip ?? null,
+            country: matchedUser.shippingCountry ?? null,
+          }
+        : null;
 
       const updatedOrder = await prisma.order.update({
         where: { id: orderId },
         data: {
           status: "PAID",
           customerEmail,
+          phone: customerPhone ?? matchedUser?.phone ?? null,
           paidTotalEur: amountTotal,
+
           stripeSessionId: fullSession.id,
           stripePaymentIntentId:
             typeof fullSession.payment_intent === "string"
               ? fullSession.payment_intent
               : fullSession.payment_intent?.id ?? null,
+
           shippingMethod,
           shippingAddress: shippingAddress as any,
           shippingCost: shippingCost as any,
+
+          billingAddress: (billingAddress ?? accountBillingAddress) as any,
+          deliveryAddress: accountDeliveryAddress as any,
+
+          accountType: matchedUser?.accountType ?? null,
+          companyName: matchedUser?.companyName ?? null,
+          ico: matchedUser?.ico ?? null,
+          dic: matchedUser?.dic ?? null,
+          icDph: matchedUser?.icDph ?? null,
+          contactPerson: matchedUser?.contactPerson ?? null,
+
           userId: matchedUser?.id ?? undefined,
         },
         select: {
           id: true,
-  fileName: true,
-  customerEmail: true,
-  paidTotalEur: true,
-  shippingMethod: true,
-  phone: true,
-  accountType: true,
-  companyName: true,
-  ico: true,
-  dic: true,
-  icDph: true,
-  contactPerson: true,
-  userId: true,
+          fileName: true,
+          customerEmail: true,
+          paidTotalEur: true,
+          shippingMethod: true,
+          phone: true,
+          accountType: true,
+          companyName: true,
+          ico: true,
+          dic: true,
+          icDph: true,
+          contactPerson: true,
+          userId: true,
         },
       });
 
       if (updatedOrder.customerEmail) {
         try {
-  await sendAdminOrderNotificationEmail({
-    orderId: updatedOrder.id,
-    fileName: updatedOrder.fileName,
-    customerEmail: updatedOrder.customerEmail,
-    totalEur: updatedOrder.paidTotalEur,
-    shippingMethod: updatedOrder.shippingMethod,
-    phone: updatedOrder.phone,
-    accountType: updatedOrder.accountType,
-    companyName: updatedOrder.companyName,
-    ico: updatedOrder.ico,
-    dic: updatedOrder.dic,
-    icDph: updatedOrder.icDph,
-    contactPerson: updatedOrder.contactPerson,
-  });
-} catch (adminEmailError) {
-  console.error("Failed to send admin order email:", adminEmailError);
-}
+          await sendOrderPaidEmail({
+            to: updatedOrder.customerEmail,
+            orderId: updatedOrder.id,
+            fileName: updatedOrder.fileName,
+            totalEur: updatedOrder.paidTotalEur,
+            shippingMethod: updatedOrder.shippingMethod,
+          });
+        } catch (customerEmailError) {
+          console.error(
+            "Failed to send customer order email:",
+            customerEmailError
+          );
+        }
+      }
+
+      try {
+        await sendAdminOrderNotificationEmail({
+          orderId: updatedOrder.id,
+          fileName: updatedOrder.fileName,
+          customerEmail: updatedOrder.customerEmail,
+          totalEur: updatedOrder.paidTotalEur,
+          shippingMethod: updatedOrder.shippingMethod,
+          phone: updatedOrder.phone,
+          accountType: updatedOrder.accountType,
+          companyName: updatedOrder.companyName,
+          ico: updatedOrder.ico,
+          dic: updatedOrder.dic,
+          icDph: updatedOrder.icDph,
+          contactPerson: updatedOrder.contactPerson,
+        });
+      } catch (adminEmailError) {
+        console.error("Failed to send admin order email:", adminEmailError);
       }
 
       console.log("Order marked as PAID:", {
         orderId,
         userId: updatedOrder.userId,
+        customerEmail: updatedOrder.customerEmail,
       });
     }
 
     return NextResponse.json({ received: true });
   } catch (e: any) {
     console.error("Stripe webhook error:", e);
+
     return NextResponse.json(
       { error: e?.message || "Webhook failed" },
       { status: 500 }
