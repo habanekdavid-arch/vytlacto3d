@@ -49,18 +49,15 @@ export async function POST(req: NextRequest) {
             email: true,
             phone: true,
             accountType: true,
-
             companyName: true,
             ico: true,
             dic: true,
             icDph: true,
             contactPerson: true,
-
             billingStreet: true,
             billingCity: true,
             billingZip: true,
             billingCountry: true,
-
             shippingName: true,
             shippingContact: true,
             shippingStreet: true,
@@ -74,17 +71,11 @@ export async function POST(req: NextRequest) {
     const body = await req.json().catch(() => null);
 
     if (!body?.uploaded?.fileKey || !body?.uploaded?.fileName) {
-      return NextResponse.json(
-        { error: "Missing uploaded data" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Missing uploaded data" }, { status: 400 });
     }
 
     if (!body?.uploaded?.analysis?.volumeCm3) {
-      return NextResponse.json(
-        { error: "Missing analysis.volumeCm3" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Missing analysis.volumeCm3" }, { status: 400 });
     }
 
     if (!body?.config?.material || !body?.config?.quality) {
@@ -99,31 +90,22 @@ export async function POST(req: NextRequest) {
     const scaledVolumeCm3 = rawVolumeCm3 * Math.pow(scaleFactor, 3);
 
     if (!Number.isFinite(rawVolumeCm3) || rawVolumeCm3 <= 0) {
-      return NextResponse.json(
-        { error: "Invalid volumeCm3" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Invalid volumeCm3" }, { status: 400 });
     }
 
     if (!Number.isFinite(quantity) || quantity < 1) {
-      return NextResponse.json(
-        { error: "Quantity must be >= 1" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Quantity must be >= 1" }, { status: 400 });
     }
 
-    if (!Number.isFinite(infillPct) || infillPct < 0 || infillPct > 100) {
+    if (!Number.isFinite(infillPct) || infillPct < 5 || infillPct > 50) {
       return NextResponse.json(
-        { error: "Invalid infillPct" },
+        { error: "Invalid infillPct. Allowed range is 5–50." },
         { status: 400 }
       );
     }
 
     if (!Number.isFinite(scalePct) || scalePct < 10 || scalePct > 200) {
-      return NextResponse.json(
-        { error: "Invalid scalePct" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Invalid scalePct" }, { status: 400 });
     }
 
     const pricing = quote({
@@ -137,44 +119,35 @@ export async function POST(req: NextRequest) {
     const order = await prisma.order.create({
       data: {
         status: "PENDING",
-
         fileKey: body.uploaded.fileKey,
         fileName: body.uploaded.fileName,
-
         analysis: {
           ...body.uploaded.analysis,
           originalVolumeCm3: rawVolumeCm3,
           scaledVolumeCm3,
           scalePct,
         },
-
         config: {
           ...body.config,
           infillPct,
           scalePct,
         },
-
         pricing: pricing as any,
-
         userId,
         customerEmail: sessionEmail ?? dbUser?.email ?? null,
-
         accountType: dbUser?.accountType ?? null,
         phone: dbUser?.phone ?? null,
-
         companyName: dbUser?.companyName ?? null,
         ico: dbUser?.ico ?? null,
         dic: dbUser?.dic ?? null,
         icDph: dbUser?.icDph ?? null,
         contactPerson: dbUser?.contactPerson ?? null,
-
         billingAddress: {
           street: dbUser?.billingStreet ?? null,
           city: dbUser?.billingCity ?? null,
           zip: dbUser?.billingZip ?? null,
           country: dbUser?.billingCountry ?? null,
         },
-
         deliveryAddress: {
           name: dbUser?.shippingName ?? null,
           contact: dbUser?.shippingContact ?? null,
@@ -187,76 +160,35 @@ export async function POST(req: NextRequest) {
       select: { id: true },
     });
 
-    console.log("ORDER CREATED BEFORE CHECKOUT:", {
-      orderId: order.id,
-      userId,
-      sessionEmail,
-      pricingTotalWithoutVat: pricing.total,
-      accountType: dbUser?.accountType ?? null,
-      companyName: dbUser?.companyName ?? null,
-    });
-
     const baseUrl = getBaseUrl(req);
     const totalWithVat = addVat(pricing.total);
     const itemAmountCents = Math.round(totalWithVat * 100);
 
-    console.log("CHECKOUT PRICE DEBUG:", {
-      orderId: order.id,
-      totalWithoutVat: pricing.total,
-      totalWithVat,
-      itemAmountCents,
-      quantity,
-      scalePct,
-      infillPct,
-    });
-
     const stripeSession = await stripe.checkout.sessions.create({
       mode: "payment",
       client_reference_id: order.id,
-
       billing_address_collection: "required",
-
-      phone_number_collection: {
-        enabled: true,
-      },
-
+      phone_number_collection: { enabled: true },
       shipping_address_collection: {
         allowed_countries: ["SK", "CZ"],
       },
-
       shipping_options: [
         {
           shipping_rate_data: {
             display_name: "Packeta / Zásielkovňa",
             type: "fixed_amount",
-            fixed_amount: {
-              amount: 399,
-              currency: "eur",
-            },
-            delivery_estimate: {
-              minimum: { unit: "business_day", value: 1 },
-              maximum: { unit: "business_day", value: 3 },
-            },
+            fixed_amount: { amount: 399, currency: "eur" },
           },
         },
         {
           shipping_rate_data: {
             display_name: "Kuriér",
             type: "fixed_amount",
-            fixed_amount: {
-              amount: 599,
-              currency: "eur",
-            },
-            delivery_estimate: {
-              minimum: { unit: "business_day", value: 1 },
-              maximum: { unit: "business_day", value: 2 },
-            },
+            fixed_amount: { amount: 599, currency: "eur" },
           },
         },
       ],
-
       customer_email: sessionEmail ?? dbUser?.email ?? undefined,
-
       line_items: [
         {
           quantity: 1,
@@ -265,69 +197,31 @@ export async function POST(req: NextRequest) {
             unit_amount: itemAmountCents,
             product_data: {
               name: `3D tlač: ${body.uploaded.fileName}`,
-              description: `${formatEur(totalWithVat)} s DPH • mierka ${scalePct}%`,
-              metadata: {
-                orderId: order.id,
-              },
+              description: `${formatEur(totalWithVat)} s DPH • mierka ${scalePct}% • výplň ${infillPct}%`,
             },
           },
         },
       ],
-
       metadata: {
         orderId: order.id,
         scalePct: String(scalePct),
+        infillPct: String(infillPct),
         userId: userId ?? "",
         customerEmail: sessionEmail ?? dbUser?.email ?? "",
         isTestOrder: "false",
-
-        accountType: dbUser?.accountType ?? "",
-        phone: dbUser?.phone ?? "",
-
-        companyName: dbUser?.companyName ?? "",
-        ico: dbUser?.ico ?? "",
-        dic: dbUser?.dic ?? "",
-        icDph: dbUser?.icDph ?? "",
-        contactPerson: dbUser?.contactPerson ?? "",
-
-        billingStreet: dbUser?.billingStreet ?? "",
-        billingCity: dbUser?.billingCity ?? "",
-        billingZip: dbUser?.billingZip ?? "",
-        billingCountry: dbUser?.billingCountry ?? "",
-
-        shippingName: dbUser?.shippingName ?? "",
-        shippingContact: dbUser?.shippingContact ?? "",
-        shippingStreet: dbUser?.shippingStreet ?? "",
-        shippingCity: dbUser?.shippingCity ?? "",
-        shippingZip: dbUser?.shippingZip ?? "",
-        shippingCountry: dbUser?.shippingCountry ?? "",
       },
-
       payment_intent_data: {
         metadata: {
           orderId: order.id,
           scalePct: String(scalePct),
+          infillPct: String(infillPct),
           userId: userId ?? "",
           customerEmail: sessionEmail ?? dbUser?.email ?? "",
           isTestOrder: "false",
-
-          accountType: dbUser?.accountType ?? "",
-          companyName: dbUser?.companyName ?? "",
-          ico: dbUser?.ico ?? "",
-          dic: dbUser?.dic ?? "",
-          icDph: dbUser?.icDph ?? "",
         },
       },
-
       success_url: `${baseUrl}/success?orderId=${order.id}&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${baseUrl}/cancel?orderId=${order.id}`,
-    });
-
-    console.log("STRIPE SESSION CREATED:", {
-      orderId: order.id,
-      sessionId: stripeSession.id,
-      customerEmail: sessionEmail ?? dbUser?.email ?? null,
-      totalWithVat,
     });
 
     await prisma.order.update({
@@ -341,9 +235,7 @@ export async function POST(req: NextRequest) {
       url: stripeSession.url,
       orderId: order.id,
       sessionId: stripeSession.id,
-      isTestOrder: false,
       checkoutTotalWithVat: totalWithVat,
-      originalTotalWithVat: totalWithVat,
     });
   } catch (e: any) {
     console.error("create-checkout-session error:", e);
