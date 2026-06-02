@@ -1,4 +1,5 @@
-export const VAT_MULTIPLIER = 1.23;
+export const VAT_RATE = 0.23;
+export const VAT_MULTIPLIER = 1 + VAT_RATE;
 
 export function addVat(priceWithoutVat: number): number {
   if (!Number.isFinite(priceWithoutVat)) return 0;
@@ -18,16 +19,10 @@ export function formatPriceWithVat(priceWithoutVat: number | null | undefined) {
   return formatEur(addVat(priceWithoutVat));
 }
 
-export function formatPricePair(priceWithoutVat: number | null | undefined) {
+export function formatPriceWithoutVat(priceWithoutVat: number | null | undefined) {
   if (typeof priceWithoutVat !== "number" || Number.isNaN(priceWithoutVat)) {
-    return {
-      withoutVat: "—",
-      withVat: "—",
-    };
+    return "—";
   }
 
-  return {
-    withoutVat: formatEur(priceWithoutVat),
-    withVat: formatEur(addVat(priceWithoutVat)),
-  };
+  return formatEur(priceWithoutVat);
 }
