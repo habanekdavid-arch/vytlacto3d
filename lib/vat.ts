@@ -11,7 +11,19 @@ export function formatEur(value: number | null | undefined): string {
   return `${value.toFixed(2).replace(".", ",")} €`;
 }
 
-export function formatPriceWithVat(priceWithoutVat: number | null | undefined) {
+export function formatPriceWithoutVat(
+  priceWithoutVat: number | null | undefined
+) {
+  if (typeof priceWithoutVat !== "number" || Number.isNaN(priceWithoutVat)) {
+    return "—";
+  }
+
+  return formatEur(priceWithoutVat);
+}
+
+export function formatPriceWithVat(
+  priceWithoutVat: number | null | undefined
+) {
   if (typeof priceWithoutVat !== "number" || Number.isNaN(priceWithoutVat)) {
     return "—";
   }
@@ -19,10 +31,18 @@ export function formatPriceWithVat(priceWithoutVat: number | null | undefined) {
   return formatEur(addVat(priceWithoutVat));
 }
 
-export function formatPriceWithoutVat(priceWithoutVat: number | null | undefined) {
+export function formatPricePair(
+  priceWithoutVat: number | null | undefined
+) {
   if (typeof priceWithoutVat !== "number" || Number.isNaN(priceWithoutVat)) {
-    return "—";
+    return {
+      withoutVat: "—",
+      withVat: "—",
+    };
   }
 
-  return formatEur(priceWithoutVat);
+  return {
+    withoutVat: formatEur(priceWithoutVat),
+    withVat: formatEur(addVat(priceWithoutVat)),
+  };
 }
