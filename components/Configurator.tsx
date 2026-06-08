@@ -231,17 +231,17 @@ export default function Configurator({
       </div>
 
       {/* Cenový blok */}
-      <div className="mt-6 rounded-[28px] bg-[#FFAE00] p-5 shadow-[0_18px_50px_rgba(255,174,0,0.25)]">
+      <div className="mt-6 rounded-[28px] bg-white p-5 shadow-[0_18px_50px_rgba(0,0,0,0.08)] border border-neutral-100">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <div className="text-sm font-semibold text-black/60">
+            <div className="text-sm font-semibold text-neutral-500">
               Cena výroby s DPH
             </div>
-            <div className="mt-1 text-4xl font-extrabold tracking-tight text-black">
+            <div className="mt-1 text-4xl font-extrabold tracking-tight text-neutral-900">
               {quote ? formatEur(addVat(quote.total)) : "—"}
             </div>
           </div>
-          <div className="rounded-2xl bg-black/10 px-4 py-3 text-sm font-extrabold text-black">
+          <div className="rounded-2xl bg-[#FFAE00] px-4 py-3 text-sm font-extrabold text-black">
             {loading ? "Prepočítavam…" : "Aktuálna cena"}
           </div>
         </div>
@@ -249,38 +249,52 @@ export default function Configurator({
         {quote ? (
           <>
             {/* Rozpis DPH */}
-            <div className="mt-5 rounded-[20px] bg-white/40 p-4">
-              <div className="text-xs font-bold uppercase tracking-wide text-black/50 mb-3">
+            <div className="mt-5 rounded-[20px] bg-neutral-50 border border-neutral-100 p-4">
+              <div className="text-xs font-bold uppercase tracking-wide text-neutral-400 mb-3">
                 Rozpis ceny (výroba)
               </div>
               <div className="space-y-2">
                 <PriceLine label="Základ bez DPH" value={formatEur(quote.total)} />
                 <PriceLine label="DPH 23 %" value={formatEur(vatAmount(quote.total))} />
-                <div className="my-1 border-t border-black/10" />
+                <div className="my-1 border-t border-neutral-200" />
                 <PriceLine label="Výroba s DPH" value={formatEur(addVat(quote.total))} bold />
-                <div className="my-1 border-t border-black/10" />
-                <PriceLine label="Doprava (Packeta)" value="+ 3,99 €" />
-                <PriceLine label="Doprava (Kuriér)" value="+ 5,99 €" />
-                <div className="my-1 border-t border-black/10" />
+                <div className="my-1 border-t border-neutral-200" />
+                <PriceLine label="Doprava — Packeta / Zásielkovňa" value="+ 3,99 €" />
+                <PriceLine label="Doprava — Kuriér" value="+ 5,99 €" />
+                <div className="my-1 border-t border-neutral-200" />
                 <PriceLine
-                  label="Celkom od (vr. dopravy)"
+                  label="Celkom od (vr. najlacnejšej dopravy)"
                   value={formatEur(addVat(quote.total) + 3.99)}
                   bold
                 />
               </div>
-              <p className="mt-3 text-xs text-black/50">
+              <p className="mt-3 text-xs text-neutral-400">
                 Spôsob dopravy zvolíte pri dokončení objednávky. Ceny sú vrátane DPH 23&nbsp;%.
               </p>
             </div>
 
             {/* Technické detaily */}
-            <div className="mt-3 rounded-[20px] bg-white/30 p-4">
-              <div className="text-xs font-bold uppercase tracking-wide text-black/50 mb-3">
+            <div className="mt-3 rounded-[20px] bg-neutral-50 border border-neutral-100 p-4">
+              <div className="text-xs font-bold uppercase tracking-wide text-neutral-400 mb-3">
                 Technické detaily
               </div>
-              <div className="grid gap-2 text-sm sm:grid-cols-2">
-                <TechLine label="Hmotnosť / ks" value={`${quote.gramsPerPart} g`} />
-                <TechLine label="Čas tlače / ks" value={`${quote.printTimeMinPerPart} min`} />
+              <div className="grid gap-2 sm:grid-cols-2">
+                <TechLine
+                  label="Hmotnosť / ks"
+                  value={formatWeight(quote.gramsPerPart)}
+                />
+                <TechLine
+                  label="Hmotnosť celkom"
+                  value={formatWeight(quote.gramsPerPart * config.quantity)}
+                />
+                <TechLine
+                  label="Čas tlače / ks"
+                  value={formatPrintTime(quote.printTimeMinPerPart)}
+                />
+                <TechLine
+                  label="Čas tlače celkom"
+                  value={formatPrintTime(quote.printTimeMinPerPart * config.quantity)}
+                />
                 <TechLine label="Mierka" value={`${config.scalePct} %`} />
                 <TechLine
                   label="Množstevná zľava"
@@ -290,7 +304,7 @@ export default function Configurator({
             </div>
           </>
         ) : (
-          <div className="mt-5 text-sm text-black/60">
+          <div className="mt-5 text-sm text-neutral-400">
             Nepodarilo sa vypočítať cenu.
           </div>
         )}
@@ -405,6 +419,26 @@ function SliderBox({
       </div>
     </div>
   );
+}
+
+function formatWeight(grams: number): string {
+  if (grams >= 1000) {
+    return `${(grams / 1000).toFixed(2).replace(".", ",")} kg`;
+  }
+  return `${Math.round(grams)} g`;
+}
+
+function formatPrintTime(minutes: number): string {
+  const totalMin = Math.round(minutes);
+  if (totalMin < 60) return `${totalMin} min`;
+  const days = Math.floor(totalMin / (60 * 24));
+  const hours = Math.floor((totalMin % (60 * 24)) / 60);
+  const mins = totalMin % 60;
+  const parts: string[] = [];
+  if (days > 0) parts.push(`${days} d`);
+  if (hours > 0) parts.push(`${hours} hod`);
+  if (mins > 0 && days === 0) parts.push(`${mins} min`);
+  return parts.join(" ");
 }
 
 function PriceLine({ label, value, bold }: { label: string; value: string; bold?: boolean }) {
