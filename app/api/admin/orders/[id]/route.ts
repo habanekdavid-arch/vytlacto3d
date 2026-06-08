@@ -77,10 +77,19 @@ export async function PATCH(
         customerEmail: true,
         shippingMethod: true,
         paidTotalEur: true,
+        shippingCost: true,
+        deliveryAddress: true,
+        config: true,
+        pricing: true,
       },
     });
 
     if (updated.customerEmail) {
+      const shippingCostEur =
+        typeof (updated.shippingCost as any)?.amount === "number"
+          ? (updated.shippingCost as any).amount / 100
+          : null;
+
       sendOrderStatusEmail({
         to: updated.customerEmail,
         orderId: updated.id,
@@ -89,6 +98,10 @@ export async function PATCH(
         status: updated.status,
         shippingMethod: updated.shippingMethod,
         totalEur: updated.paidTotalEur,
+        shippingCostEur,
+        deliveryAddress: updated.deliveryAddress as any,
+        config: updated.config as any,
+        pricing: updated.pricing as any,
       }).catch((e) => console.error("Status email failed:", e));
     }
 

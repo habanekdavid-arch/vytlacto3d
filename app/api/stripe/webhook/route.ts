@@ -240,18 +240,33 @@ export async function POST(req: NextRequest) {
           dic: true,
           icDph: true,
           contactPerson: true,
+          deliveryAddress: true,
+          config: true,
+          pricing: true,
+          shippingCost: true,
+          createdAt: true,
           userId: true,
         },
       });
+
+      const shippingCostEur =
+        typeof (updatedOrder.shippingCost as any)?.amount === "number"
+          ? (updatedOrder.shippingCost as any).amount / 100
+          : null;
 
       if (updatedOrder.customerEmail) {
         try {
           await sendOrderPaidEmail({
             to: updatedOrder.customerEmail,
             orderId: updatedOrder.id,
+            orderNumber: updatedOrder.orderNumber,
             fileName: updatedOrder.fileName,
             totalEur: updatedOrder.paidTotalEur,
             shippingMethod: updatedOrder.shippingMethod,
+            shippingCostEur,
+            deliveryAddress: updatedOrder.deliveryAddress as any,
+            config: updatedOrder.config as any,
+            pricing: updatedOrder.pricing as any,
           });
         } catch (customerEmailError) {
           console.error(
@@ -264,10 +279,12 @@ export async function POST(req: NextRequest) {
       try {
         await sendAdminOrderNotificationEmail({
           orderId: updatedOrder.id,
+          orderNumber: updatedOrder.orderNumber,
           fileName: updatedOrder.fileName,
           customerEmail: updatedOrder.customerEmail,
           totalEur: updatedOrder.paidTotalEur,
           shippingMethod: updatedOrder.shippingMethod,
+          shippingCostEur,
           phone: updatedOrder.phone,
           accountType: updatedOrder.accountType,
           companyName: updatedOrder.companyName,
@@ -275,6 +292,10 @@ export async function POST(req: NextRequest) {
           dic: updatedOrder.dic,
           icDph: updatedOrder.icDph,
           contactPerson: updatedOrder.contactPerson,
+          deliveryAddress: updatedOrder.deliveryAddress as any,
+          config: updatedOrder.config as any,
+          pricing: updatedOrder.pricing as any,
+          createdAt: updatedOrder.createdAt,
         });
       } catch (adminEmailError) {
         console.error("Failed to send admin order email:", adminEmailError);
