@@ -28,11 +28,10 @@ function getShippingAddress(session: Stripe.Checkout.Session) {
   return {
     name: shipping.name ?? null,
     phone: shipping.phone ?? null,
-    address: shipping.address.line1 ?? null,
-    line1: shipping.address.line1 ?? null,
+    street: shipping.address.line1 ?? null,
     line2: shipping.address.line2 ?? null,
     city: shipping.address.city ?? null,
-    postal_code: shipping.address.postal_code ?? null,
+    zip: shipping.address.postal_code ?? null,
     state: shipping.address.state ?? null,
     country: shipping.address.country ?? null,
   };
@@ -214,7 +213,9 @@ export async function POST(req: NextRequest) {
           shippingCost: shippingCost as any,
 
           billingAddress: (billingAddress ?? accountBillingAddress) as any,
-          deliveryAddress: accountDeliveryAddress as any,
+          // deliveryAddress = Stripe shipping (what customer actually filled in),
+          // fallback to account address only if Stripe had no shipping details
+          deliveryAddress: (shippingAddress ?? accountDeliveryAddress) as any,
 
           accountType: matchedUser?.accountType ?? null,
           companyName: matchedUser?.companyName ?? null,

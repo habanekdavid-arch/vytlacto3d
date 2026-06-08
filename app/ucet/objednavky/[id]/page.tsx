@@ -189,15 +189,27 @@ export default async function OrderDetailPage({
           <DetailCard label="Meno" value={String(shippingAddress.name ?? "—")} />
           <DetailCard label="Telefón" value={String(shippingAddress.phone ?? "—")} />
           <DetailCard
-            label="Adresa"
-            value={String(shippingAddress.address ?? shippingAddress.line1 ?? "—")}
+            label="Ulica"
+            value={String(
+              shippingAddress.street ??
+              shippingAddress.line1 ??
+              (shippingAddress as any).address ??
+              "—"
+            )}
           />
           <DetailCard
-            label="Druhý riadok adresy"
+            label="Doplnenie adresy"
             value={String(shippingAddress.line2 ?? "—")}
           />
           <DetailCard label="Mesto" value={String(shippingAddress.city ?? "—")} />
-          <DetailCard label="PSČ" value={String(shippingAddress.postal_code ?? "—")} />
+          <DetailCard
+            label="PSČ"
+            value={String(
+              shippingAddress.zip ??
+              (shippingAddress as any).postal_code ??
+              "—"
+            )}
+          />
           <DetailCard label="Krajina" value={String(shippingAddress.country ?? "—")} />
         </div>
       </section>

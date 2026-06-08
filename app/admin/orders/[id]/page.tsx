@@ -173,6 +173,14 @@ export default async function AdminOrderDetailPage({
 
         <section className="mt-6 grid gap-6 lg:grid-cols-2">
           <Panel title="Zákazník">
+            <InfoCard
+              label="Meno"
+              value={getValue(
+                billingAddress.name ??
+                shippingAddress.name ??
+                deliveryAddress.name
+              )}
+            />
             <InfoCard label="Email" value={order.customerEmail ?? "—"} />
             <InfoCard label="Telefón" value={order.phone ?? "—"} />
             <InfoCard
@@ -200,36 +208,46 @@ export default async function AdminOrderDetailPage({
         </section>
 
         <section className="mt-6 grid gap-6 lg:grid-cols-2">
-          <Panel title="Dodacia adresa zo Stripe">
-            <InfoCard label="Meno" value={getValue(shippingAddress.name)} />
-            <InfoCard label="Telefón" value={getValue(shippingAddress.phone)} />
+          <Panel title="Adresa doručenia">
+            <InfoCard
+              label="Meno"
+              value={getValue(deliveryAddress.name ?? shippingAddress.name)}
+            />
+            <InfoCard
+              label="Telefón"
+              value={getValue(deliveryAddress.phone ?? shippingAddress.phone)}
+            />
             <InfoCard
               label="Ulica"
-              value={getValue(shippingAddress.line1 ?? shippingAddress.address)}
+              value={getValue(
+                deliveryAddress.street ??
+                shippingAddress.street ??
+                shippingAddress.line1 ??
+                (shippingAddress as any).address
+              )}
             />
             <InfoCard
               label="Doplnenie adresy"
-              value={getValue(shippingAddress.line2)}
+              value={getValue(deliveryAddress.line2 ?? shippingAddress.line2)}
             />
-            <InfoCard label="Mesto" value={getValue(shippingAddress.city)} />
-            <InfoCard label="PSČ" value={getValue(shippingAddress.postal_code)} />
-            <InfoCard label="Krajina" value={getValue(shippingAddress.country)} />
-          </Panel>
-
-          <Panel title="Dodacia adresa z účtu">
-            <InfoCard label="Názov" value={getValue(deliveryAddress.name)} />
             <InfoCard
-              label="Kontaktná osoba"
-              value={getValue(deliveryAddress.contact)}
+              label="Mesto"
+              value={getValue(deliveryAddress.city ?? shippingAddress.city)}
             />
-            <InfoCard label="Ulica" value={getValue(deliveryAddress.street)} />
-            <InfoCard label="Mesto" value={getValue(deliveryAddress.city)} />
-            <InfoCard label="PSČ" value={getValue(deliveryAddress.zip)} />
-            <InfoCard label="Krajina" value={getValue(deliveryAddress.country)} />
+            <InfoCard
+              label="PSČ"
+              value={getValue(
+                deliveryAddress.zip ??
+                shippingAddress.zip ??
+                (shippingAddress as any).postal_code
+              )}
+            />
+            <InfoCard
+              label="Krajina"
+              value={getValue(deliveryAddress.country ?? shippingAddress.country)}
+            />
           </Panel>
-        </section>
 
-        <section className="mt-6 grid gap-6 lg:grid-cols-2">
           <Panel title="Fakturačná adresa">
             <InfoCard label="Meno" value={getValue(billingAddress.name)} />
             <InfoCard label="Email" value={getValue(billingAddress.email)} />
@@ -239,7 +257,9 @@ export default async function AdminOrderDetailPage({
             <InfoCard label="PSČ" value={getValue(billingAddress.zip)} />
             <InfoCard label="Krajina" value={getValue(billingAddress.country)} />
           </Panel>
+        </section>
 
+        <section className="mt-6 grid gap-6 lg:grid-cols-2">
           <Panel title="Stripe údaje">
             <InfoCard
               label="Stripe session"
