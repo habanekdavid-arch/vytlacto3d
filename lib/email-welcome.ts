@@ -1,6 +1,4 @@
-import { Resend } from "resend";
-
-const resend = new Resend(process.env.RESEND_API_KEY);
+import { transporter, FROM } from "@/lib/mailer";
 
 const baseUrl =
   process.env.NEXT_PUBLIC_BASE_URL || "https://www.vytlacto3d.sk";
@@ -16,14 +14,12 @@ export async function sendWelcomeEmail({
   accountType?: string | null;
   companyName?: string | null;
 }) {
-  if (!process.env.RESEND_API_KEY) return;
+  if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) return;
 
   const isCompany = accountType === "COMPANY";
 
-  await resend.emails.send({
-    from:
-      process.env.RESEND_FROM_EMAIL ||
-      "VytlacTo3D <onboarding@resend.dev>",
+  await transporter.sendMail({
+    from: FROM,
     to,
     subject: isCompany
       ? "Vitajte vo VytlačTo3D – firemný účet bol vytvorený"

@@ -1,7 +1,5 @@
-import { Resend } from "resend";
+import { transporter, FROM } from "@/lib/mailer";
 import { formatEur } from "@/lib/vat";
-
-const resend = new Resend(process.env.RESEND_API_KEY);
 
 const baseUrl =
   process.env.NEXT_PUBLIC_BASE_URL || "https://www.vytlacto3d.sk";
@@ -33,12 +31,10 @@ export async function sendAdminOrderNotificationEmail({
   icDph?: string | null;
   contactPerson?: string | null;
 }) {
-  if (!process.env.RESEND_API_KEY) return;
+  if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) return;
 
-  await resend.emails.send({
-    from:
-      process.env.RESEND_FROM_EMAIL ||
-      "VytlacTo3D <onboarding@resend.dev>",
+  await transporter.sendMail({
+    from: FROM,
     to: process.env.ADMIN_ORDER_EMAIL || "info@4frommedia.sk",
     subject: `Nová zaplatená objednávka – ${fileName}`,
     html: `

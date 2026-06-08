@@ -1,13 +1,8 @@
-import { Resend } from "resend";
+import { transporter, FROM } from "@/lib/mailer";
 import { formatEur } from "@/lib/vat";
-
-const resend = new Resend(process.env.RESEND_API_KEY);
 
 const baseUrl =
   process.env.NEXT_PUBLIC_BASE_URL || "https://www.vytlacto3d.sk";
-
-const FROM =
-  process.env.RESEND_FROM_EMAIL || "VytlacTo3D <onboarding@resend.dev>";
 
 type StatusEmailParams = {
   to: string;
@@ -123,7 +118,7 @@ function buildHtml(params: StatusEmailParams): string {
 }
 
 export async function sendOrderStatusEmail(params: StatusEmailParams) {
-  if (!process.env.RESEND_API_KEY) return;
+  if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) return;
   if (!params.to) return;
 
   const html = buildHtml(params);
@@ -135,5 +130,5 @@ export async function sendOrderStatusEmail(params: StatusEmailParams) {
 
   if (!subject) return;
 
-  await resend.emails.send({ from: FROM, to: params.to, subject, html });
+  await transporter.sendMail({ from: FROM, to: params.to, subject, html });
 }
