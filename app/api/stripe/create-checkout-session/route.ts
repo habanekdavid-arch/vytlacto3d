@@ -12,6 +12,23 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
   apiVersion: "2026-02-25.clover",
 });
 
+async function generateOrderNumber(): Promise<string> {
+  const year = new Date().getFullYear();
+  const prefix = `VYT-${year}-`;
+
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const count = await prisma.order.count({
+      where: { orderNumber: { startsWith: prefix } },
+    });
+    const seq = String(count + 1).padStart(4, "0");
+    const orderNumber = `${prefix}${seq}`;
+    const exists = await prisma.order.findUnique({ where: { orderNumber } });
+    if (!exists) return orderNumber;
+  }
+
+  return `${prefix}${Date.now().toString().slice(-6)}`;
+}
+
 function getBaseUrl(req: NextRequest) {
   const origin = req.headers.get("origin");
   if (origin) return origin;
@@ -116,8 +133,11 @@ export async function POST(req: NextRequest) {
       quantity,
     });
 
+    const orderNumber = await generateOrderNumber();
+
     const order = await prisma.order.create({
       data: {
+        orderNumber,
         status: "PENDING",
         fileKey: body.uploaded.fileKey,
         fileName: body.uploaded.fileName,

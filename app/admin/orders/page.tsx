@@ -102,6 +102,7 @@ export default async function AdminOrdersPage() {
 
   const orders = ordersRaw.map((order) => ({
     id: order.id,
+    orderNumber: order.orderNumber ?? null,
     fileName: order.fileName,
     fileKey: order.fileKey,
     status: order.status,
@@ -184,14 +185,20 @@ export default async function AdminOrdersPage() {
               >
                 <div className="grid gap-6 xl:grid-cols-[1.2fr_1fr_1fr_auto]">
                   <div>
-                    <div className="font-mono text-xs text-neutral-500">{order.id}</div>
+                    <div className="text-lg font-extrabold text-neutral-900">
+                      {order.orderNumber ?? (
+                        <span className="font-mono text-sm text-neutral-500">
+                          {order.id.slice(0, 16)}…
+                        </span>
+                      )}
+                    </div>
 
-                    <div className="mt-2 text-lg font-bold text-neutral-900">
+                    <div className="mt-1 text-sm font-semibold text-neutral-700">
                       {order.fileName}
                     </div>
 
-                    <div className="mt-2 break-all text-xs text-neutral-500">
-                      {order.fileKey}
+                    <div className="mt-1 font-mono text-xs text-neutral-400">
+                      {order.id}
                     </div>
 
                     <div className="mt-3">

@@ -92,10 +92,16 @@ export default async function AdminOrderDetailPage({
               </div>
 
               <h1 className="mt-2 text-3xl font-extrabold tracking-tight">
-                {order.fileName}
+                {order.orderNumber ?? order.fileName}
               </h1>
 
-              <div className="mt-2 break-all font-mono text-xs text-neutral-500">
+              {order.orderNumber && (
+                <div className="mt-1 text-base font-semibold text-neutral-600">
+                  {order.fileName}
+                </div>
+              )}
+
+              <div className="mt-2 break-all font-mono text-xs text-neutral-400">
                 {order.id}
               </div>
             </div>
@@ -206,7 +212,10 @@ export default async function AdminOrderDetailPage({
         </section>
 
         <section className="mt-6 grid gap-6 lg:grid-cols-2">
-          <Panel title="Fakturačná adresa z účtu">
+          <Panel title="Fakturačná adresa">
+            <InfoCard label="Meno" value={getValue(billingAddress.name)} />
+            <InfoCard label="Email" value={getValue(billingAddress.email)} />
+            <InfoCard label="Telefón" value={getValue(billingAddress.phone)} />
             <InfoCard label="Ulica" value={getValue(billingAddress.street)} />
             <InfoCard label="Mesto" value={getValue(billingAddress.city)} />
             <InfoCard label="PSČ" value={getValue(billingAddress.zip)} />

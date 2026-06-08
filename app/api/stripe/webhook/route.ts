@@ -47,10 +47,10 @@ function getBillingAddress(session: Stripe.Checkout.Session) {
     name: customer.name ?? null,
     email: customer.email ?? null,
     phone: customer.phone ?? null,
-    line1: customer.address.line1 ?? null,
+    street: customer.address.line1 ?? null,
     line2: customer.address.line2 ?? null,
     city: customer.address.city ?? null,
-    postal_code: customer.address.postal_code ?? null,
+    zip: customer.address.postal_code ?? null,
     state: customer.address.state ?? null,
     country: customer.address.country ?? null,
   };
@@ -227,6 +227,7 @@ export async function POST(req: NextRequest) {
         },
         select: {
           id: true,
+          orderNumber: true,
           fileName: true,
           customerEmail: true,
           paidTotalEur: true,

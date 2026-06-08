@@ -20,10 +20,10 @@ model User {
   accountType  String   @default("PERSON")
   vatPayer     Boolean  @default(false)
 
-  companyName  String?
-  ico          String?
-  dic          String?
-  icDph        String?
+  companyName   String?
+  ico           String?
+  dic           String?
+  icDph         String?
   contactPerson String?
 
   billingStreet  String?
@@ -38,49 +38,55 @@ model User {
   shippingZip     String?
   shippingCountry String?
 
-  orders       Order[]
+  orders Order[]
 }
 
 model Order {
-  id                    String   @id @default(cuid())
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  id          String   @id @default(cuid())
+  orderNumber String?  @unique
 
-  status                String   @default("PENDING")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  fileKey               String
-  fileName              String
+  status      String   @default("PENDING")
 
-  analysis              Json
-  config                Json
-  pricing               Json
+  fileKey     String
+  fileName    String
 
-  stripeSessionId       String?  @unique
+  analysis    Json
+  config      Json
+  pricing     Json
+
+  stripeSessionId       String? @unique
   stripePaymentIntentId String?
-  customerEmail         String?
-  paidTotalEur          Float?
 
-  shippingAddress       Json?
-  shippingCost          Json?
-  shippingMethod        String?
+  customerEmail String?
+  paidTotalEur  Float?
 
-  accountType           String?
-  phone                 String?
-  vatPayer     Boolean  @default(false)
+  shippingAddress Json?
+  shippingCost    Json?
+  shippingMethod  String?
 
-  companyName           String?
-  ico                   String?
-  dic                   String?
-  icDph                 String?
-  contactPerson         String?
+  accountType String?
+  phone       String?
+  vatPayer    Boolean @default(false)
 
-  billingAddress        Json?
-  deliveryAddress       Json?
+  companyName   String?
+  ico           String?
+  dic           String?
+  icDph         String?
+  contactPerson String?
 
-  userId                String?
-  user                  User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  billingAddress  Json?
+  deliveryAddress Json?
 
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([orderNumber])
   @@index([userId])
   @@index([createdAt])
   @@index([status])
+  @@index([customerEmail])
+  @@index([stripeSessionId])
 }
