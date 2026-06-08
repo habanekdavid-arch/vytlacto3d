@@ -83,10 +83,45 @@ model Order {
   userId String?
   user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
 
+  invoices Invoice[]
+
   @@index([orderNumber])
   @@index([userId])
   @@index([createdAt])
   @@index([status])
   @@index([customerEmail])
   @@index([stripeSessionId])
+}
+
+model Invoice {
+  id            String   @id @default(cuid())
+  invoiceNumber String   @unique
+  type          String   @default("INVOICE") // INVOICE | CREDIT_NOTE
+  isTest        Boolean  @default(false)
+
+  orderId       String
+  order         Order    @relation(fields: [orderId], references: [id])
+
+  creditNoteForId String?
+  creditNoteFor   Invoice?  @relation("CreditNotes", fields: [creditNoteForId], references: [id])
+  creditNotes     Invoice[] @relation("CreditNotes")
+
+  issuedAt      DateTime @default(now())
+  dueAt         DateTime
+
+  sellerSnapshot   Json
+  customerSnapshot Json
+  items            Json
+
+  totalNet   Float
+  totalVat   Float
+  totalGross Float
+
+  note      String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([orderId])
+  @@index([invoiceNumber])
 }

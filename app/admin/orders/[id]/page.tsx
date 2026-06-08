@@ -3,6 +3,7 @@ import { getSafeServerSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { formatEur, addVat, vatAmount } from "@/lib/vat";
 import CopyOrderButton from "@/components/CopyOrderButton";
+import InvoiceSection from "@/components/InvoiceSection";
 
 export const dynamic = "force-dynamic";
 
@@ -84,6 +85,12 @@ export default async function AdminOrderDetailPage({
 
   const shippingCostEur =
     typeof shippingCost.amount === "number" ? shippingCost.amount / 100 : null;
+
+  const invoices = await prisma.invoice.findMany({
+    where: { orderId: id },
+    include: { creditNotes: { select: { id: true, invoiceNumber: true } } },
+    orderBy: { createdAt: "asc" },
+  });
 
   const paidTotal =
     typeof order.paidTotalEur === "number" ? order.paidTotalEur : null;
@@ -397,6 +404,19 @@ export default async function AdminOrderDetailPage({
             <JsonBox title="Shipping JSON" value={formatJson(rawShipping)} />
           </div>
         </section>
+
+        <InvoiceSection
+          orderId={order.id}
+          initialInvoices={invoices.map((inv: any) => ({
+            id: inv.id,
+            invoiceNumber: inv.invoiceNumber,
+            type: inv.type,
+            isTest: inv.isTest,
+            issuedAt: inv.issuedAt.toISOString(),
+            totalGross: inv.totalGross,
+            creditNotes: (inv.creditNotes ?? []) as { id: string; invoiceNumber: string }[],
+          }))}
+        />
       </div>
     </main>
   );
