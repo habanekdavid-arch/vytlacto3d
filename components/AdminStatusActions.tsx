@@ -55,10 +55,13 @@ export default function AdminStatusActions({
 
       <div className="mt-3 flex flex-wrap gap-2">
         <Btn disabled={loading} onClick={() => setStatus("PRINTING")}>
-          Začať tlač
+          Tlačiť
+        </Btn>
+        <Btn disabled={loading} onClick={() => setStatus("SHIPPED")}>
+          Odoslané
         </Btn>
         <Btn disabled={loading} onClick={() => setStatus("DONE")}>
-          Hotovo
+          Vybavené
         </Btn>
         <Btn disabled={loading} onClick={() => setStatus("CANCELED")}>
           Zrušiť

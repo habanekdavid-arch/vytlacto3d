@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getSafeServerSession } from "@/lib/session";
 import { revalidatePath } from "next/cache";
 import { formatEur, addVat } from "@/lib/vat";
+import { sendOrderStatusEmail } from "@/lib/email-status";
 
 async function updateOrderStatus(formData: FormData) {
   "use server";
@@ -13,10 +14,31 @@ async function updateOrderStatus(formData: FormData) {
 
   if (!id || !status) return;
 
-  await prisma.order.update({
+  const updated = await prisma.order.update({
     where: { id },
     data: { status },
+    select: {
+      id: true,
+      status: true,
+      orderNumber: true,
+      fileName: true,
+      customerEmail: true,
+      shippingMethod: true,
+      paidTotalEur: true,
+    },
   });
+
+  if (updated.customerEmail) {
+    sendOrderStatusEmail({
+      to: updated.customerEmail,
+      orderId: updated.id,
+      orderNumber: updated.orderNumber,
+      fileName: updated.fileName,
+      status: updated.status,
+      shippingMethod: updated.shippingMethod,
+      totalEur: updated.paidTotalEur,
+    }).catch((e) => console.error("Status email failed:", e));
+  }
 
   revalidatePath("/admin/orders");
   revalidatePath(`/admin/orders/${id}`);
@@ -68,6 +90,8 @@ function getStatusClasses(status: string) {
       return "border-[#FFAE00]/40 bg-[#FFAE00]/15 text-neutral-900";
     case "PRINTING":
       return "border-blue-200 bg-blue-50 text-blue-700";
+    case "SHIPPED":
+      return "border-indigo-200 bg-indigo-50 text-indigo-700";
     case "DONE":
       return "border-green-200 bg-green-50 text-green-700";
     case "CANCELED":
@@ -312,9 +336,19 @@ export default async function AdminOrdersPage() {
                     {order.status === "PRINTING" && (
                       <form action={updateOrderStatus}>
                         <input type="hidden" name="id" value={order.id} />
+                        <input type="hidden" name="status" value="SHIPPED" />
+                        <button className="w-full rounded-xl bg-blue-600 px-3 py-2 text-xs font-bold text-white hover:opacity-90">
+                          Označiť ODOSLANÉ
+                        </button>
+                      </form>
+                    )}
+
+                    {order.status === "SHIPPED" && (
+                      <form action={updateOrderStatus}>
+                        <input type="hidden" name="id" value={order.id} />
                         <input type="hidden" name="status" value="DONE" />
                         <button className="w-full rounded-xl bg-green-600 px-3 py-2 text-xs font-bold text-white hover:opacity-90">
-                          Označiť DONE
+                          Označiť VYBAVENÉ
                         </button>
                       </form>
                     )}

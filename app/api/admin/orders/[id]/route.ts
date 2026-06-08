@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { sendOrderStatusEmail } from "@/lib/email-status";
 
 export const runtime = "nodejs";
 
@@ -60,30 +61,38 @@ export async function PATCH(
     const body = await req.json().catch(() => null);
     const status = body?.status;
 
-    const allowed = ["PENDING", "PAID", "PRINTING", "DONE", "CANCELED"];
+    const allowed = ["PENDING", "PAID", "PRINTING", "SHIPPED", "DONE", "CANCELED"];
     if (!allowed.includes(status)) {
       return NextResponse.json({ error: "Invalid status" }, { status: 400 });
-    }
-
-    const exists = await prisma.order.findUnique({
-      where: { id },
-      select: { id: true },
-    });
-
-    if (!exists) {
-      return NextResponse.json(
-        { error: `Order not found: ${id}` },
-        { status: 404 }
-      );
     }
 
     const updated = await prisma.order.update({
       where: { id },
       data: { status },
-      select: { id: true, status: true },
+      select: {
+        id: true,
+        status: true,
+        orderNumber: true,
+        fileName: true,
+        customerEmail: true,
+        shippingMethod: true,
+        paidTotalEur: true,
+      },
     });
 
-    return NextResponse.json({ ok: true, order: updated });
+    if (updated.customerEmail) {
+      sendOrderStatusEmail({
+        to: updated.customerEmail,
+        orderId: updated.id,
+        orderNumber: updated.orderNumber,
+        fileName: updated.fileName,
+        status: updated.status,
+        shippingMethod: updated.shippingMethod,
+        totalEur: updated.paidTotalEur,
+      }).catch((e) => console.error("Status email failed:", e));
+    }
+
+    return NextResponse.json({ ok: true, order: { id: updated.id, status: updated.status } });
   } catch (e: any) {
     console.error("PATCH /api/admin/orders/[id] failed:", e);
     return NextResponse.json(

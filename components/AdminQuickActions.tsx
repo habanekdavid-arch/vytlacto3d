@@ -49,18 +49,27 @@ export default function AdminQuickActions({
   const disabledAll = loading;
   const isDone = status === "DONE";
   const isCanceled = status === "CANCELED";
+  const isTerminal = isDone || isCanceled;
 
   return (
     <div className="flex flex-wrap items-center gap-2">
       <Btn
-        disabled={disabledAll || isDone || isCanceled}
+        disabled={disabledAll || isTerminal}
         onClick={() => setStatus("PRINTING")}
       >
         PRINTING
       </Btn>
 
       <Btn
-        disabled={disabledAll || isDone || isCanceled}
+        disabled={disabledAll || isTerminal}
+        onClick={() => setStatus("SHIPPED")}
+        variant="ok"
+      >
+        SHIPPED
+      </Btn>
+
+      <Btn
+        disabled={disabledAll || isTerminal}
         onClick={() => setStatus("DONE", "Naozaj označiť ako DONE?")}
         variant="ok"
       >
