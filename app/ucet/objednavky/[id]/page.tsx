@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { formatEur, addVat, vatAmount, formatPriceWithVat } from "@/lib/vat";
+import { formatEur, addVat } from "@/lib/vat";
 import { getSafeServerSession } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -74,17 +74,30 @@ export default async function OrderDetailPage({
   };
   const shippingCost = (order.shippingCost ?? {}) as Record<string, any>;
 
-  const total =
-    typeof order.paidTotalEur === "number"
-      ? order.paidTotalEur
-      : typeof pricing.total === "number"
-      ? pricing.total
-      : null;
+  const paidTotal =
+    typeof order.paidTotalEur === "number" ? order.paidTotalEur : null;
 
   const shippingCostEur =
     typeof shippingCost.amount === "number"
       ? shippingCost.amount / 100
       : null;
+
+  // VAT breakdown odvodený z reálne zaplatenej sumy (nie z interného pricing.total)
+  const productionGross =
+    paidTotal !== null
+      ? paidTotal - (shippingCostEur ?? 0)
+      : typeof pricing.total === "number"
+      ? addVat(pricing.total)
+      : null;
+
+  const productionNet =
+    productionGross !== null ? productionGross / 1.23 : null;
+  const productionVat =
+    productionGross !== null && productionNet !== null
+      ? productionGross - productionNet
+      : null;
+
+  const total = paidTotal;
 
   return (
     <div className="space-y-6">
@@ -168,29 +181,24 @@ export default async function OrderDetailPage({
         <div className="mt-4 grid gap-4 md:grid-cols-2">
           <DetailCard
             label="Základ bez DPH"
-            value={
-              typeof pricing.total === "number" ? formatEur(pricing.total) : "—"
-            }
+            value={productionNet !== null ? formatEur(productionNet) : "—"}
           />
           <DetailCard
             label="DPH 23 %"
-            value={
-              typeof pricing.total === "number"
-                ? formatEur(vatAmount(pricing.total))
-                : "—"
-            }
+            value={productionVat !== null ? formatEur(productionVat) : "—"}
           />
           <DetailCard
             label="Výroba s DPH"
-            value={
-              typeof pricing.total === "number"
-                ? formatEur(addVat(pricing.total))
-                : "—"
-            }
+            value={productionGross !== null ? formatEur(productionGross) : "—"}
           />
           <DetailCard
             label="Doprava"
             value={shippingCostEur !== null ? formatEur(shippingCostEur) : "—"}
+          />
+          <DetailCard
+            label="Celkom s DPH"
+            value={total !== null ? formatEur(total) : "—"}
+            highlight
           />
         </div>
       </section>
@@ -215,16 +223,30 @@ export default async function OrderDetailPage({
 function DetailCard({
   label,
   value,
+  highlight = false,
 }: {
   label: string;
   value: string;
+  highlight?: boolean;
 }) {
   return (
-    <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
+    <div
+      className={[
+        "rounded-2xl border p-4",
+        highlight
+          ? "border-[#FFAE00]/30 bg-[#FFAE00]/10"
+          : "border-neutral-200 bg-neutral-50",
+      ].join(" ")}
+    >
       <div className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
         {label}
       </div>
-      <div className="mt-2 break-words text-sm font-semibold text-neutral-900">
+      <div
+        className={[
+          "mt-2 break-words text-sm font-semibold",
+          highlight ? "text-neutral-900 text-base font-extrabold" : "text-neutral-900",
+        ].join(" ")}
+      >
         {value}
       </div>
     </div>
