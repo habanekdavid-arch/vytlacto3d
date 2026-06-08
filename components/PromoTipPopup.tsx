@@ -4,38 +4,38 @@ import { useEffect, useRef, useState } from "react";
 
 const STORAGE_KEY = "vytlacto3d:promo-popup-last-seen";
 const SHOW_AFTER_HOURS = 24;
-const AUTO_ADVANCE_MS = 6000;
+const AUTO_ADVANCE_MS = 9000;
 
 const tips = [
   {
     icon: "🖨️",
     badge: "Vedeli ste, že…",
     title: "FDM tlačiarne stavajú objekt vrstvu po vrstve",
-    text: "Každá vrstva má hrúbku 0,1–0,3 mm. Tenšie vrstvy = krajší povrch, ale dlhší čas tlače.",
+    text: "Každá vrstva má hrúbku 0,1–0,3 mm. Tenšie vrstvy znamenajú krajší povrch, ale dlhší čas tlače.",
   },
   {
     icon: "🧱",
     badge: "Tip pre návrh",
-    title: "Infill ovplyvňuje pevnosť aj hmotnosť",
-    text: "20 % výplň stačí pre väčšinu modelov. Na nosné diely odporúčame 40–50 %.",
+    title: "Infill ovplyvňuje pevnosť aj hmotnosť modelu",
+    text: "20 % výplň stačí pre väčšinu modelov. Na nosné diely odporúčame 40–50 % pre maximálnu pevnosť.",
   },
   {
     icon: "🌡️",
     badge: "Materiály",
     title: "PLA je najľahšie na tlač, PETG vydrží viac",
-    text: "PLA je ideálny na prototypy a dekorácie. PETG zvláda záťaž aj vonkajšie prostredie.",
+    text: "PLA je ideálny na prototypy a dekorácie. PETG zvláda vyššiu záťaž aj vonkajšie prostredie.",
   },
   {
     icon: "⚡",
-    badge: "Rýchlosť",
-    title: "Cenu vidíte ešte pred objednávkou",
+    badge: "Kalkulácia",
+    title: "Cenu vidíte ešte pred odoslaním objednávky",
     text: "Konfigurátor automaticky vypočíta cenu podľa objemu, materiálu, kvality a počtu kusov.",
   },
   {
     icon: "🔩",
     badge: "Vedeli ste, že…",
     title: "3D tlač nahradí aj drahé náhradné diely",
-    text: "Lámajúce sa plastové súčiastky, držiaky alebo kryty — vieme ich vytlačiť na mieru.",
+    text: "Lámajúce sa plastové súčiastky, držiaky alebo kryty — vieme ich vytlačiť presne na mieru.",
   },
 ];
 
@@ -43,20 +43,20 @@ function shouldShowPopup() {
   if (typeof window === "undefined") return false;
   const lastSeen = window.localStorage.getItem(STORAGE_KEY);
   if (!lastSeen) return true;
-  const lastSeenTime = Number(lastSeen);
-  if (!Number.isFinite(lastSeenTime)) return true;
-  const hoursPassed = (Date.now() - lastSeenTime) / 1000 / 60 / 60;
-  return hoursPassed >= SHOW_AFTER_HOURS;
+  const t = Number(lastSeen);
+  if (!Number.isFinite(t)) return true;
+  return (Date.now() - t) / 3_600_000 >= SHOW_AFTER_HOURS;
 }
 
 export default function PromoTipPopup() {
-  const [visible, setVisible] = useState(false);
-  const [closing, setClosing] = useState(false);
+  const [visible, setVisible]   = useState(false);
+  const [closing, setClosing]   = useState(false);
   const [activeIdx, setActiveIdx] = useState(0);
   const [progress, setProgress] = useState(0);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const progressRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const tickRef     = useRef<ReturnType<typeof setInterval> | null>(null);
+  const advanceRef  = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  /* — initial show — */
   useEffect(() => {
     const t = window.setTimeout(() => {
       if (shouldShowPopup()) setVisible(true);
@@ -64,60 +64,54 @@ export default function PromoTipPopup() {
     return () => clearTimeout(t);
   }, []);
 
+  /* — progress bar + auto-advance — */
   useEffect(() => {
     if (!visible || closing) return;
-
     setProgress(0);
+
     const TICK = 50;
-    progressRef.current = setInterval(() => {
-      setProgress((p) => {
-        if (p >= 100) return 0;
-        return p + (TICK / AUTO_ADVANCE_MS) * 100;
-      });
+    tickRef.current = setInterval(() => {
+      setProgress((p) => Math.min(100, p + (TICK / AUTO_ADVANCE_MS) * 100));
     }, TICK);
 
-    intervalRef.current = setInterval(() => {
+    advanceRef.current = setInterval(() => {
       setProgress(0);
       setActiveIdx((i) => (i + 1) % tips.length);
     }, AUTO_ADVANCE_MS);
 
     return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-      if (progressRef.current) clearInterval(progressRef.current);
+      if (tickRef.current)    clearInterval(tickRef.current);
+      if (advanceRef.current) clearInterval(advanceRef.current);
     };
   }, [visible, closing, activeIdx]);
 
+  /* — ESC to close — */
   useEffect(() => {
     if (!visible) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") doClose();
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
+    const fn = (e: KeyboardEvent) => { if (e.key === "Escape") doClose(); };
+    window.addEventListener("keydown", fn);
+    return () => window.removeEventListener("keydown", fn);
   }, [visible]);
 
   function doClose() {
     if (closing) return;
     setClosing(true);
     window.localStorage.setItem(STORAGE_KEY, String(Date.now()));
-    window.setTimeout(() => {
-      setVisible(false);
-      setClosing(false);
-    }, 350);
+    window.setTimeout(() => { setVisible(false); setClosing(false); }, 380);
   }
 
   function goToConfigurator() {
     doClose();
     window.setTimeout(() => {
-      const target = document.getElementById("kalkulator");
-      if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+      const el = document.getElementById("kalkulator");
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
       else window.location.href = "/#kalkulator";
-    }, 350);
+    }, 380);
   }
 
   function jumpTo(idx: number) {
-    if (intervalRef.current) clearInterval(intervalRef.current);
-    if (progressRef.current) clearInterval(progressRef.current);
+    if (tickRef.current)    clearInterval(tickRef.current);
+    if (advanceRef.current) clearInterval(advanceRef.current);
     setProgress(0);
     setActiveIdx(idx);
   }
@@ -130,71 +124,76 @@ export default function PromoTipPopup() {
     <>
       <div
         className={[
-          "fixed bottom-5 right-5 z-[90] w-[calc(100%-40px)] max-w-[360px]",
-          closing ? "animate-[promoOut_0.35s_ease-in_forwards]" : "animate-[promoIn_0.5s_cubic-bezier(0.34,1.56,0.64,1)_forwards]",
+          "fixed bottom-6 right-6 z-[90] w-[calc(100%-48px)] max-w-[440px]",
+          closing
+            ? "animate-[promoOut_0.38s_ease-in_forwards]"
+            : "animate-[promoIn_0.55s_cubic-bezier(0.34,1.56,0.64,1)_forwards]",
         ].join(" ")}
       >
-        {/* Main card */}
-        <div className="relative overflow-hidden rounded-[28px] shadow-[0_24px_60px_rgba(0,0,0,0.18)]">
+        <div className="overflow-hidden rounded-[32px] bg-white shadow-[0_32px_80px_rgba(0,0,0,0.14),0_0_0_1px_rgba(0,0,0,0.04)]">
 
-          {/* Header strip */}
-          <div className="relative bg-neutral-950 px-5 pt-5 pb-4">
-            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(255,174,0,0.25),transparent_60%)]" />
+          {/* ── Yellow header ── */}
+          <div className="relative bg-[#FFAE00] px-6 pt-6 pb-5">
 
-            <div className="relative flex items-start justify-between gap-3">
+            {/* subtle radial shine */}
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_10%_0%,rgba(255,255,255,0.35),transparent)]" />
+
+            <div className="relative flex items-start justify-between gap-4">
+              {/* icon + badge */}
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[#FFAE00]/15 text-2xl">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-black/10 text-[22px] leading-none">
                   {tip.icon}
                 </div>
-                <span className="rounded-full bg-[#FFAE00]/20 px-3 py-1 text-xs font-extrabold tracking-wide text-[#FFAE00]">
+                <span className="rounded-full bg-black/10 px-3 py-1 text-[11px] font-extrabold uppercase tracking-widest text-black/70">
                   {tip.badge}
                 </span>
               </div>
 
-              {/* Close button — large, clear */}
+              {/* close */}
               <button
                 type="button"
                 onClick={doClose}
                 aria-label="Zatvoriť"
-                className="group flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/10 text-white/60 transition hover:bg-white/20 hover:text-white"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-black/10 text-black/50 transition hover:bg-black/20 hover:text-black active:scale-95"
               >
-                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
-                  <line x1="1" y1="1" x2="13" y2="13" />
-                  <line x1="13" y1="1" x2="1" y2="13" />
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+                  <line x1="1" y1="1" x2="11" y2="11" />
+                  <line x1="11" y1="1" x2="1" y2="11" />
                 </svg>
               </button>
             </div>
 
-            <h3 className="relative mt-4 text-base font-extrabold leading-snug tracking-tight text-white">
+            <h3 className="relative mt-4 text-[17px] font-extrabold leading-snug tracking-tight text-black">
               {tip.title}
             </h3>
           </div>
 
-          {/* Body */}
-          <div className="bg-white px-5 pt-4 pb-5">
-            <p className="text-sm leading-6 text-neutral-600">{tip.text}</p>
+          {/* ── White body ── */}
+          <div className="px-6 pt-5 pb-6">
+            <p className="text-[14px] leading-[1.7] text-neutral-500">
+              {tip.text}
+            </p>
 
-            {/* Actions */}
-            <div className="mt-4 flex items-center justify-between gap-3">
+            {/* CTA */}
+            <div className="mt-5 flex items-center gap-4">
               <button
                 type="button"
                 onClick={goToConfigurator}
-                className="rounded-2xl bg-[#FFAE00] px-4 py-2.5 text-sm font-extrabold text-black shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg hover:shadow-[#FFAE00]/30 active:translate-y-0"
+                className="rounded-2xl bg-[#FFAE00] px-5 py-3 text-[13px] font-extrabold text-black transition hover:-translate-y-px hover:shadow-[0_8px_24px_rgba(255,174,0,0.45)] active:translate-y-0"
               >
-                Vyskúšať konfigurátor
+                Vyskúšať konfigurátor →
               </button>
-
               <button
                 type="button"
                 onClick={doClose}
-                className="text-sm font-semibold text-neutral-400 transition hover:text-neutral-700"
+                className="text-[13px] font-semibold text-neutral-400 transition hover:text-neutral-600"
               >
                 Zavrieť
               </button>
             </div>
 
-            {/* Progress dots + bar */}
-            <div className="mt-4 flex items-center gap-2">
+            {/* dots + counter */}
+            <div className="mt-5 flex items-center gap-1.5">
               {tips.map((_, i) => (
                 <button
                   key={i}
@@ -202,23 +201,22 @@ export default function PromoTipPopup() {
                   onClick={() => jumpTo(i)}
                   aria-label={`Tip ${i + 1}`}
                   className={[
-                    "h-1.5 rounded-full transition-all duration-300",
+                    "h-[5px] rounded-full transition-all duration-300",
                     i === activeIdx
-                      ? "w-6 bg-[#FFAE00]"
-                      : "w-1.5 bg-neutral-200 hover:bg-neutral-300",
+                      ? "w-7 bg-[#FFAE00]"
+                      : "w-[5px] bg-neutral-200 hover:bg-[#FFAE00]/50",
                   ].join(" ")}
                 />
               ))}
-              {/* progress fill for active */}
-              <div className="ml-auto text-[10px] font-semibold text-neutral-300">
-                {activeIdx + 1}/{tips.length}
-              </div>
+              <span className="ml-auto text-[11px] font-semibold tabular-nums text-neutral-300">
+                {activeIdx + 1} / {tips.length}
+              </span>
             </div>
 
-            {/* Thin progress bar */}
-            <div className="mt-2 h-0.5 w-full overflow-hidden rounded-full bg-neutral-100">
+            {/* progress bar */}
+            <div className="mt-2.5 h-[3px] w-full overflow-hidden rounded-full bg-neutral-100">
               <div
-                className="h-full bg-[#FFAE00]/60 transition-none"
+                className="h-full rounded-full bg-[#FFAE00] transition-none"
                 style={{ width: `${progress}%` }}
               />
             </div>
@@ -228,12 +226,12 @@ export default function PromoTipPopup() {
 
       <style jsx global>{`
         @keyframes promoIn {
-          0%   { opacity: 0; transform: translateY(32px) scale(0.92); }
+          0%   { opacity: 0; transform: translateY(28px) scale(0.93); }
           100% { opacity: 1; transform: translateY(0)    scale(1);    }
         }
         @keyframes promoOut {
           0%   { opacity: 1; transform: translateY(0)    scale(1);    }
-          100% { opacity: 0; transform: translateY(20px) scale(0.94); }
+          100% { opacity: 0; transform: translateY(18px) scale(0.95); }
         }
       `}</style>
     </>
