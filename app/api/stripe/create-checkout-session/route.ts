@@ -200,14 +200,16 @@ export async function POST(req: NextRequest) {
           shipping_rate_data: {
             display_name: "Packeta / Zásielkovňa",
             type: "fixed_amount",
-            fixed_amount: { amount: 399, currency: "eur" },
+            // DOČASNÉ: 10 centov namiesto 3,99 € — po teste vrátiť na 399
+            fixed_amount: { amount: process.env.FORCE_TEST_PRICE === "true" ? 10 : 399, currency: "eur" },
           },
         },
         {
           shipping_rate_data: {
             display_name: "Kuriér",
             type: "fixed_amount",
-            fixed_amount: { amount: 599, currency: "eur" },
+            // DOČASNÉ: 10 centov namiesto 5,99 € — po teste vrátiť na 599
+            fixed_amount: { amount: process.env.FORCE_TEST_PRICE === "true" ? 10 : 599, currency: "eur" },
           },
         },
       ],
