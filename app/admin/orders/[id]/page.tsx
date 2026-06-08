@@ -59,10 +59,20 @@ export default async function AdminOrderDetailPage({
   const config = (order.config ?? {}) as Record<string, any>;
   const pricing = (order.pricing ?? {}) as Record<string, any>;
 
-  const shippingAddress = (order.shippingAddress ?? {}) as Record<string, any>;
   const shippingCost = (order.shippingCost ?? {}) as Record<string, any>;
+  const rawDelivery = (order.deliveryAddress ?? {}) as Record<string, any>;
+  const rawShipping = (order.shippingAddress ?? {}) as Record<string, any>;
   const billingAddress = (order.billingAddress ?? {}) as Record<string, any>;
-  const deliveryAddress = (order.deliveryAddress ?? {}) as Record<string, any>;
+  // Zlúčená adresa: delivery → shipping → billing
+  const deliveryAddress = {
+    name: rawDelivery.name ?? rawShipping.name ?? billingAddress.name ?? null,
+    phone: rawDelivery.phone ?? rawShipping.phone ?? billingAddress.phone ?? order.phone ?? null,
+    street: rawDelivery.street ?? rawShipping.street ?? billingAddress.street ?? billingAddress.line1 ?? null,
+    line2: rawDelivery.line2 ?? rawShipping.line2 ?? billingAddress.line2 ?? null,
+    city: rawDelivery.city ?? rawShipping.city ?? billingAddress.city ?? null,
+    zip: rawDelivery.zip ?? rawShipping.zip ?? billingAddress.zip ?? billingAddress.postal_code ?? null,
+    country: rawDelivery.country ?? rawShipping.country ?? billingAddress.country ?? null,
+  };
 
   const total =
     typeof order.paidTotalEur === "number"
@@ -175,11 +185,7 @@ export default async function AdminOrderDetailPage({
           <Panel title="Zákazník">
             <InfoCard
               label="Meno"
-              value={getValue(
-                billingAddress.name ??
-                shippingAddress.name ??
-                deliveryAddress.name
-              )}
+              value={getValue(deliveryAddress.name ?? billingAddress.name)}
             />
             <InfoCard label="Email" value={order.customerEmail ?? "—"} />
             <InfoCard label="Telefón" value={order.phone ?? "—"} />
@@ -209,43 +215,13 @@ export default async function AdminOrderDetailPage({
 
         <section className="mt-6 grid gap-6 lg:grid-cols-2">
           <Panel title="Adresa doručenia">
-            <InfoCard
-              label="Meno"
-              value={getValue(deliveryAddress.name ?? shippingAddress.name)}
-            />
-            <InfoCard
-              label="Telefón"
-              value={getValue(deliveryAddress.phone ?? shippingAddress.phone)}
-            />
-            <InfoCard
-              label="Ulica"
-              value={getValue(
-                deliveryAddress.street ??
-                shippingAddress.street ??
-                shippingAddress.line1 ??
-                (shippingAddress as any).address
-              )}
-            />
-            <InfoCard
-              label="Doplnenie adresy"
-              value={getValue(deliveryAddress.line2 ?? shippingAddress.line2)}
-            />
-            <InfoCard
-              label="Mesto"
-              value={getValue(deliveryAddress.city ?? shippingAddress.city)}
-            />
-            <InfoCard
-              label="PSČ"
-              value={getValue(
-                deliveryAddress.zip ??
-                shippingAddress.zip ??
-                (shippingAddress as any).postal_code
-              )}
-            />
-            <InfoCard
-              label="Krajina"
-              value={getValue(deliveryAddress.country ?? shippingAddress.country)}
-            />
+            <InfoCard label="Meno" value={getValue(deliveryAddress.name)} />
+            <InfoCard label="Telefón" value={getValue(deliveryAddress.phone ?? order.phone)} />
+            <InfoCard label="Ulica" value={getValue(deliveryAddress.street)} />
+            <InfoCard label="Doplnenie adresy" value={getValue(deliveryAddress.line2)} />
+            <InfoCard label="Mesto" value={getValue(deliveryAddress.city)} />
+            <InfoCard label="PSČ" value={getValue(deliveryAddress.zip)} />
+            <InfoCard label="Krajina" value={getValue(deliveryAddress.country)} />
           </Panel>
 
           <Panel title="Fakturačná adresa">
@@ -332,7 +308,7 @@ export default async function AdminOrderDetailPage({
           <div className="mt-4 grid gap-4 lg:grid-cols-3">
             <JsonBox title="Pricing JSON" value={formatJson(pricing)} />
             <JsonBox title="Config JSON" value={formatJson(config)} />
-            <JsonBox title="Shipping JSON" value={formatJson(shippingAddress)} />
+            <JsonBox title="Shipping JSON" value={formatJson(rawShipping)} />
           </div>
         </section>
       </div>

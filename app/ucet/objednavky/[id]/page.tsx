@@ -42,9 +42,13 @@ export default async function OrderDetailPage({
       customerEmail: true,
       paidTotalEur: true,
       shippingAddress: true,
+      deliveryAddress: true,
+      billingAddress: true,
       shippingCost: true,
       shippingMethod: true,
       stripeSessionId: true,
+      orderNumber: true,
+      phone: true,
     },
   });
 
@@ -55,7 +59,19 @@ export default async function OrderDetailPage({
   const analysis = (order.analysis ?? {}) as Record<string, any>;
   const config = (order.config ?? {}) as Record<string, any>;
   const pricing = (order.pricing ?? {}) as Record<string, any>;
-  const shippingAddress = (order.shippingAddress ?? {}) as Record<string, any>;
+  // Adresa: preferuj deliveryAddress, fallback na shippingAddress, potom billingAddress
+  const rawDelivery = (order.deliveryAddress ?? {}) as Record<string, any>;
+  const rawShipping = (order.shippingAddress ?? {}) as Record<string, any>;
+  const rawBilling = (order.billingAddress ?? {}) as Record<string, any>;
+  const addr = {
+    name: rawDelivery.name ?? rawShipping.name ?? rawBilling.name ?? null,
+    phone: rawDelivery.phone ?? rawShipping.phone ?? rawBilling.phone ?? (order as any).phone ?? null,
+    street: rawDelivery.street ?? rawShipping.street ?? rawBilling.street ?? rawBilling.line1 ?? null,
+    line2: rawDelivery.line2 ?? rawShipping.line2 ?? rawBilling.line2 ?? null,
+    city: rawDelivery.city ?? rawShipping.city ?? rawBilling.city ?? null,
+    zip: rawDelivery.zip ?? rawShipping.zip ?? rawBilling.zip ?? rawBilling.postal_code ?? null,
+    country: rawDelivery.country ?? rawShipping.country ?? rawBilling.country ?? null,
+  };
   const shippingCost = (order.shippingCost ?? {}) as Record<string, any>;
 
   const total =
@@ -182,35 +198,14 @@ export default async function OrderDetailPage({
       <section className="rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm">
         <div className="text-sm font-semibold text-neutral-500">Dodacie údaje</div>
         <div className="mt-4 grid gap-4 md:grid-cols-2">
-          <DetailCard
-            label="Email zákazníka"
-            value={order.customerEmail ?? sessionUser?.email ?? "—"}
-          />
-          <DetailCard label="Meno" value={String(shippingAddress.name ?? "—")} />
-          <DetailCard label="Telefón" value={String(shippingAddress.phone ?? "—")} />
-          <DetailCard
-            label="Ulica"
-            value={String(
-              shippingAddress.street ??
-              shippingAddress.line1 ??
-              (shippingAddress as any).address ??
-              "—"
-            )}
-          />
-          <DetailCard
-            label="Doplnenie adresy"
-            value={String(shippingAddress.line2 ?? "—")}
-          />
-          <DetailCard label="Mesto" value={String(shippingAddress.city ?? "—")} />
-          <DetailCard
-            label="PSČ"
-            value={String(
-              shippingAddress.zip ??
-              (shippingAddress as any).postal_code ??
-              "—"
-            )}
-          />
-          <DetailCard label="Krajina" value={String(shippingAddress.country ?? "—")} />
+          <DetailCard label="Email zákazníka" value={order.customerEmail ?? sessionUser?.email ?? "—"} />
+          <DetailCard label="Meno" value={addr.name ?? "—"} />
+          <DetailCard label="Telefón" value={addr.phone ?? (order as any).phone ?? "—"} />
+          <DetailCard label="Ulica" value={addr.street ?? "—"} />
+          {addr.line2 && <DetailCard label="Doplnenie adresy" value={addr.line2} />}
+          <DetailCard label="Mesto" value={addr.city ?? "—"} />
+          <DetailCard label="PSČ" value={addr.zip ?? "—"} />
+          <DetailCard label="Krajina" value={addr.country ?? "—"} />
         </div>
       </section>
     </div>

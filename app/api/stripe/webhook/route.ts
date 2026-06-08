@@ -213,9 +213,8 @@ export async function POST(req: NextRequest) {
           shippingCost: shippingCost as any,
 
           billingAddress: (billingAddress ?? accountBillingAddress) as any,
-          // deliveryAddress = Stripe shipping (what customer actually filled in),
-          // fallback to account address only if Stripe had no shipping details
-          deliveryAddress: (shippingAddress ?? accountDeliveryAddress) as any,
+          // deliveryAddress: preferujeme shipping_details, ak nie je tak billing, ak nie je tak account adresa
+          deliveryAddress: (shippingAddress ?? billingAddress ?? accountDeliveryAddress) as any,
 
           accountType: matchedUser?.accountType ?? null,
           companyName: matchedUser?.companyName ?? null,
