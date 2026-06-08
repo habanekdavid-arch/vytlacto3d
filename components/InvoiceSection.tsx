@@ -92,7 +92,7 @@ export default function InvoiceSection({
       <div className="flex items-center justify-between gap-4">
         <h2 className="text-lg font-extrabold text-neutral-900">Faktúry</h2>
 
-        {!mainInvoice && !creating && (
+        {!creating && (
           <button
             type="button"
             onClick={() => { setCreating(true); setError(null); }}
@@ -104,7 +104,7 @@ export default function InvoiceSection({
       </div>
 
       {/* Create form */}
-      {creating && !mainInvoice && (
+      {creating && (
         <div className="mt-4 flex flex-wrap items-end gap-4 rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
           <div>
             <div className="mb-1 text-xs font-bold text-neutral-500">Číselný rad</div>
@@ -225,7 +225,7 @@ export default function InvoiceSection({
                   Zobraziť / Tlačiť
                 </a>
 
-                {!isCreditNote && !hasCreditNote && (
+                {!isCreditNote && (
                   <button
                     type="button"
                     onClick={() => {

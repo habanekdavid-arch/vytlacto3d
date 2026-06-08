@@ -48,16 +48,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Order not found" }, { status: 404 });
   }
 
-  const existing = await prisma.invoice.findFirst({
-    where: { orderId, type: "INVOICE" },
-  });
-  if (existing) {
-    return NextResponse.json(
-      { error: "Faktúra pre túto objednávku už existuje.", invoice: existing },
-      { status: 409 }
-    );
-  }
-
   const pricing = (order.pricing ?? {}) as Record<string, any>;
   const shippingCost = (order.shippingCost ?? {}) as Record<string, any>;
   const billing = (order.billingAddress ?? {}) as Record<string, any>;

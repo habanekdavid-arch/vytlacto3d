@@ -52,13 +52,6 @@ export async function POST(
     return NextResponse.json({ error: "Dobropis možno vystaviť iba k faktúre" }, { status: 400 });
   }
 
-  if (original.creditNotes.length > 0) {
-    return NextResponse.json(
-      { error: "K tejto faktúre už existuje dobropis.", creditNote: original.creditNotes[0] },
-      { status: 409 }
-    );
-  }
-
   const body = await req.json().catch(() => ({}));
   const note: string | undefined = body?.note;
 
