@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import ColorPalette, { COLOR_LABELS } from "@/components/ColorPalette";
-import { formatPriceWithVat } from "@/lib/vat";
+import { formatEur, addVat, vatAmount } from "@/lib/vat";
 
 type Analysis = { volumeCm3: number };
 
@@ -230,60 +230,67 @@ export default function Configurator({
         </Field>
       </div>
 
-      <div className="mt-6 rounded-[28px] bg-neutral-950 p-5 text-white shadow-[0_18px_50px_rgba(0,0,0,0.18)]">
+      {/* Cenový blok */}
+      <div className="mt-6 rounded-[28px] bg-[#FFAE00] p-5 shadow-[0_18px_50px_rgba(255,174,0,0.25)]">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <div className="text-sm font-semibold text-white/60">
-              Finálna cena
+            <div className="text-sm font-semibold text-black/60">
+              Cena výroby s DPH
             </div>
-            <div className="mt-1 text-3xl font-extrabold tracking-tight">
-              {quote ? formatPriceWithVat(quote.total) : "—"}
-            </div>
-            <div className="mt-1 text-xs text-white/50">
-              Cena je uvedená vrátane DPH.
+            <div className="mt-1 text-4xl font-extrabold tracking-tight text-black">
+              {quote ? formatEur(addVat(quote.total)) : "—"}
             </div>
           </div>
-
-          <div className="rounded-2xl bg-[#FFAE00] px-4 py-3 text-sm font-extrabold text-black">
-            {loading ? "Prepočítavam…" : "Aktuálne"}
+          <div className="rounded-2xl bg-black/10 px-4 py-3 text-sm font-extrabold text-black">
+            {loading ? "Prepočítavam…" : "Aktuálna cena"}
           </div>
         </div>
 
         {quote ? (
-          <div className="mt-5 grid gap-3 text-sm md:grid-cols-2">
-            <PriceLine label="Materiál / ks" value={`${quote.gramsPerPart} g`} />
-            <PriceLine
-              label="Čas tlače / ks"
-              value={`${quote.printTimeMinPerPart} min`}
-            />
-            <PriceLine
-              label="Cena materiálu / ks"
-              value={formatPriceWithVat(quote.materialCostPerPart)}
-            />
-            <PriceLine
-              label="Cena stroja / ks"
-              value={formatPriceWithVat(quote.machineCostPerPart)}
-            />
-            <PriceLine
-              label="Výroba spolu"
-              value={formatPriceWithVat(quote.productionSubtotal)}
-            />
-            <PriceLine
-              label="Základ za model"
-              value={formatPriceWithVat(quote.setupFee)}
-            />
-            <PriceLine label="Mierka" value={`${config.scalePct}%`} />
-            <PriceLine
-              label="Množstevná zľava"
-              value={
-                quote.quantityDiscountPct > 0
-                  ? `-${quote.quantityDiscountPct}%`
-                  : "bez zľavy"
-              }
-            />
-          </div>
+          <>
+            {/* Rozpis DPH */}
+            <div className="mt-5 rounded-[20px] bg-white/40 p-4">
+              <div className="text-xs font-bold uppercase tracking-wide text-black/50 mb-3">
+                Rozpis ceny (výroba)
+              </div>
+              <div className="space-y-2">
+                <PriceLine label="Základ bez DPH" value={formatEur(quote.total)} />
+                <PriceLine label="DPH 23 %" value={formatEur(vatAmount(quote.total))} />
+                <div className="my-1 border-t border-black/10" />
+                <PriceLine label="Výroba s DPH" value={formatEur(addVat(quote.total))} bold />
+                <div className="my-1 border-t border-black/10" />
+                <PriceLine label="Doprava (Packeta)" value="+ 3,99 €" />
+                <PriceLine label="Doprava (Kuriér)" value="+ 5,99 €" />
+                <div className="my-1 border-t border-black/10" />
+                <PriceLine
+                  label="Celkom od (vr. dopravy)"
+                  value={formatEur(addVat(quote.total) + 3.99)}
+                  bold
+                />
+              </div>
+              <p className="mt-3 text-xs text-black/50">
+                Spôsob dopravy zvolíte pri dokončení objednávky. Ceny sú vrátane DPH 23&nbsp;%.
+              </p>
+            </div>
+
+            {/* Technické detaily */}
+            <div className="mt-3 rounded-[20px] bg-white/30 p-4">
+              <div className="text-xs font-bold uppercase tracking-wide text-black/50 mb-3">
+                Technické detaily
+              </div>
+              <div className="grid gap-2 text-sm sm:grid-cols-2">
+                <TechLine label="Hmotnosť / ks" value={`${quote.gramsPerPart} g`} />
+                <TechLine label="Čas tlače / ks" value={`${quote.printTimeMinPerPart} min`} />
+                <TechLine label="Mierka" value={`${config.scalePct} %`} />
+                <TechLine
+                  label="Množstevná zľava"
+                  value={quote.quantityDiscountPct > 0 ? `−${quote.quantityDiscountPct} %` : "bez zľavy"}
+                />
+              </div>
+            </div>
+          </>
         ) : (
-          <div className="mt-5 text-sm text-white/60">
+          <div className="mt-5 text-sm text-black/60">
             Nepodarilo sa vypočítať cenu.
           </div>
         )}
@@ -400,11 +407,20 @@ function SliderBox({
   );
 }
 
-function PriceLine({ label, value }: { label: string; value: string }) {
+function PriceLine({ label, value, bold }: { label: string; value: string; bold?: boolean }) {
   return (
-    <div className="flex items-center justify-between rounded-2xl bg-white/5 px-4 py-3">
-      <span className="text-white/60">{label}</span>
-      <b>{value}</b>
+    <div className="flex items-center justify-between">
+      <span className={bold ? "text-sm font-extrabold text-black" : "text-sm text-black/70"}>{label}</span>
+      <span className={bold ? "text-sm font-extrabold text-black" : "text-sm font-semibold text-black"}>{value}</span>
+    </div>
+  );
+}
+
+function TechLine({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between rounded-xl bg-white/30 px-3 py-2">
+      <span className="text-xs text-black/60">{label}</span>
+      <span className="text-xs font-bold text-black">{value}</span>
     </div>
   );
 }

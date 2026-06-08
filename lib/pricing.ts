@@ -48,7 +48,7 @@ const QUALITY_TIME_MULTIPLIER: Record<Quality, number> = {
   FINE: 1.18,
 };
 
-const SETUP_FEE = 12;
+const SETUP_FEE = 10;
 const MAX_INFILL_PCT = 50;
 
 function clamp(value: number, min: number, max: number) {
