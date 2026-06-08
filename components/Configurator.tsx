@@ -271,6 +271,10 @@ export default function Configurator({
               </div>
               <div className="grid gap-2 sm:grid-cols-2">
                 <TechLine
+                  label="Cena za 1 model"
+                  value={formatEur(addVat(quote.subtotalPerPart))}
+                />
+                <TechLine
                   label="Hmotnosť / ks"
                   value={formatWeight(quote.gramsPerPart)}
                 />

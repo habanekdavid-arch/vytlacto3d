@@ -22,19 +22,19 @@ type QuoteResult = {
   total: number;
 };
 
-// Cena materiálu za gram (€/g) vrátane straty pri tlači ~15 %
+// Cena materiálu za gram (€/g) — zhodné s verejným cenníkom MaterialPricing.tsx
 const MATERIAL_PRICE_PER_GRAM: Record<Material, number> = {
-  PLA:  0.022,
-  PETG: 0.026,
-  ABS:  0.028,
-  TPU:  0.034,
+  PLA:  0.012,
+  PETG: 0.013,
+  ABS:  0.014,
+  TPU:  0.015,
 };
 
 const MATERIAL_DENSITY_G_PER_CM3: Record<Material, number> = {
   PLA:  1.24,
   PETG: 1.27,
   ABS:  1.04,
-  TPU:  1.21,
+  TPU:  1.20,
 };
 
 // Strojová sadzba €/hod (odpis stroja + elektrina + údržba + réžia)
@@ -53,7 +53,7 @@ const PRINT_MIN_PER_CM3_MATERIAL: Record<Quality, number> = {
 };
 
 // Základný poplatok za objednávku (nastavenie stroja, slicing, kontrola)
-const SETUP_FEE = 15;
+const SETUP_FEE = 10;
 
 // Maximálny povolený infill
 const MAX_INFILL_PCT = 50;
