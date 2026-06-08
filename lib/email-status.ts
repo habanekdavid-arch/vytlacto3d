@@ -7,7 +7,7 @@ const baseUrl =
   process.env.NEXT_PUBLIC_BASE_URL || "https://www.vytlacto3d.sk";
 
 const FROM =
-  process.env.RESEND_FROM_EMAIL || "VytlačTo3D <noreply@vytlacto3d.sk>";
+  process.env.RESEND_FROM_EMAIL || "VytlacTo3D <onboarding@resend.dev>";
 
 type StatusEmailParams = {
   to: string;

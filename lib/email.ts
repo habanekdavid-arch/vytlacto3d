@@ -27,7 +27,7 @@ export async function sendOrderPaidEmail({
   await resend.emails.send({
     from:
       process.env.RESEND_FROM_EMAIL ||
-      "VytlačTo3D <noreply@vytlacto3d.sk>",
+      "VytlacTo3D <onboarding@resend.dev>",
     to,
     subject: "Ďakujeme za objednávku – VytlačTo3D",
     html: `

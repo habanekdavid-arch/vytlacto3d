@@ -38,7 +38,7 @@ export async function sendAdminOrderNotificationEmail({
   await resend.emails.send({
     from:
       process.env.RESEND_FROM_EMAIL ||
-      "VytlačTo3D <noreply@vytlacto3d.sk>",
+      "VytlacTo3D <onboarding@resend.dev>",
     to: process.env.ADMIN_ORDER_EMAIL || "info@4frommedia.sk",
     subject: `Nová zaplatená objednávka – ${fileName}`,
     html: `

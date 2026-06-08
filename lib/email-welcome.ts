@@ -23,7 +23,7 @@ export async function sendWelcomeEmail({
   await resend.emails.send({
     from:
       process.env.RESEND_FROM_EMAIL ||
-      "VytlačTo3D <noreply@vytlacto3d.sk>",
+      "VytlacTo3D <onboarding@resend.dev>",
     to,
     subject: isCompany
       ? "Vitajte vo VytlačTo3D – firemný účet bol vytvorený"
