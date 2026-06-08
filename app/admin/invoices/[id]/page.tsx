@@ -221,13 +221,13 @@ export default async function InvoicePrintPage({
         </div>
       </div>
 
-      <style jsx global>{`
+      <style dangerouslySetInnerHTML={{ __html: `
         @media print {
           @page { size: A4; margin: 0; }
           body  { margin: 0; }
           .print\\:hidden { display: none !important; }
         }
-      `}</style>
+      ` }} />
     </>
   );
 }
