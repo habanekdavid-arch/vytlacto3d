@@ -4,7 +4,14 @@ import { useEffect, useMemo, useState } from "react";
 import ColorPalette, { COLOR_LABELS } from "@/components/ColorPalette";
 import { formatEur, addVat, vatAmount } from "@/lib/vat";
 
-type Analysis = { volumeCm3: number };
+const MAX_DIM_MM = 700;
+
+type Analysis = {
+  volumeCm3: number;
+  dimsXmm?: number;
+  dimsYmm?: number;
+  dimsZmm?: number;
+};
 
 type Quote = {
   gramsPerPart: number;
@@ -47,10 +54,19 @@ export default function Configurator({
   const [quote, setQuote] = useState<Quote | null>(null);
   const [loading, setLoading] = useState(false);
 
+  const scaleFactor = config.scalePct / 100;
+
   const scaledVolumeCm3 = useMemo(() => {
-    const scaleFactor = config.scalePct / 100;
     return analysis.volumeCm3 * Math.pow(scaleFactor, 3);
-  }, [analysis.volumeCm3, config.scalePct]);
+  }, [analysis.volumeCm3, scaleFactor]);
+
+  const scaledDims = useMemo(() => ({
+    x: (analysis.dimsXmm ?? 0) * scaleFactor,
+    y: (analysis.dimsYmm ?? 0) * scaleFactor,
+    z: (analysis.dimsZmm ?? 0) * scaleFactor,
+  }), [analysis.dimsXmm, analysis.dimsYmm, analysis.dimsZmm, scaleFactor]);
+
+  const tooBig = scaledDims.x > MAX_DIM_MM || scaledDims.y > MAX_DIM_MM || scaledDims.z > MAX_DIM_MM;
 
   const payload = useMemo(
     () => ({
@@ -230,26 +246,56 @@ export default function Configurator({
         </Field>
       </div>
 
+      {/* Varovanie o veľkosti */}
+      {tooBig && (
+        <div className="mt-6 flex items-start gap-3 rounded-[20px] border border-red-200 bg-red-50 px-5 py-4">
+          <svg className="mt-0.5 shrink-0 text-red-500" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <line x1="12" y1="16" x2="12.01" y2="16" />
+          </svg>
+          <div>
+            <div className="text-sm font-extrabold text-red-700">
+              Model je pri tejto mierke príliš veľký
+            </div>
+            <div className="mt-1 text-xs leading-5 text-red-600">
+              Pri mierke {config.scalePct}&nbsp;% sú rozmery{" "}
+              <span className="font-bold">
+                {scaledDims.x.toFixed(0)}&thinsp;×&thinsp;{scaledDims.y.toFixed(0)}&thinsp;×&thinsp;{scaledDims.z.toFixed(0)}&thinsp;mm
+              </span>
+              . Maximálna povolená veľkosť je{" "}
+              <span className="font-bold">{MAX_DIM_MM}&thinsp;×&thinsp;{MAX_DIM_MM}&thinsp;×&thinsp;{MAX_DIM_MM}&thinsp;mm</span>.
+              Zmenšite mierku alebo kontaktujte nás.
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Cenový blok */}
-      <div className="mt-6 rounded-[28px] bg-white p-5 shadow-[0_18px_50px_rgba(0,0,0,0.08)] border border-neutral-100 transition duration-300 hover:-translate-y-1 hover:shadow-[0_24px_60px_rgba(255,174,0,0.15)] hover:border-[#FFAE00]/40">
+      <div className={[
+        "mt-6 rounded-[28px] bg-white p-5 shadow-[0_18px_50px_rgba(0,0,0,0.08)] border transition duration-300",
+        tooBig
+          ? "border-red-200 opacity-50 pointer-events-none select-none"
+          : "border-neutral-100 hover:-translate-y-1 hover:shadow-[0_24px_60px_rgba(255,174,0,0.15)] hover:border-[#FFAE00]/40",
+      ].join(" ")}>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <div className="text-sm font-semibold text-neutral-500">
               Cena výroby s DPH
             </div>
             <div className="mt-1 text-4xl font-extrabold tracking-tight text-neutral-900">
-              {quote ? formatEur(addVat(quote.total)) : "—"}
+              {tooBig ? "—" : quote ? formatEur(addVat(quote.total)) : "—"}
             </div>
             <div className="mt-1 text-xs text-neutral-400">
               Všetky ceny sú uvedené s DPH 23&nbsp;%
             </div>
           </div>
           <div className="rounded-2xl bg-[#FFAE00] px-4 py-3 text-sm font-extrabold text-black">
-            {loading ? "Prepočítavam…" : "Aktuálna cena"}
+            {loading && !tooBig ? "Prepočítavam…" : "Aktuálna cena"}
           </div>
         </div>
 
-        {quote ? (
+        {!tooBig && quote ? (
           <>
             {/* Rozpis DPH */}
             <div className="mt-5 rounded-[20px] bg-neutral-50 border border-neutral-100 p-4">
@@ -298,11 +344,11 @@ export default function Configurator({
               </div>
             </div>
           </>
-        ) : (
+        ) : !tooBig ? (
           <div className="mt-5 text-sm text-neutral-400">
             Nepodarilo sa vypočítať cenu.
           </div>
-        )}
+        ) : null}
       </div>
     </div>
   );
@@ -357,6 +403,7 @@ function Seg({
 
 function SliderBox({
   value,
+  
   min,
   max,
   suffix,
