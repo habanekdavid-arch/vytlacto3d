@@ -231,7 +231,7 @@ export default function Configurator({
       </div>
 
       {/* Cenový blok */}
-      <div className="mt-6 rounded-[28px] bg-white p-5 shadow-[0_18px_50px_rgba(0,0,0,0.08)] border border-neutral-100">
+      <div className="mt-6 rounded-[28px] bg-white p-5 shadow-[0_18px_50px_rgba(0,0,0,0.08)] border border-neutral-100 transition duration-300 hover:-translate-y-1 hover:shadow-[0_24px_60px_rgba(255,174,0,0.15)] hover:border-[#FFAE00]/40">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <div className="text-sm font-semibold text-neutral-500">
@@ -239,6 +239,9 @@ export default function Configurator({
             </div>
             <div className="mt-1 text-4xl font-extrabold tracking-tight text-neutral-900">
               {quote ? formatEur(addVat(quote.total)) : "—"}
+            </div>
+            <div className="mt-1 text-xs text-neutral-400">
+              Všetky ceny sú uvedené s DPH 23&nbsp;%
             </div>
           </div>
           <div className="rounded-2xl bg-[#FFAE00] px-4 py-3 text-sm font-extrabold text-black">
@@ -251,26 +254,14 @@ export default function Configurator({
             {/* Rozpis DPH */}
             <div className="mt-5 rounded-[20px] bg-neutral-50 border border-neutral-100 p-4">
               <div className="text-xs font-bold uppercase tracking-wide text-neutral-400 mb-3">
-                Rozpis ceny (výroba)
+                Rozpis DPH
               </div>
               <div className="space-y-2">
                 <PriceLine label="Základ bez DPH" value={formatEur(quote.total)} />
                 <PriceLine label="DPH 23 %" value={formatEur(vatAmount(quote.total))} />
                 <div className="my-1 border-t border-neutral-200" />
-                <PriceLine label="Výroba s DPH" value={formatEur(addVat(quote.total))} bold />
-                <div className="my-1 border-t border-neutral-200" />
-                <PriceLine label="Doprava — Packeta / Zásielkovňa" value="+ 3,99 €" />
-                <PriceLine label="Doprava — Kuriér" value="+ 5,99 €" />
-                <div className="my-1 border-t border-neutral-200" />
-                <PriceLine
-                  label="Celkom od (vr. najlacnejšej dopravy)"
-                  value={formatEur(addVat(quote.total) + 3.99)}
-                  bold
-                />
+                <PriceLine label="Cena s DPH" value={formatEur(addVat(quote.total))} bold />
               </div>
-              <p className="mt-3 text-xs text-neutral-400">
-                Spôsob dopravy zvolíte pri dokončení objednávky. Ceny sú vrátane DPH 23&nbsp;%.
-              </p>
             </div>
 
             {/* Technické detaily */}
