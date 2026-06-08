@@ -182,7 +182,10 @@ export async function POST(req: NextRequest) {
 
     const baseUrl = getBaseUrl(req);
     const totalWithVat = addVat(pricing.total);
-    const itemAmountCents = Math.round(totalWithVat * 100);
+    // DOČASNÉ: pri FORCE_TEST_PRICE=true použije 1 € namiesto skutočnej ceny
+    const itemAmountCents = process.env.FORCE_TEST_PRICE === "true"
+      ? 100
+      : Math.round(totalWithVat * 100);
 
     const stripeSession = await stripe.checkout.sessions.create({
       mode: "payment",
