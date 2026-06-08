@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getSafeServerSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { formatEur, addVat, vatAmount } from "@/lib/vat";
+import CopyOrderButton from "@/components/CopyOrderButton";
 
 export const dynamic = "force-dynamic";
 
@@ -83,6 +84,89 @@ export default async function AdminOrderDetailPage({
 
   const shippingCostEur =
     typeof shippingCost.amount === "number" ? shippingCost.amount / 100 : null;
+
+  const paidTotal =
+    typeof order.paidTotalEur === "number" ? order.paidTotalEur : null;
+  const productionGross =
+    paidTotal !== null
+      ? paidTotal - (shippingCostEur ?? 0)
+      : typeof pricing.total === "number"
+      ? addVat(pricing.total)
+      : null;
+
+  function v(val: any) {
+    return val === null || val === undefined || val === "" ? "—" : String(val);
+  }
+
+  const sep = "─────────────────────────────────────────";
+  const copyText = [
+    "═".repeat(45),
+    `  OBJEDNÁVKA: ${v(order.orderNumber ?? order.id)}`,
+    `  Stav: ${v(order.status)}`,
+    "═".repeat(45),
+    "",
+    "ZÁKLADNÉ INFORMÁCIE",
+    sep,
+    `  Číslo objednávky : ${v(order.orderNumber)}`,
+    `  ID               : ${v(order.id)}`,
+    `  Dátum            : ${formatDate(order.createdAt)}`,
+    `  Súbor            : ${v(order.fileName)}`,
+    `  Celkom zaplatené : ${paidTotal !== null ? formatEur(paidTotal) : "—"}`,
+    `  Doprava          : ${v(order.shippingMethod)}`,
+    `  Cena dopravy     : ${shippingCostEur !== null ? formatEur(shippingCostEur) : "—"}`,
+    "",
+    "ZÁKAZNÍK",
+    sep,
+    `  Email      : ${v(order.customerEmail)}`,
+    `  Telefón    : ${v(deliveryAddress.phone ?? order.phone)}`,
+    `  Typ účtu   : ${order.accountType === "COMPANY" ? "Firma" : order.accountType === "PERSON" ? "Súkromná osoba" : "—"}`,
+    ...(order.accountType === "COMPANY" ? [
+      "",
+      "FIREMNÉ ÚDAJE",
+      sep,
+      `  Spoločnosť     : ${v(order.companyName)}`,
+      `  Kontaktná os.  : ${v(order.contactPerson)}`,
+      `  IČO            : ${v(order.ico)}`,
+      `  DIČ            : ${v(order.dic)}`,
+      `  IČ DPH         : ${v(order.icDph)}`,
+    ] : []),
+    "",
+    "ADRESA DORUČENIA",
+    sep,
+    `  Meno    : ${v(deliveryAddress.name)}`,
+    `  Ulica   : ${v(deliveryAddress.street)}${deliveryAddress.line2 ? `, ${deliveryAddress.line2}` : ""}`,
+    `  Mesto   : ${v(deliveryAddress.city)}`,
+    `  PSČ     : ${v(deliveryAddress.zip)}`,
+    `  Krajina : ${v(deliveryAddress.country)}`,
+    "",
+    "KONFIGURÁCIA TLAČE",
+    sep,
+    `  Materiál    : ${v(config.material)}`,
+    `  Kvalita     : ${v(config.quality)}`,
+    `  Farba       : ${v(config.color)}`,
+    `  Počet kusov : ${v(config.quantity)}`,
+    `  Infill      : ${config.infillPct !== undefined ? `${config.infillPct}%` : "—"}`,
+    `  Mierka      : ${config.scalePct !== undefined ? `${config.scalePct}%` : "—"}`,
+    "",
+    "ANALÝZA MODELU",
+    sep,
+    `  Rozmer X : ${analysis.dimsXmm !== undefined ? `${analysis.dimsXmm} mm` : "—"}`,
+    `  Rozmer Y : ${analysis.dimsYmm !== undefined ? `${analysis.dimsYmm} mm` : "—"}`,
+    `  Rozmer Z : ${analysis.dimsZmm !== undefined ? `${analysis.dimsZmm} mm` : "—"}`,
+    `  Objem    : ${analysis.volumeCm3 !== undefined ? `${analysis.volumeCm3} cm³` : "—"}`,
+    "",
+    "CENOVÝ ROZPIS",
+    sep,
+    ...(productionGross !== null ? [
+      `  Základ bez DPH : ${formatEur(productionGross / 1.23)}`,
+      `  DPH 23 %       : ${formatEur(productionGross - productionGross / 1.23)}`,
+      `  Výroba s DPH   : ${formatEur(productionGross)}`,
+    ] : []),
+    `  Doprava        : ${shippingCostEur !== null ? formatEur(shippingCostEur) : "—"}`,
+    `  CELKOM         : ${paidTotal !== null ? formatEur(paidTotal) : "—"}`,
+    "",
+    "═".repeat(45),
+  ].join("\n");
 
   return (
     <main className="min-h-screen bg-white px-6 py-10 text-neutral-900">
@@ -178,6 +262,8 @@ export default async function AdminOrderDetailPage({
             >
               Stiahnuť model
             </a>
+
+            <CopyOrderButton text={copyText} />
           </div>
         </section>
 
