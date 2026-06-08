@@ -1,5 +1,5 @@
 import { Resend } from "resend";
-import { formatPriceWithVat } from "@/lib/vat";
+import { formatEur } from "@/lib/vat";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -59,7 +59,7 @@ export async function sendAdminOrderNotificationEmail({
             <p><strong>Kontaktná osoba:</strong> ${contactPerson ?? "—"}</p>
             <p><strong>Doprava:</strong> ${shippingMethod ?? "—"}</p>
             <p><strong>Suma:</strong> ${
-              typeof totalEur === "number" ? formatPriceWithVat(totalEur) : "—"
+              typeof totalEur === "number" ? formatEur(totalEur) : "—"
             }</p>
           </div>
 

@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { formatPriceWithVat } from "@/lib/vat";
+import { formatEur, addVat, vatAmount, formatPriceWithVat } from "@/lib/vat";
 import { getSafeServerSession } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -102,15 +102,13 @@ export default async function OrderDetailPage({
             value={new Date(order.createdAt).toLocaleString("sk-SK")}
           />
           <DetailCard
-            label="Cena spolu"
-            value={total !== null ? formatPriceWithVat(total) : "—"}
+            label="Celkom zaplatené"
+            value={total !== null ? formatEur(total) : "—"}
           />
           <DetailCard label="Doprava" value={order.shippingMethod ?? "—"} />
           <DetailCard
             label="Cena dopravy"
-            value={
-              shippingCostEur !== null ? formatPriceWithVat(shippingCostEur) : "—"
-            }
+            value={shippingCostEur !== null ? formatEur(shippingCostEur) : "—"}
           />
         </div>
       </section>
@@ -153,36 +151,30 @@ export default async function OrderDetailPage({
         <div className="text-sm font-semibold text-neutral-500">Cenový rozpis</div>
         <div className="mt-4 grid gap-4 md:grid-cols-2">
           <DetailCard
-            label="Cena výroby spolu"
+            label="Základ bez DPH"
             value={
-              typeof pricing.productionSubtotal === "number"
-                ? formatPriceWithVat(pricing.productionSubtotal)
+              typeof pricing.total === "number" ? formatEur(pricing.total) : "—"
+            }
+          />
+          <DetailCard
+            label="DPH 23 %"
+            value={
+              typeof pricing.total === "number"
+                ? formatEur(vatAmount(pricing.total))
                 : "—"
             }
           />
           <DetailCard
-            label="Základ za model"
+            label="Výroba s DPH"
             value={
-              typeof pricing.setupFee === "number"
-                ? formatPriceWithVat(pricing.setupFee)
+              typeof pricing.total === "number"
+                ? formatEur(addVat(pricing.total))
                 : "—"
             }
           />
           <DetailCard
-            label="Množstevná zľava"
-            value={
-              typeof pricing.quantityDiscountAmount === "number"
-                ? pricing.quantityDiscountAmount > 0
-                  ? `-${formatPriceWithVat(pricing.quantityDiscountAmount)}`
-                  : "bez zľavy"
-                : "—"
-            }
-          />
-          <DetailCard
-            label="Cena dopravy"
-            value={
-              shippingCostEur !== null ? formatPriceWithVat(shippingCostEur) : "—"
-            }
+            label="Doprava"
+            value={shippingCostEur !== null ? formatEur(shippingCostEur) : "—"}
           />
         </div>
       </section>

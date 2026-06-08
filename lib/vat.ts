@@ -1,6 +1,11 @@
 export const VAT_RATE = 0.23;
 export const VAT_MULTIPLIER = 1 + VAT_RATE;
 
+export function vatAmount(priceWithoutVat: number): number {
+  if (!Number.isFinite(priceWithoutVat)) return 0;
+  return Math.round(priceWithoutVat * VAT_RATE * 100) / 100;
+}
+
 export function addVat(priceWithoutVat: number): number {
   if (!Number.isFinite(priceWithoutVat)) return 0;
   return Math.round(priceWithoutVat * VAT_MULTIPLIER * 100) / 100;

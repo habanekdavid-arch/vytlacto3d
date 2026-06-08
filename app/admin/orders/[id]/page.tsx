@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { getSafeServerSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
-import { formatPriceWithVat } from "@/lib/vat";
+import { formatEur, addVat, vatAmount } from "@/lib/vat";
 
 export const dynamic = "force-dynamic";
 
@@ -119,19 +119,37 @@ export default async function AdminOrderDetailPage({
           <div className="mt-8 grid gap-4 md:grid-cols-4">
             <InfoCard label="Vytvorené" value={formatDate(order.createdAt)} />
             <InfoCard
-              label="Cena spolu"
-              value={total !== null ? formatPriceWithVat(total) : "—"}
+              label="Celkom zaplatené"
+              value={total !== null ? formatEur(total) : "—"}
             />
             <InfoCard label="Doprava" value={order.shippingMethod ?? "—"} />
             <InfoCard
               label="Cena dopravy"
-              value={
-                shippingCostEur !== null
-                  ? formatPriceWithVat(shippingCostEur)
-                  : "—"
-              }
+              value={shippingCostEur !== null ? formatEur(shippingCostEur) : "—"}
             />
           </div>
+
+          {typeof pricing.total === "number" && (
+            <div className="mt-4 rounded-2xl bg-neutral-50 px-5 py-4 text-sm">
+              <div className="text-xs font-bold uppercase tracking-wide text-neutral-500 mb-3">
+                Rozpis DPH (výroba)
+              </div>
+              <div className="grid grid-cols-3 gap-2 text-neutral-700">
+                <span>Základ bez DPH</span>
+                <span className="col-span-2 font-semibold">{formatEur(pricing.total)}</span>
+                <span>DPH 23 %</span>
+                <span className="col-span-2 font-semibold">{formatEur(vatAmount(pricing.total))}</span>
+                <span className="font-bold text-neutral-900">Výroba s DPH</span>
+                <span className="col-span-2 font-bold text-neutral-900">{formatEur(addVat(pricing.total))}</span>
+                {shippingCostEur !== null && (
+                  <>
+                    <span>Doprava</span>
+                    <span className="col-span-2 font-semibold">{formatEur(shippingCostEur)}</span>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
 
           <div className="mt-6 flex flex-wrap gap-3">
             <a

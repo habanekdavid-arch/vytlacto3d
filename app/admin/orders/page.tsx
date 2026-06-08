@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getSafeServerSession } from "@/lib/session";
 import { revalidatePath } from "next/cache";
-import { formatPricePair, formatEur, addVat } from "@/lib/vat";
+import { formatEur, addVat } from "@/lib/vat";
 
 async function updateOrderStatus(formData: FormData) {
   "use server";
@@ -109,7 +109,7 @@ export default async function AdminOrdersPage() {
     customerEmail: order.customerEmail ?? "—",
     shippingMethod: order.shippingMethod ?? "—",
     stripeSessionId: order.stripeSessionId ?? null,
-    paidTotal: formatPricePair(order.paidTotalEur ?? null),
+    paidTotalEur: order.paidTotalEur ?? null,
     createdAtText: formatDateBratislava(order.createdAt),
     configLabel: getConfigLabel(order.config),
   }));
@@ -244,13 +244,13 @@ export default async function AdminOrdersPage() {
 
                   <div>
                     <div className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
-                      Cena
+                      Cena celkom
                     </div>
                     <div className="mt-2 text-lg font-bold text-neutral-900">
-                      {order.paidTotal.withoutVat}
+                      {order.paidTotalEur !== null ? formatEur(order.paidTotalEur) : "—"}
                     </div>
                     <div className="text-xs text-neutral-500">
-                      {order.paidTotal.withVat} s DPH
+                      vrátane DPH a dopravy
                     </div>
 
                     <div className="mt-4 text-xs font-semibold uppercase tracking-wide text-neutral-500">
