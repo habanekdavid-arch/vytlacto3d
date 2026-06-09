@@ -148,6 +148,19 @@ export async function POST(req: NextRequest) {
       const billingAddress = getBillingAddress(fullSession);
       const shippingCost = getShippingCost(fullSession);
 
+      const isPacketa = fullSession.metadata?.deliveryMethod === "packeta";
+      const packetaDeliveryAddress = isPacketa && fullSession.metadata?.packetaPointId
+        ? {
+            type: "packeta",
+            packetaPointId: fullSession.metadata.packetaPointId,
+            packetaPointName: fullSession.metadata.packetaPointName ?? null,
+            street: fullSession.metadata.packetaStreet ?? null,
+            city: fullSession.metadata.packetaCity ?? null,
+            zip: fullSession.metadata.packetaZip ?? null,
+            country: "SK",
+          }
+        : null;
+
       const matchedUser = customerEmail
         ? await prisma.user.findUnique({
             where: { email: customerEmail },
@@ -213,8 +226,7 @@ export async function POST(req: NextRequest) {
           shippingCost: shippingCost as any,
 
           billingAddress: (billingAddress ?? accountBillingAddress) as any,
-          // deliveryAddress: preferujeme shipping_details, ak nie je tak billing, ak nie je tak account adresa
-          deliveryAddress: (shippingAddress ?? billingAddress ?? accountDeliveryAddress) as any,
+          deliveryAddress: (packetaDeliveryAddress ?? shippingAddress ?? billingAddress ?? accountDeliveryAddress) as any,
 
           accountType: matchedUser?.accountType ?? null,
           companyName: matchedUser?.companyName ?? null,

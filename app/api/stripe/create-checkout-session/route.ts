@@ -87,6 +87,9 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json().catch(() => null);
 
+    const deliveryMethod: "packeta" | "courier" = body?.deliveryMethod === "courier" ? "courier" : "packeta";
+    const packetaPoint = deliveryMethod === "packeta" ? (body?.packetaPoint ?? null) : null;
+
     if (!body?.uploaded?.fileKey || !body?.uploaded?.fileName) {
       return NextResponse.json({ error: "Missing uploaded data" }, { status: 400 });
     }
@@ -168,14 +171,24 @@ export async function POST(req: NextRequest) {
           zip: dbUser?.billingZip ?? null,
           country: dbUser?.billingCountry ?? null,
         },
-        deliveryAddress: {
-          name: dbUser?.shippingName ?? null,
-          contact: dbUser?.shippingContact ?? null,
-          street: dbUser?.shippingStreet ?? null,
-          city: dbUser?.shippingCity ?? null,
-          zip: dbUser?.shippingZip ?? null,
-          country: dbUser?.shippingCountry ?? null,
-        },
+        deliveryAddress: deliveryMethod === "packeta" && packetaPoint
+          ? {
+              type: "packeta",
+              packetaPointId: String(packetaPoint.id),
+              packetaPointName: packetaPoint.name,
+              street: packetaPoint.nameStreet ?? null,
+              city: packetaPoint.city ?? null,
+              zip: packetaPoint.zip ?? null,
+              country: "SK",
+            }
+          : {
+              name: dbUser?.shippingName ?? null,
+              contact: dbUser?.shippingContact ?? null,
+              street: dbUser?.shippingStreet ?? null,
+              city: dbUser?.shippingCity ?? null,
+              zip: dbUser?.shippingZip ?? null,
+              country: dbUser?.shippingCountry ?? null,
+            },
       },
       select: { id: true },
     });
@@ -189,24 +202,25 @@ export async function POST(req: NextRequest) {
       client_reference_id: order.id,
       billing_address_collection: "required",
       phone_number_collection: { enabled: true },
-      shipping_address_collection: {
-        allowed_countries: ["SK", "CZ"],
-      },
+      ...(deliveryMethod === "courier"
+        ? { shipping_address_collection: { allowed_countries: ["SK", "CZ"] } }
+        : {}),
       shipping_options: [
-        {
-          shipping_rate_data: {
-            display_name: "Packeta / Zásielkovňa",
-            type: "fixed_amount",
-            fixed_amount: { amount: 399, currency: "eur" },
-          },
-        },
-        {
-          shipping_rate_data: {
-            display_name: "Kuriér",
-            type: "fixed_amount",
-            fixed_amount: { amount: 599, currency: "eur" },
-          },
-        },
+        deliveryMethod === "packeta"
+          ? {
+              shipping_rate_data: {
+                display_name: "Packeta výdajňa / Z-Box",
+                type: "fixed_amount",
+                fixed_amount: { amount: 299, currency: "eur" },
+              },
+            }
+          : {
+              shipping_rate_data: {
+                display_name: "Kuriér",
+                type: "fixed_amount",
+                fixed_amount: { amount: 499, currency: "eur" },
+              },
+            },
       ],
       customer_email: sessionEmail ?? dbUser?.email ?? undefined,
       line_items: [
@@ -229,6 +243,12 @@ export async function POST(req: NextRequest) {
         userId: userId ?? "",
         customerEmail: sessionEmail ?? dbUser?.email ?? "",
         isTestOrder: "false",
+        deliveryMethod,
+        packetaPointId: packetaPoint?.id ? String(packetaPoint.id) : "",
+        packetaPointName: packetaPoint?.name ?? "",
+        packetaCity: packetaPoint?.city ?? "",
+        packetaZip: packetaPoint?.zip ?? "",
+        packetaStreet: packetaPoint?.nameStreet ?? "",
       },
       payment_intent_data: {
         metadata: {
@@ -238,6 +258,9 @@ export async function POST(req: NextRequest) {
           userId: userId ?? "",
           customerEmail: sessionEmail ?? dbUser?.email ?? "",
           isTestOrder: "false",
+          deliveryMethod,
+          packetaPointId: packetaPoint?.id ? String(packetaPoint.id) : "",
+          packetaPointName: packetaPoint?.name ?? "",
         },
       },
       success_url: `${baseUrl}/success?orderId=${order.id}&session_id={CHECKOUT_SESSION_ID}`,
