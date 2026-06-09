@@ -203,7 +203,7 @@ export async function POST(req: NextRequest) {
       billing_address_collection: "required",
       phone_number_collection: { enabled: true },
       ...(deliveryMethod === "courier"
-        ? { shipping_address_collection: { allowed_countries: ["SK", "CZ"] } }
+        ? { shipping_address_collection: { allowed_countries: ["SK"] } }
         : {}),
       shipping_options: [
         deliveryMethod === "packeta"

@@ -345,7 +345,7 @@ export default function Home() {
                   </div>
                   <div className="flex-1">
                     <div className="text-sm font-bold text-neutral-900">Kuriér na adresu</div>
-                    <div className="mt-0.5 text-xs text-neutral-500">Doručenie domov · SK / CZ</div>
+                    <div className="mt-0.5 text-xs text-neutral-500">Doručenie domov · SK</div>
                     <div className="mt-1.5 text-sm font-extrabold text-neutral-900">4,99 €</div>
                   </div>
                   {deliveryMethod === "courier" && (
