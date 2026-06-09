@@ -22,13 +22,13 @@ export default function BlogArticleLayout({
 }: BlogArticleLayoutProps) {
   return (
     <article className="bg-white text-zinc-900">
-      <section className="px-4 pt-14 pb-10 md:pt-20 md:pb-14">
+      <section className="px-4 pt-14 pb-10 md:pt-20 md:pb-14 animate-fade-up">
         <div className="mx-auto max-w-4xl text-center">
           <Link
             href="/blog"
-            className="mb-6 inline-flex text-sm font-medium text-zinc-500 transition hover:text-zinc-900"
+            className="mb-6 inline-flex items-center gap-1.5 text-sm font-medium text-zinc-500 transition-all duration-200 hover:gap-2.5 hover:text-zinc-900"
           >
-            ← Späť na blog
+            <span className="transition-transform duration-200 group-hover:-translate-x-0.5">←</span> Späť na blog
           </Link>
 
           {/* Hlavný názov */}
@@ -53,8 +53,8 @@ export default function BlogArticleLayout({
       </section>
 
       {/* Iba jeden obrázok */}
-      <section className="px-4 pb-12">
-        <div className="mx-auto max-w-5xl overflow-hidden rounded-2xl border border-zinc-200 shadow-sm">
+      <section className="px-4 pb-12 animate-fade-up" style={{ animationDelay: "120ms" }}>
+        <div className="mx-auto max-w-5xl overflow-hidden rounded-2xl border border-zinc-200 shadow-sm transition-shadow duration-300 hover:shadow-md">
           <div className="relative aspect-[16/8] w-full">
             <Image
               src={image.src}
@@ -68,7 +68,7 @@ export default function BlogArticleLayout({
       </section>
 
       {/* Obsah článku */}
-      <section className="px-4 pb-20">
+      <section className="px-4 pb-20 animate-fade-up" style={{ animationDelay: "200ms" }}>
         <div className="mx-auto max-w-3xl space-y-8 text-zinc-700">
           {children}
         </div>

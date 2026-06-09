@@ -46,6 +46,15 @@ body {
   color: #18181b;
 }
 
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-up {
+  animation: fadeUp 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
 .article-content h2 {
   margin-top: 3.5rem;
   margin-bottom: 1rem;
