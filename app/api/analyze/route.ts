@@ -277,22 +277,6 @@ export async function POST(req: NextRequest) {
       analysis = parseBinaryStl(buffer);
     }
 
-    const MAX_DIM_MM = 700;
-    if (
-      analysis.dimsXmm > MAX_DIM_MM ||
-      analysis.dimsYmm > MAX_DIM_MM ||
-      analysis.dimsZmm > MAX_DIM_MM
-    ) {
-      return NextResponse.json(
-        {
-          error: `Model je príliš veľký. Maximálna povolená veľkosť je ${MAX_DIM_MM} × ${MAX_DIM_MM} × ${MAX_DIM_MM} mm. Váš model má rozmery ${analysis.dimsXmm} × ${analysis.dimsYmm} × ${analysis.dimsZmm} mm.`,
-          code: "MODEL_TOO_LARGE",
-          dims: { x: analysis.dimsXmm, y: analysis.dimsYmm, z: analysis.dimsZmm },
-        },
-        { status: 422 }
-      );
-    }
-
     return NextResponse.json({
       ok: true,
       analysis,

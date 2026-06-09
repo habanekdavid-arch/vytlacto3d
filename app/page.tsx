@@ -98,10 +98,6 @@ export default function Home() {
     };
   }, [uploaded, scaleFactor]);
 
-  const modelTooBig = scaledAnalysis
-    ? scaledAnalysis.dimsXmm > 700 || scaledAnalysis.dimsYmm > 700 || scaledAnalysis.dimsZmm > 700
-    : false;
-
   const totalWithVat = formatPriceWithVat(latestQuote?.total ?? null);
 
   return (
@@ -246,7 +242,7 @@ export default function Home() {
 
               <div className="mt-6 flex flex-wrap items-center gap-3">
                 <button
-                  disabled={!latestQuote || !latestConfig || orderLoading || modelTooBig}
+                  disabled={!latestQuote || !latestConfig || orderLoading}
                   onClick={payByCard}
                   className="rounded-2xl bg-[#FFAE00] px-5 py-3 text-sm font-semibold text-black shadow-sm hover:opacity-90 disabled:opacity-50"
                 >
