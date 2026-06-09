@@ -55,7 +55,6 @@ export default function Home() {
   const [uploadLoading, setUploadLoading] = useState(false);
   const [deliveryMethod, setDeliveryMethod] = useState<"packeta" | "courier">("packeta");
   const [packetaPoint, setPacketaPoint] = useState<PacketaPoint | null>(null);
-  const [termsAccepted, setTermsAccepted] = useState(false);
 
   useEffect(() => {
     const script = document.createElement("script");
@@ -397,44 +396,21 @@ export default function Home() {
               )}
 
               {/* Objednať */}
-              <div className="mt-6 space-y-3">
-                <label className="flex cursor-pointer items-start gap-3">
-                  <input
-                    type="checkbox"
-                    checked={termsAccepted}
-                    onChange={(e) => setTermsAccepted(e.target.checked)}
-                    className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-[#FFAE00]"
-                  />
-                  <span className="text-sm text-neutral-600">
-                    Súhlasím so{" "}
-                    <a
-                      href="/podmienky"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-semibold text-neutral-900 underline underline-offset-2 hover:text-[#b07a00]"
-                    >
-                      všeobecnými obchodnými podmienkami
-                    </a>
-                  </span>
-                </label>
-
-                <div className="flex flex-wrap items-center gap-3">
-                  <button
-                    disabled={
-                      !latestQuote || !latestConfig || orderLoading ||
-                      (deliveryMethod === "packeta" && !packetaPoint) ||
-                      !termsAccepted
-                    }
-                    onClick={payByCard}
-                    className="rounded-2xl bg-[#FFAE00] px-5 py-3 text-sm font-semibold text-black shadow-sm hover:opacity-90 disabled:opacity-50"
-                  >
-                    {orderLoading ? "Presmerúvam…" : "Objednať a zaplatiť"}
-                  </button>
-                  <div className="text-xs text-neutral-500">
-                    {deliveryMethod === "packeta"
-                      ? "Fakturačná adresa sa zadáva pri platbe."
-                      : "Adresa doručenia a platba v ďalšom kroku."}
-                  </div>
+              <div className="mt-6 flex flex-wrap items-center gap-3">
+                <button
+                  disabled={
+                    !latestQuote || !latestConfig || orderLoading ||
+                    (deliveryMethod === "packeta" && !packetaPoint)
+                  }
+                  onClick={payByCard}
+                  className="rounded-2xl bg-[#FFAE00] px-5 py-3 text-sm font-semibold text-black shadow-sm hover:opacity-90 disabled:opacity-50"
+                >
+                  {orderLoading ? "Presmerúvam…" : "Objednať a zaplatiť"}
+                </button>
+                <div className="text-xs text-neutral-500">
+                  {deliveryMethod === "packeta"
+                    ? "Fakturačná adresa sa zadáva pri platbe."
+                    : "Adresa doručenia a platba v ďalšom kroku."}
                 </div>
               </div>
             </div>

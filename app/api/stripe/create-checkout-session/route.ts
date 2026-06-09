@@ -263,6 +263,14 @@ export async function POST(req: NextRequest) {
           packetaPointName: packetaPoint?.name ?? "",
         },
       },
+      consent_collection: {
+        terms_of_service: "required",
+      },
+      custom_text: {
+        terms_of_service_acceptance: {
+          message: `Súhlasím so <a href="${baseUrl}/podmienky">všeobecnými obchodnými podmienkami</a> vytlacto3d.sk`,
+        },
+      },
       success_url: `${baseUrl}/success?orderId=${order.id}&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${baseUrl}/cancel?orderId=${order.id}`,
     });
