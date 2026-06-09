@@ -55,6 +55,7 @@ export default function Home() {
   const [uploadLoading, setUploadLoading] = useState(false);
   const [deliveryMethod, setDeliveryMethod] = useState<"packeta" | "courier">("packeta");
   const [packetaPoint, setPacketaPoint] = useState<PacketaPoint | null>(null);
+  const [termsAccepted, setTermsAccepted] = useState(false);
 
   useEffect(() => {
     const script = document.createElement("script");
@@ -396,21 +397,64 @@ export default function Home() {
               )}
 
               {/* Objednať */}
-              <div className="mt-6 flex flex-wrap items-center gap-3">
-                <button
-                  disabled={
-                    !latestQuote || !latestConfig || orderLoading ||
-                    (deliveryMethod === "packeta" && !packetaPoint)
-                  }
-                  onClick={payByCard}
-                  className="rounded-2xl bg-[#FFAE00] px-5 py-3 text-sm font-semibold text-black shadow-sm hover:opacity-90 disabled:opacity-50"
+              <div className="mt-6 space-y-4">
+                <label
+                  className={[
+                    "flex cursor-pointer items-start gap-3 rounded-2xl border-2 p-4 transition-colors duration-150",
+                    termsAccepted
+                      ? "border-[#FFAE00] bg-[#FFAE00]/5"
+                      : "border-neutral-200 bg-white hover:border-neutral-300",
+                  ].join(" ")}
                 >
-                  {orderLoading ? "Presmerúvam…" : "Objednať a zaplatiť"}
-                </button>
-                <div className="text-xs text-neutral-500">
-                  {deliveryMethod === "packeta"
-                    ? "Fakturačná adresa sa zadáva pri platbe."
-                    : "Adresa doručenia a platba v ďalšom kroku."}
+                  <div className={[
+                    "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border-2 transition-colors duration-150",
+                    termsAccepted
+                      ? "border-[#FFAE00] bg-[#FFAE00]"
+                      : "border-neutral-300 bg-white",
+                  ].join(" ")}>
+                    {termsAccepted && (
+                      <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
+                        <path d="M2 6l3 3 5-5" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    )}
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={termsAccepted}
+                    onChange={(e) => setTermsAccepted(e.target.checked)}
+                    className="sr-only"
+                  />
+                  <span className="text-sm leading-5 text-neutral-700">
+                    Súhlasím so{" "}
+                    <a
+                      href="/podmienky"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="font-semibold text-neutral-900 underline underline-offset-2 hover:text-[#b07a00]"
+                    >
+                      všeobecnými obchodnými podmienkami
+                    </a>
+                  </span>
+                </label>
+
+                <div className="flex flex-wrap items-center gap-3">
+                  <button
+                    disabled={
+                      !latestQuote || !latestConfig || orderLoading ||
+                      (deliveryMethod === "packeta" && !packetaPoint) ||
+                      !termsAccepted
+                    }
+                    onClick={payByCard}
+                    className="rounded-2xl bg-[#FFAE00] px-5 py-3 text-sm font-semibold text-black shadow-sm hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {orderLoading ? "Presmerúvam…" : "Objednať a zaplatiť"}
+                  </button>
+                  <div className="text-xs text-neutral-500">
+                    {deliveryMethod === "packeta"
+                      ? "Fakturačná adresa sa zadáva pri platbe."
+                      : "Adresa doručenia a platba v ďalšom kroku."}
+                  </div>
                 </div>
               </div>
             </div>
