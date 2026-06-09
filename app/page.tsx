@@ -313,7 +313,7 @@ export default function Home() {
                   <div className="flex-1">
                     <div className="text-sm font-bold text-neutral-900">Packeta výdajňa / Z-Box</div>
                     <div className="mt-0.5 text-xs text-neutral-500">Vyzdvihnutie na výdajnom mieste · SK</div>
-                    <div className="mt-1.5 text-sm font-extrabold text-neutral-900">2,99 €</div>
+                    <div className="mt-1.5 text-sm font-extrabold text-neutral-900">3,99 €</div>
                   </div>
                   {deliveryMethod === "packeta" && (
                     <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#FFAE00]">
@@ -346,7 +346,7 @@ export default function Home() {
                   <div className="flex-1">
                     <div className="text-sm font-bold text-neutral-900">Kuriér na adresu</div>
                     <div className="mt-0.5 text-xs text-neutral-500">Doručenie domov · SK</div>
-                    <div className="mt-1.5 text-sm font-extrabold text-neutral-900">4,99 €</div>
+                    <div className="mt-1.5 text-sm font-extrabold text-neutral-900">5,99 €</div>
                   </div>
                   {deliveryMethod === "courier" && (
                     <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#FFAE00]">

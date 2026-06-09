@@ -211,14 +211,14 @@ export async function POST(req: NextRequest) {
               shipping_rate_data: {
                 display_name: "Packeta výdajňa / Z-Box",
                 type: "fixed_amount",
-                fixed_amount: { amount: 299, currency: "eur" },
+                fixed_amount: { amount: 399, currency: "eur" },
               },
             }
           : {
               shipping_rate_data: {
                 display_name: "Kuriér",
                 type: "fixed_amount",
-                fixed_amount: { amount: 499, currency: "eur" },
+                fixed_amount: { amount: 599, currency: "eur" },
               },
             },
       ],
