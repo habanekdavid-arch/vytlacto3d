@@ -80,6 +80,8 @@ model Order {
   billingAddress  Json?
   deliveryAddress Json?
 
+  reminderSentAt DateTime?
+
   userId String?
   user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
 
