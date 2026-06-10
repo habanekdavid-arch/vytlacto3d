@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { formatEur, addVat } from "@/lib/vat";
 import { getSafeServerSession } from "@/lib/session";
 import { formatDateSK } from "@/lib/formatDate";
+import ResumeOrderButton from "@/components/ResumeOrderButton";
 
 export const dynamic = "force-dynamic";
 
@@ -123,6 +124,9 @@ export default async function OrderDetailPage({
             <div className="mt-1 text-lg font-extrabold text-neutral-900">
               {order.status}
             </div>
+            {order.status === "PENDING" && (
+              <ResumeOrderButton orderId={order.id} />
+            )}
           </div>
         </div>
 

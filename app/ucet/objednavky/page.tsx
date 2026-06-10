@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { formatPriceWithVat } from "@/lib/vat";
 import { getSafeServerSession } from "@/lib/session";
 import { formatDateSK } from "@/lib/formatDate";
+import ResumeOrderButton from "@/components/ResumeOrderButton";
 
 export const dynamic = "force-dynamic";
 
@@ -41,6 +42,7 @@ export default async function OrdersPage() {
       pricing: true,
       paidTotalEur: true,
       shippingMethod: true,
+      stripeSessionId: true,
     },
   });
 
@@ -78,35 +80,40 @@ export default async function OrdersPage() {
                 : null;
 
             return (
-              <Link
-                key={order.id}
-                href={`/ucet/objednavky/${order.id}`}
-                className="block rounded-2xl border border-neutral-200 p-4 transition hover:bg-neutral-50"
-              >
-                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                  <div className="min-w-0">
-                    <div className="text-xs text-neutral-500">{order.id}</div>
-                    <div className="mt-1 truncate text-lg font-bold text-neutral-900">
-                      {order.fileName}
+              <div key={order.id} className="rounded-2xl border border-neutral-200 p-4">
+                <Link
+                  href={`/ucet/objednavky/${order.id}`}
+                  className="block transition hover:opacity-80"
+                >
+                  <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                    <div className="min-w-0">
+                      <div className="text-xs text-neutral-500">{order.id}</div>
+                      <div className="mt-1 truncate text-lg font-bold text-neutral-900">
+                        {order.fileName}
+                      </div>
+                      <div className="mt-1 text-sm text-neutral-600">
+                        {formatDateSK(order.createdAt)}
+                      </div>
                     </div>
-                    <div className="mt-1 text-sm text-neutral-600">
-                      {formatDateSK(order.createdAt)}
-                    </div>
-                  </div>
 
-                  <div className="grid gap-3 sm:grid-cols-3 md:min-w-[420px]">
-                    <InfoMini label="Stav" value={order.status} />
-                    <InfoMini
-                      label="Cena"
-                      value={total !== null ? formatPriceWithVat(total) : "—"}
-                    />
-                    <InfoMini
-                      label="Doprava"
-                      value={order.shippingMethod ?? "—"}
-                    />
+                    <div className="grid gap-3 sm:grid-cols-3 md:min-w-[420px]">
+                      <InfoMini label="Stav" value={order.status} />
+                      <InfoMini
+                        label="Cena"
+                        value={total !== null ? formatPriceWithVat(total) : "—"}
+                      />
+                      <InfoMini
+                        label="Doprava"
+                        value={order.shippingMethod ?? "—"}
+                      />
+                    </div>
                   </div>
-                </div>
-              </Link>
+                </Link>
+
+                {order.status === "PENDING" && (
+                  <ResumeOrderButton orderId={order.id} />
+                )}
+              </div>
             );
           })}
         </div>
