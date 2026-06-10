@@ -3,7 +3,7 @@ import Stripe from "stripe";
 
 import { prisma } from "@/lib/prisma";
 import { quote } from "@/lib/pricing";
-import { addVat, formatEur } from "@/lib/vat";
+import { addVat } from "@/lib/vat";
 import { getSafeServerSession } from "@/lib/session";
 
 export const runtime = "nodejs";
@@ -230,8 +230,8 @@ export async function POST(req: NextRequest) {
             currency: "eur",
             unit_amount: itemAmountCents,
             product_data: {
-              name: `3D tlač: ${body.uploaded.fileName}`,
-              description: `${formatEur(totalWithVat)} s DPH • mierka ${scalePct}% • výplň ${infillPct}%`,
+              name: `3D tlac: ${body.uploaded.fileName}`,
+              description: `${totalWithVat.toFixed(2)} EUR s DPH | mierka ${scalePct}% | vypln ${infillPct}%`,
             },
           },
         },
