@@ -27,6 +27,15 @@ export default function UploadBox({
   const [error, setError] = useState<string>("");
   const [svgThicknessMm, setSvgThicknessMm] = useState(10);
 
+  function sanitizeFileName(name: string): string {
+    return name
+      .normalize("NFD")
+      .replace(/[̀-ͯ]/g, "")
+      .replace(/[^a-zA-Z0-9._\-]/g, "_")
+      .replace(/_+/g, "_")
+      .toLowerCase();
+  }
+
   async function convertSvgToStl(file: File) {
     const formData = new FormData();
     formData.append("file", file);
@@ -51,7 +60,7 @@ export default function UploadBox({
     }
 
     const blob = await res.blob();
-    const stlFileName = file.name.replace(/\.svg$/i, ".stl");
+    const stlFileName = sanitizeFileName(file.name.replace(/\.svg$/i, ".stl"));
 
     return new File([blob], stlFileName, {
       type: "model/stl",
@@ -78,7 +87,9 @@ export default function UploadBox({
         ? await convertSvgToStl(originalFile)
         : originalFile;
 
-      const blob = await upload(file.name, file, {
+      const safeName = sanitizeFileName(file.name);
+
+      const blob = await upload(safeName, file, {
         access: "public",
         handleUploadUrl: "/api/blob/upload",
         multipart: true,
@@ -95,7 +106,7 @@ export default function UploadBox({
         },
         body: JSON.stringify({
           fileKey: blob.url,
-          fileName: file.name,
+          fileName: safeName,
           fileSize: file.size,
         }),
       });
