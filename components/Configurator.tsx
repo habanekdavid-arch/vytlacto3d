@@ -192,13 +192,17 @@ export default function Configurator({
             type="number"
             min={1}
             max={999}
+            step={1}
             value={config.quantity}
             onChange={(e) =>
               setConfig((c) => ({
                 ...c,
-                quantity: Math.max(1, Number(e.target.value || 1)),
+                quantity: Math.max(1, Math.floor(Number(e.target.value || 1))),
               }))
             }
+            onKeyDown={(e) => {
+              if (e.key === "." || e.key === ",") e.preventDefault();
+            }}
           />
         </Field>
 
