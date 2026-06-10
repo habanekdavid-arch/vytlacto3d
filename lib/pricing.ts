@@ -39,17 +39,16 @@ const MATERIAL_DENSITY_G_PER_CM3: Record<Material, number> = {
 
 // Strojová sadzba €/hod (odpis stroja + elektrina + údržba + réžia)
 const MACHINE_RATE_PER_HOUR: Record<Quality, number> = {
-  DRAFT:    4.5,
-  STANDARD: 5.5,
-  FINE:     7.0,
+  DRAFT:    3.0,
+  STANDARD: 3.5,
+  FINE:     4.5,
 };
 
-// Minúty tlače na 1 cm³ skutočného materiálu (empiricky kalibrované)
-// DRAFT = rýchla tlač 0.3 mm, STANDARD = 0.2 mm, FINE = 0.15 mm
-const PRINT_MIN_PER_CM3_MATERIAL: Record<Quality, number> = {
-  DRAFT:    14,
-  STANDARD: 22,
-  FINE:     34,
+// Minúty tlače na 1 gram skutočného materiálu
+const PRINT_MIN_PER_GRAM: Record<Quality, number> = {
+  DRAFT:    0.50,
+  STANDARD: 0.65,
+  FINE:     0.85,
 };
 
 // Základný poplatok za objednávku (nastavenie stroja, slicing, kontrola)
@@ -74,18 +73,13 @@ function getQuantityDiscountPct(quantity: number): number {
 }
 
 /**
- * Odhadovaný pomer skutočne spotrebovaného materiálu voči plnému
- * objemu modelu. Zohľadňuje steny (perimeters) + infill + podlahy/stropy.
- * Pre typický FDM model (3 perimeters + top/bottom 4 vrstvy):
- *   - 5 % infill  → ~28 % hustota
- *   - 20 % infill → ~37 % hustota
- *   - 50 % infill → ~54 % hustota
+ * Pomer skutočne spotrebovaného materiálu voči plnému objemu modelu.
+ * Zohľadňuje steny (plášť je vždy plný) + infill vnútra.
+ * Lineárna interpolácia: 5 % → 0.20, 20 % → 0.35, 50 % → 0.65
  */
 function materialUsageRatio(infillPct: number): number {
   const safeInfill = clamp(infillPct, 5, MAX_INFILL_PCT);
-  // Steny + podlahy/stropy sú konštantné ~25 %, infill sa pridáva lineárne
-  const ratio = 0.25 + (safeInfill / 100) * 0.58;
-  return clamp(ratio, 0.28, 0.76);
+  return clamp(0.20 + (safeInfill - 5) * 0.01, 0.20, 0.65);
 }
 
 export function quote(input: QuoteInput): QuoteResult {
@@ -95,38 +89,28 @@ export function quote(input: QuoteInput): QuoteResult {
   const infillPct = clamp(Number(input.infillPct), 5, MAX_INFILL_PCT);
   const quantity  = Math.max(1, Number(input.quantity));
 
-  const usageRatio       = materialUsageRatio(infillPct);
-  const materialVolumeCm3 = volumeCm3 * usageRatio;
+  const usageRatio = materialUsageRatio(infillPct);
 
-  // Hmotnosť
-  const gramsPerPartRaw = materialVolumeCm3 * MATERIAL_DENSITY_G_PER_CM3[material];
+  // Hmotnosť: objem × hustota × faktor výplne
+  const gramsPerPartRaw = volumeCm3 * MATERIAL_DENSITY_G_PER_CM3[material] * usageRatio;
 
-  // Čas tlače — objem skutočného materiálu × minúty/cm³
-  const printTimeMinPerPartRaw = Math.max(
-    8,
-    materialVolumeCm3 * PRINT_MIN_PER_CM3_MATERIAL[quality]
-  );
+  // Čas tlače: gramy × min/gram, minimálne 5 minút
+  const printTimeMinPerPartRaw = Math.max(5, gramsPerPartRaw * PRINT_MIN_PER_GRAM[quality]);
 
-  // Náklady
-  const materialCostPerPartRaw =
-    gramsPerPartRaw * MATERIAL_PRICE_PER_GRAM[material];
+  // Náklady na materiál a stroj
+  const materialCostPerPartRaw = gramsPerPartRaw * MATERIAL_PRICE_PER_GRAM[material];
+  const machineCostPerPartRaw  = (printTimeMinPerPartRaw / 60) * MACHINE_RATE_PER_HOUR[quality];
+  const subtotalPerPartRaw     = materialCostPerPartRaw + machineCostPerPartRaw;
 
-  const machineCostPerPartRaw =
-    (printTimeMinPerPartRaw / 60) * MACHINE_RATE_PER_HOUR[quality];
-
-  // Minimálna cena za kus (pokryje náklady pri veľmi malých modeloch)
-  const minCostPerPart = 0.5;
-  const subtotalPerPartRaw = Math.max(
-    minCostPerPart,
-    materialCostPerPartRaw + machineCostPerPartRaw
-  );
-
-  const productionSubtotalRaw = subtotalPerPartRaw * quantity;
-
+  const productionSubtotalRaw     = subtotalPerPartRaw * quantity;
   const quantityDiscountPct       = getQuantityDiscountPct(quantity);
   const quantityDiscountAmountRaw = productionSubtotalRaw * (quantityDiscountPct / 100);
 
-  const totalRaw = SETUP_FEE + productionSubtotalRaw - quantityDiscountAmountRaw;
+  // Minimálna celková cena objednávky = SETUP_FEE (10 €)
+  const totalRaw = Math.max(
+    SETUP_FEE,
+    SETUP_FEE + productionSubtotalRaw - quantityDiscountAmountRaw
+  );
 
   return {
     gramsPerPart:           round2(gramsPerPartRaw),
@@ -134,7 +118,7 @@ export function quote(input: QuoteInput): QuoteResult {
     materialCostPerPart:    round2(materialCostPerPartRaw),
     machineCostPerPart:     round2(machineCostPerPartRaw),
     subtotalPerPart:        round2(subtotalPerPartRaw),
-    setupFee:               round2(SETUP_FEE),
+    setupFee:               SETUP_FEE,
     productionSubtotal:     round2(productionSubtotalRaw),
     quantityDiscountPct,
     quantityDiscountAmount: round2(quantityDiscountAmountRaw),
