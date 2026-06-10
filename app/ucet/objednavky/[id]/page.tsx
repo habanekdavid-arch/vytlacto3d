@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { formatEur, addVat } from "@/lib/vat";
 import { getSafeServerSession } from "@/lib/session";
+import { formatDateSK } from "@/lib/formatDate";
 
 export const dynamic = "force-dynamic";
 
@@ -128,7 +129,7 @@ export default async function OrderDetailPage({
         <div className="mt-6 grid gap-4 md:grid-cols-4">
           <DetailCard
             label="Dátum"
-            value={new Date(order.createdAt).toLocaleString("sk-SK")}
+            value={formatDateSK(order.createdAt)}
           />
           <DetailCard
             label="Celkom zaplatené"

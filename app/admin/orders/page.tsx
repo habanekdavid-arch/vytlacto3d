@@ -5,6 +5,7 @@ import { getSafeServerSession } from "@/lib/session";
 import { revalidatePath } from "next/cache";
 import { formatEur, addVat } from "@/lib/vat";
 import { sendOrderStatusEmail } from "@/lib/email-status";
+import { formatDateSK } from "@/lib/formatDate";
 
 async function updateOrderStatus(formData: FormData) {
   "use server";
@@ -44,18 +45,6 @@ async function updateOrderStatus(formData: FormData) {
   revalidatePath(`/admin/orders/${id}`);
 }
 
-function formatDateBratislava(value: Date | string) {
-  const d = typeof value === "string" ? new Date(value) : value;
-
-  return new Intl.DateTimeFormat("sk-SK", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    timeZone: "Europe/Bratislava",
-  }).format(d);
-}
 
 function getConfigLabel(config: any) {
   if (!config || typeof config !== "object") return "—";
@@ -134,7 +123,7 @@ export default async function AdminOrdersPage() {
     shippingMethod: order.shippingMethod ?? "—",
     stripeSessionId: order.stripeSessionId ?? null,
     paidTotalEur: order.paidTotalEur ?? null,
-    createdAtText: formatDateBratislava(order.createdAt),
+    createdAtText: formatDateSK(order.createdAt),
     configLabel: getConfigLabel(order.config),
   }));
 

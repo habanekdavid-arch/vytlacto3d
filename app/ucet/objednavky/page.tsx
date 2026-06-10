@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { formatPriceWithVat } from "@/lib/vat";
 import { getSafeServerSession } from "@/lib/session";
+import { formatDateSK } from "@/lib/formatDate";
 
 export const dynamic = "force-dynamic";
 
@@ -89,7 +90,7 @@ export default async function OrdersPage() {
                       {order.fileName}
                     </div>
                     <div className="mt-1 text-sm text-neutral-600">
-                      {new Date(order.createdAt).toLocaleString("sk-SK")}
+                      {formatDateSK(order.createdAt)}
                     </div>
                   </div>
 

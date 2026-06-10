@@ -4,19 +4,9 @@ import { prisma } from "@/lib/prisma";
 import { formatEur, addVat, vatAmount } from "@/lib/vat";
 import CopyOrderButton from "@/components/CopyOrderButton";
 import InvoiceSection from "@/components/InvoiceSection";
+import { formatDateSK } from "@/lib/formatDate";
 
 export const dynamic = "force-dynamic";
-
-function formatDate(value: Date) {
-  return new Intl.DateTimeFormat("sk-SK", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    timeZone: "Europe/Bratislava",
-  }).format(value);
-}
 
 function getValue(value: any) {
   if (value === null || value === undefined || value === "") return "—";
@@ -116,7 +106,7 @@ export default async function AdminOrderDetailPage({
     sep,
     `  Číslo objednávky : ${v(order.orderNumber)}`,
     `  ID               : ${v(order.id)}`,
-    `  Dátum            : ${formatDate(order.createdAt)}`,
+    `  Dátum            : ${formatDateSK(order.createdAt)}`,
     `  Súbor            : ${v(order.fileName)}`,
     `  Celkom zaplatené : ${paidTotal !== null ? formatEur(paidTotal) : "—"}`,
     `  Doprava          : ${v(order.shippingMethod)}`,
@@ -218,7 +208,7 @@ export default async function AdminOrderDetailPage({
           </div>
 
           <div className="mt-8 grid gap-4 md:grid-cols-4">
-            <InfoCard label="Vytvorené" value={formatDate(order.createdAt)} />
+            <InfoCard label="Vytvorené" value={formatDateSK(order.createdAt)} />
             <InfoCard
               label="Celkom zaplatené"
               value={total !== null ? formatEur(total) : "—"}
