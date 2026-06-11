@@ -36,10 +36,10 @@ export default function ColorPalette({
             type="button"
             onClick={() => onChange(c.id)}
             className={[
-              "group relative h-9 w-9 rounded-xl border border-white/10",
+              "group relative h-9 w-9 rounded-xl",
+              c.id === "white" ? "border-2 border-neutral-300 shadow-sm" : "border border-white/10",
               "ring-2 ring-transparent",
-              c.ringClass ? `ring-inset ${c.ringClass}` : "",
-              active ? "outline outline-2 outline-[#7C3AED]" : "hover:border-white/20",
+              active ? "outline outline-2 outline-[#7C3AED]" : "",
             ].join(" ")}
             aria-label={c.name}
             title={c.name}
