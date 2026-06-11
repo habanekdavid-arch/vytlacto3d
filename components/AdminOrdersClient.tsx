@@ -33,12 +33,12 @@ type Stats = {
 type FilterType = "ALL" | "PENDING" | "PAID" | "IN_PRODUCTION" | "SHIPPED" | "DELIVERED" | "CANCELLED";
 
 const STATUS_LABELS: Record<string, { label: string; classes: string }> = {
-  PENDING:       { label: "Čaká na platbu",  classes: "border-neutral-200 bg-neutral-100 text-neutral-700" },
-  PAID:          { label: "Zaplatená",        classes: "border-[#FFAE00]/40 bg-[#FFAE00]/15 text-neutral-900" },
-  IN_PRODUCTION: { label: "V produkcii",      classes: "border-blue-200 bg-blue-50 text-blue-700" },
-  SHIPPED:       { label: "Odoslaná",         classes: "border-indigo-200 bg-indigo-50 text-indigo-700" },
-  DELIVERED:     { label: "Doručená",         classes: "border-green-200 bg-green-50 text-green-700" },
-  CANCELLED:     { label: "Zrušená",          classes: "border-red-200 bg-red-50 text-red-700" },
+  PENDING:       { label: "Čaká na platbu",  classes: "border-neutral-300 bg-neutral-100 text-neutral-700" },
+  PAID:          { label: "Zaplatená",        classes: "border-[#FFAE00] bg-[#FFAE00] text-black" },
+  IN_PRODUCTION: { label: "V produkcii",      classes: "border-blue-600 bg-blue-600 text-white" },
+  SHIPPED:       { label: "Odoslaná",         classes: "border-blue-600 bg-blue-600 text-white" },
+  DELIVERED:     { label: "Doručená",         classes: "border-green-600 bg-green-600 text-white" },
+  CANCELLED:     { label: "Zrušená",          classes: "border-red-500 bg-red-500 text-white" },
 };
 
 function formatEur(val: number | null) {
