@@ -37,6 +37,10 @@ body {
   color: #171717;
 }
 
+h1, h2 {
+  text-transform: uppercase;
+}
+
 html {
   scroll-behavior: smooth;
 }
