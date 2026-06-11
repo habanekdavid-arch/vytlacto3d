@@ -25,16 +25,16 @@ type QuoteResult = {
 // Cena materiálu za gram (€/g) — zhodné s verejným cenníkom MaterialPricing.tsx
 const MATERIAL_PRICE_PER_GRAM: Record<Material, number> = {
   PLA:  0.012,
-  PETG: 0.013,
-  ABS:  0.014,
-  TPU:  0.015,
+  PETG: 0.016,
+  ABS:  0.030,
+  TPU:  0.035,
 };
 
 const MATERIAL_DENSITY_G_PER_CM3: Record<Material, number> = {
   PLA:  1.24,
   PETG: 1.27,
   ABS:  1.04,
-  TPU:  1.20,
+  TPU:  1.21,
 };
 
 // Strojová sadzba €/hod (odpis stroja + elektrina + údržba + réžia)

@@ -11,7 +11,7 @@ export default function MaterialPricing() {
     {
       key: "PETG",
       name: "PETG",
-      eurPerGram: 13 / 1000,
+      eurPerGram: 16 / 1000,
       density: "1.27 g/cm³",
       use: "Funkčné diely, vyššia odolnosť, vhodné aj do exteriéru",
       dot: "bg-blue-500",
@@ -19,7 +19,7 @@ export default function MaterialPricing() {
     {
       key: "ABS",
       name: "ABS",
-      eurPerGram: 14 / 1000,
+      eurPerGram: 30 / 1000,
       density: "1.04 g/cm³",
       use: "Technické diely, teplotná odolnosť, pevnosť (náročnejšia tlač)",
       dot: "bg-gray-500",
@@ -27,8 +27,8 @@ export default function MaterialPricing() {
     {
       key: "TPU",
       name: "TPU",
-      eurPerGram: 15 / 1000,
-      density: "1.20 g/cm³",
+      eurPerGram: 35 / 1000,
+      density: "1.21 g/cm³",
       use: "Flexibilné/gumové diely, tlmenie nárazov, ochranné prvky",
       dot: "bg-purple-500",
     },
