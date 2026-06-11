@@ -36,6 +36,13 @@ export function formatPriceWithVat(
   return formatEur(addVat(priceWithoutVat));
 }
 
+// Formátuje sumu, ktorá JUŽ obsahuje DPH (napr. paidTotalEur zo Stripe).
+// Nesmie volať addVat() — DPH je v sume zahrnutá.
+export function formatPaidTotal(paidWithVat: number | null | undefined): string {
+  if (typeof paidWithVat !== "number" || !Number.isFinite(paidWithVat)) return "—";
+  return `${formatEur(paidWithVat)} s DPH`;
+}
+
 export function formatPricePair(
   priceWithoutVat: number | null | undefined
 ) {

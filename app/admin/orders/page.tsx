@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getSafeServerSession } from "@/lib/session";
-import { formatEur, addVat } from "@/lib/vat";
 import { formatDateSK } from "@/lib/formatDate";
 import AdminOrdersClient from "@/components/AdminOrdersClient";
 
@@ -51,7 +50,8 @@ export default async function AdminOrdersPage() {
     configLabel: getConfigLabel(order.config),
   }));
 
-  const revenueWithoutVat = ordersRaw.reduce(
+  // paidTotalEur je zo Stripe — už obsahuje DPH, sčítame priamo
+  const revenueTotal = ordersRaw.reduce(
     (s, o) => s + (typeof o.paidTotalEur === "number" ? o.paidTotalEur : 0),
     0
   );
@@ -64,8 +64,7 @@ export default async function AdminOrdersPage() {
     shipped: orders.filter((o) => o.status === "SHIPPED").length,
     delivered: orders.filter((o) => o.status === "DELIVERED").length,
     cancelled: orders.filter((o) => o.status === "CANCELLED").length,
-    revenueWithoutVat,
-    revenueWithVat: addVat(revenueWithoutVat),
+    revenueTotal,
   };
 
   return <AdminOrdersClient orders={orders} stats={stats} />;

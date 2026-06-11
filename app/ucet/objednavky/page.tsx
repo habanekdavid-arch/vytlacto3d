@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { formatPriceWithVat } from "@/lib/vat";
+import { formatPaidTotal, addVat } from "@/lib/vat";
 import { getSafeServerSession } from "@/lib/session";
 import { formatDateSK } from "@/lib/formatDate";
 import ResumeOrderButton from "@/components/ResumeOrderButton";
@@ -76,7 +76,7 @@ export default async function OrdersPage() {
               typeof order.paidTotalEur === "number"
                 ? order.paidTotalEur
                 : typeof pricing?.total === "number"
-                ? pricing.total
+                ? addVat(pricing.total)
                 : null;
 
             return (
@@ -100,7 +100,7 @@ export default async function OrdersPage() {
                       <StatusBadgeMini status={order.status} />
                       <InfoMini
                         label="Cena"
-                        value={total !== null ? formatPriceWithVat(total) : "—"}
+                        value={total !== null ? formatPaidTotal(total) : "—"}
                       />
                       <InfoMini
                         label="Doprava"

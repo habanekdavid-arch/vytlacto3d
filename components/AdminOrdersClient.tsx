@@ -26,8 +26,7 @@ type Stats = {
   shipped: number;
   delivered: number;
   cancelled: number;
-  revenueWithoutVat: number;
-  revenueWithVat: number;
+  revenueTotal: number;
 };
 
 type FilterType = "ALL" | "PENDING" | "PAID" | "IN_PRODUCTION" | "SHIPPED" | "DELIVERED" | "CANCELLED";
@@ -182,11 +181,9 @@ export default function AdminOrdersClient({
               Tržby
             </div>
             <div className="mt-2 text-2xl font-extrabold text-neutral-900">
-              {formatEur(stats.revenueWithoutVat)}
+              {formatEur(stats.revenueTotal)}
             </div>
-            <div className="mt-1 text-xs text-neutral-400">
-              {formatEur(stats.revenueWithVat)} s DPH
-            </div>
+            <div className="mt-1 text-xs text-neutral-400">vrátane DPH</div>
           </div>
         </section>
 
