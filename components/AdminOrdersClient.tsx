@@ -346,7 +346,7 @@ export default function AdminOrdersClient({
                         <button
                           onClick={() => handleStatusChange(order.id, "IN_PRODUCTION")}
                           disabled={changingId === order.id}
-                          className="w-full rounded-xl bg-green-600 px-3 py-2 text-xs font-bold text-white transition hover:bg-green-700 disabled:opacity-50"
+                          className="w-full rounded-xl bg-blue-600 px-3 py-2 text-xs font-bold text-white transition hover:bg-blue-700 disabled:opacity-50"
                         >
                           {changingId === order.id ? "..." : "Spustiť tlač"}
                         </button>
