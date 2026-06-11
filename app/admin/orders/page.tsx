@@ -33,11 +33,8 @@ async function updateOrderStatus(formData: FormData) {
     sendOrderStatusEmail({
       to: updated.customerEmail,
       orderId: updated.id,
-      orderNumber: updated.orderNumber,
       fileName: updated.fileName,
       status: updated.status,
-      shippingMethod: updated.shippingMethod,
-      totalEur: updated.paidTotalEur,
     }).catch((e) => console.error("Status email failed:", e));
   }
 

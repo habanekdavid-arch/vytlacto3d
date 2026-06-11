@@ -97,7 +97,7 @@ export default async function OrdersPage() {
                     </div>
 
                     <div className="grid gap-3 sm:grid-cols-3 md:min-w-[420px]">
-                      <InfoMini label="Stav" value={order.status} />
+                      <StatusBadgeMini status={order.status} />
                       <InfoMini
                         label="Cena"
                         value={total !== null ? formatPriceWithVat(total) : "—"}
@@ -135,6 +135,28 @@ function InfoMini({
         {label}
       </div>
       <div className="mt-1 text-sm font-semibold text-neutral-900">{value}</div>
+    </div>
+  );
+}
+
+function StatusBadgeMini({ status }: { status: string }) {
+  const map: Record<string, { label: string; className: string }> = {
+    PENDING:       { label: "Čaká na platbu",  className: "bg-yellow-100 text-yellow-800" },
+    PAID:          { label: "Zaplatená",        className: "bg-green-100 text-green-800" },
+    IN_PRODUCTION: { label: "V produkcii",      className: "bg-blue-100 text-blue-800" },
+    SHIPPED:       { label: "Odoslaná",         className: "bg-purple-100 text-purple-800" },
+    DELIVERED:     { label: "Doručená",         className: "bg-emerald-100 text-emerald-800" },
+    CANCELLED:     { label: "Zrušená",          className: "bg-red-100 text-red-800" },
+  };
+  const s = map[status] ?? { label: status, className: "bg-neutral-100 text-neutral-700" };
+  return (
+    <div className="rounded-2xl bg-neutral-50 p-3">
+      <div className="text-xs font-semibold uppercase tracking-wide text-neutral-500 mb-1">
+        Stav
+      </div>
+      <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-bold ${s.className}`}>
+        {s.label}
+      </span>
     </div>
   );
 }

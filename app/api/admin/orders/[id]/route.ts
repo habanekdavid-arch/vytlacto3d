@@ -93,15 +93,8 @@ export async function PATCH(
       sendOrderStatusEmail({
         to: updated.customerEmail,
         orderId: updated.id,
-        orderNumber: updated.orderNumber,
         fileName: updated.fileName,
         status: updated.status,
-        shippingMethod: updated.shippingMethod,
-        totalEur: updated.paidTotalEur,
-        shippingCostEur,
-        deliveryAddress: updated.deliveryAddress as any,
-        config: updated.config as any,
-        pricing: updated.pricing as any,
       }).catch((e) => console.error("Status email failed:", e));
     }
 

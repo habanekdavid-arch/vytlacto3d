@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { formatEur, addVat, vatAmount } from "@/lib/vat";
 import CopyOrderButton from "@/components/CopyOrderButton";
 import InvoiceSection from "@/components/InvoiceSection";
+import AdminStatusChanger from "@/components/AdminStatusChanger";
 import { formatDateSK } from "@/lib/formatDate";
 
 export const dynamic = "force-dynamic";
@@ -261,6 +262,10 @@ export default async function AdminOrderDetailPage({
             </a>
 
             <CopyOrderButton text={copyText} />
+          </div>
+
+          <div className="mt-6">
+            <AdminStatusChanger orderId={order.id} currentStatus={order.status} />
           </div>
         </section>
 

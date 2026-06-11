@@ -1,5 +1,4 @@
 import { transporter, FROM } from "@/lib/mailer";
-import { formatEur, addVat, vatAmount } from "@/lib/vat";
 
 const baseUrl =
   process.env.NEXT_PUBLIC_BASE_URL || "https://www.vytlacto3d.sk";
@@ -12,177 +11,132 @@ const CONTACT = `
   </div>
 `;
 
-function row(label: string, value: string | null | undefined) {
-  if (!value) return "";
-  return `<tr><td style="padding:5px 12px 5px 0;color:#666;font-size:14px;white-space:nowrap;">${label}</td><td style="padding:5px 0;font-size:14px;color:#111;font-weight:600;">${value}</td></tr>`;
+type OrderStatus =
+  | "PENDING"
+  | "PAID"
+  | "IN_PRODUCTION"
+  | "SHIPPED"
+  | "DELIVERED"
+  | "CANCELLED";
+
+type ContentMap = {
+  subject: string;
+  heading: string;
+  body: string;
+  btnText: string;
+  btnColor: string;
+  btnTextColor: string;
+};
+
+function getContent(
+  status: OrderStatus,
+  fileName: string,
+  orderId: string
+): ContentMap | null {
+  const link = `${baseUrl}/ucet/objednavky/${orderId}`;
+
+  const map: Record<OrderStatus, ContentMap & { btnUrl?: string }> = {
+    PENDING: {
+      subject: "Objednavka caka na platbu – VytlacTo3D",
+      heading: "Vasa objednavka caka na dokoncenie",
+      body: `Objednavka pre subor <strong>${fileName}</strong> nebola este zaplatena. Kliknite nizsie a dokoncite platbu.`,
+      btnText: "Dokoncit platbu &rarr;",
+      btnColor: "#FFAE00",
+      btnTextColor: "#000",
+    },
+    PAID: {
+      subject: "Platba prijata – VytlacTo3D",
+      heading: "Platba bola uspesna",
+      body: `Vasa platba za <strong>${fileName}</strong> bola prijata. Objednavka caka na spracovanie – coskoro zacneme tlacat.`,
+      btnText: "Zobrazit objednavku &rarr;",
+      btnColor: "#FFAE00",
+      btnTextColor: "#000",
+    },
+    IN_PRODUCTION: {
+      subject: "Vasa objednavka sa tlaci – VytlacTo3D",
+      heading: "Tlacime vas model",
+      body: `Super sprava! Vas model <strong>${fileName}</strong> prave tlacime na 3D tlaciarni. O dokonceni vas budeme informovat.`,
+      btnText: "Sledovat objednavku &rarr;",
+      btnColor: "#22c55e",
+      btnTextColor: "#fff",
+    },
+    SHIPPED: {
+      subject: "Objednavka odoslana – VytlacTo3D",
+      heading: "Balik je na ceste",
+      body: `Vas model <strong>${fileName}</strong> bol vyrobeny a odoslany. Coskoro dorazi na vasu adresu.`,
+      btnText: "Detail objednavky &rarr;",
+      btnColor: "#3b82f6",
+      btnTextColor: "#fff",
+    },
+    DELIVERED: {
+      subject: "Objednavka dorucena – VytlacTo3D",
+      heading: "Balik doruceny!",
+      body: `Vasa objednavka <strong>${fileName}</strong> bola dorucena. Dakujeme ze ste si vybrali VytlacTo3D!`,
+      btnText: "Zobrazit objednavku &rarr;",
+      btnColor: "#FFAE00",
+      btnTextColor: "#000",
+    },
+    CANCELLED: {
+      subject: "Objednavka zrusena – VytlacTo3D",
+      heading: "Objednavka bola zrusena",
+      body: `Vasa objednavka pre subor <strong>${fileName}</strong> bola zrusena. Ak mate otazky, kontaktujte nas.`,
+      btnText: "Kontaktovat podporu &rarr;",
+      btnColor: "#ef4444",
+      btnTextColor: "#fff",
+    },
+  };
+
+  return map[status] ?? null;
 }
 
-type StatusEmailParams = {
+export async function sendOrderStatusEmail({
+  to,
+  orderId,
+  fileName,
+  status,
+}: {
   to: string;
   orderId: string;
-  orderNumber?: string | null;
   fileName: string;
   status: string;
-  shippingMethod?: string | null;
-  totalEur?: number | null;
-  shippingCostEur?: number | null;
-  deliveryAddress?: Record<string, any> | null;
-  config?: Record<string, any> | null;
-  pricing?: Record<string, any> | null;
-};
+}) {
+  if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) return;
+  if (!to) return;
 
-const STATUS_LABELS: Record<string, string> = {
-  PRINTING: "Tlačíme váš model",
-  SHIPPED: "Objednávka odoslaná",
-  DONE: "Objednávka vybavená",
-  CANCELED: "Objednávka zrušená",
-};
+  const content = getContent(status as OrderStatus, fileName, orderId);
+  if (!content) return;
 
-function headerBadge(status: string) {
-  const color =
-    status === "CANCELED" ? "#ef4444" :
-    status === "DONE" || status === "SHIPPED" ? "#16a34a" :
-    "#FFAE00";
-  const textColor = status === "CANCELED" || status === "DONE" || status === "SHIPPED" ? "#fff" : "#000";
-  const label = STATUS_LABELS[status] ?? status;
-  return `<div style="display:inline-block;background:${color};color:${textColor};font-weight:800;font-size:13px;padding:6px 16px;border-radius:999px;margin-bottom:20px;">${label}</div>`;
-}
+  const link = `${baseUrl}/ucet/objednavky/${orderId}`;
 
-function orderInfoBox(params: StatusEmailParams) {
-  const ref = params.orderNumber ?? params.orderId;
-  const qualityLabel =
-    params.config?.quality === "DRAFT" ? "Rýchla (draft)" :
-    params.config?.quality === "FINE" ? "Jemná (fine)" :
-    params.config?.quality === "STANDARD" ? "Štandardná" :
-    params.config?.quality ?? null;
-
-  const pricingNet = typeof params.pricing?.total === "number" ? params.pricing.total : null;
-
-  return `
-    <div style="background:#fafafa;border:1px solid #eee;border-radius:14px;padding:16px 20px;margin:16px 0;">
-      <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#999;margin-bottom:10px;">Detaily objednávky</div>
-      <table style="border-collapse:collapse;width:100%;">
-        ${row("Číslo objednávky", ref)}
-        ${row("Súbor", params.fileName)}
-        ${row("Materiál", params.config?.material)}
-        ${row("Farba", params.config?.color)}
-        ${row("Kvalita", qualityLabel)}
-        ${params.config?.quantity != null ? row("Množstvo", `${params.config.quantity} ks`) : ""}
-        ${row("Doprava", params.shippingMethod)}
-      </table>
-    </div>
-
-    ${pricingNet != null ? `
-    <div style="background:#fafafa;border:1px solid #eee;border-radius:14px;padding:16px 20px;margin:16px 0;">
-      <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#999;margin-bottom:10px;">Cena</div>
-      <table style="border-collapse:collapse;width:100%;">
-        ${row("Základ bez DPH", formatEur(pricingNet))}
-        ${row("DPH 23 %", formatEur(vatAmount(pricingNet)))}
-        ${row("Výroba s DPH", formatEur(addVat(pricingNet)))}
-        ${params.shippingCostEur != null ? row("Doprava", formatEur(params.shippingCostEur)) : ""}
-        ${params.totalEur != null ? `<tr><td style="padding:8px 12px 5px 0;color:#111;font-size:15px;font-weight:800;border-top:1px solid #eee;">Celkom zaplatené</td><td style="padding:8px 0 5px;font-size:15px;color:#111;font-weight:800;border-top:1px solid #eee;">${formatEur(params.totalEur)}</td></tr>` : ""}
-      </table>
-    </div>
-    ` : params.totalEur != null ? `
-    <div style="background:#fafafa;border:1px solid #eee;border-radius:14px;padding:16px 20px;margin:16px 0;">
-      <table style="border-collapse:collapse;width:100%;">
-        <tr><td style="padding:5px 12px 5px 0;color:#111;font-size:15px;font-weight:800;">Celkom zaplatené</td><td style="padding:5px 0;font-size:15px;color:#111;font-weight:800;">${formatEur(params.totalEur)}</td></tr>
-      </table>
-    </div>
-    ` : ""}
-
-    ${params.deliveryAddress && params.status === "SHIPPED" ? `
-    <div style="background:#fafafa;border:1px solid #eee;border-radius:14px;padding:16px 20px;margin:16px 0;">
-      <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#999;margin-bottom:10px;">Adresa doručenia</div>
-      <table style="border-collapse:collapse;width:100%;">
-        ${row("Meno", params.deliveryAddress.name)}
-        ${row("Ulica", params.deliveryAddress.street ?? params.deliveryAddress.line1 ?? params.deliveryAddress.address)}
-        ${row("Mesto", params.deliveryAddress.city)}
-        ${row("PSČ", params.deliveryAddress.zip ?? params.deliveryAddress.postal_code)}
-        ${row("Krajina", params.deliveryAddress.country)}
-      </table>
-    </div>
-    ` : ""}
-  `;
-}
-
-function wrapper(content: string) {
-  return `
+  const html = `
     <div style="font-family:Arial,sans-serif;background:#f7f7f7;padding:32px;">
       <div style="max-width:640px;margin:0 auto;background:white;border-radius:22px;padding:32px;border:1px solid #e5e5e5;">
-        <div style="font-size:13px;color:#777;font-weight:700;text-transform:uppercase;margin-bottom:8px;">VytlačTo3D</div>
-        ${content}
+        <div style="font-size:13px;color:#777;font-weight:700;text-transform:uppercase;margin-bottom:8px;">VytlacTo3D</div>
+
+        <h1 style="margin:14px 0 16px;font-size:26px;color:#111;">${content.heading}</h1>
+
+        <p style="font-size:15px;line-height:1.6;color:#444;margin:0 0 24px;">
+          ${content.body}
+        </p>
+
+        <div style="margin-bottom:28px;">
+          <a href="${link}"
+             style="display:inline-block;background:${content.btnColor};color:${content.btnTextColor};
+                    text-decoration:none;font-weight:800;padding:14px 28px;
+                    border-radius:14px;font-size:16px;">
+            ${content.btnText}
+          </a>
+        </div>
+
         ${CONTACT}
       </div>
     </div>
   `;
-}
 
-function buildHtml(params: StatusEmailParams): string {
-  const { status, orderId } = params;
-  const link = `${baseUrl}/ucet/objednavky/${orderId}`;
-
-  if (status === "PRINTING") {
-    return wrapper(`
-      ${headerBadge(status)}
-      <h1 style="margin:0 0 12px;font-size:26px;color:#111;">Váš model sa práve tlačí 🖨️</h1>
-      <p style="font-size:15px;line-height:1.6;color:#444;margin:0 0 4px;">
-        Vaša objednávka bola prijatá do výroby. Keď bude hotová, ihneď vám dáme vedieť.
-      </p>
-      ${orderInfoBox(params)}
-      <a href="${link}" style="display:inline-block;margin-top:4px;background:#111;color:#fff;text-decoration:none;font-weight:700;padding:12px 20px;border-radius:12px;font-size:14px;">Sledovať objednávku →</a>
-    `);
-  }
-
-  if (status === "SHIPPED") {
-    return wrapper(`
-      ${headerBadge(status)}
-      <h1 style="margin:0 0 12px;font-size:26px;color:#111;">Objednávka je na ceste k vám 📦</h1>
-      <p style="font-size:15px;line-height:1.6;color:#444;margin:0 0 4px;">
-        Váš 3D model bol vyrobený a odoslaný. Čoskoro dorazí na vašu adresu.
-      </p>
-      ${orderInfoBox(params)}
-      <a href="${link}" style="display:inline-block;margin-top:4px;background:#111;color:#fff;text-decoration:none;font-weight:700;padding:12px 20px;border-radius:12px;font-size:14px;">Zobraziť objednávku →</a>
-    `);
-  }
-
-  if (status === "DONE") {
-    return wrapper(`
-      ${headerBadge(status)}
-      <h1 style="margin:0 0 12px;font-size:26px;color:#111;">Objednávka vybavená ✅</h1>
-      <p style="font-size:15px;line-height:1.6;color:#444;margin:0 0 4px;">
-        Vaša objednávka bola úspešne vybavená. Ďakujeme, že ste si vybrali VytlačTo3D!
-      </p>
-      ${orderInfoBox(params)}
-    `);
-  }
-
-  if (status === "CANCELED") {
-    return wrapper(`
-      ${headerBadge(status)}
-      <h1 style="margin:0 0 12px;font-size:26px;color:#111;">Objednávka bola zrušená</h1>
-      <p style="font-size:15px;line-height:1.6;color:#444;margin:0 0 4px;">
-        Vaša objednávka bola zrušená. Ak máte otázky alebo potrebujete pomoc, neváhajte nás kontaktovať.
-      </p>
-      ${orderInfoBox(params)}
-    `);
-  }
-
-  return "";
-}
-
-export async function sendOrderStatusEmail(params: StatusEmailParams) {
-  if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) return;
-  if (!params.to) return;
-
-  const html = buildHtml(params);
-  if (!html) return;
-
-  const subject = STATUS_LABELS[params.status]
-    ? `${STATUS_LABELS[params.status]} – ${params.orderNumber ?? params.orderId}`
-    : null;
-
-  if (!subject) return;
-
-  await transporter.sendMail({ from: FROM, to: params.to, subject, html });
+  await transporter.sendMail({
+    from: FROM,
+    to,
+    subject: content.subject,
+    html,
+  });
 }

@@ -121,8 +121,8 @@ export default async function OrderDetailPage({
             <div className="text-xs font-semibold uppercase tracking-wide text-neutral-600">
               Stav objednávky
             </div>
-            <div className="mt-1 text-lg font-extrabold text-neutral-900">
-              {order.status}
+            <div className="mt-2">
+              <StatusBadge status={order.status} />
             </div>
             {order.status === "PENDING" && (
               <ResumeOrderButton orderId={order.id} />
@@ -222,6 +222,23 @@ export default async function OrderDetailPage({
         </div>
       </section>
     </div>
+  );
+}
+
+function StatusBadge({ status }: { status: string }) {
+  const map: Record<string, { label: string; className: string }> = {
+    PENDING:       { label: "Čaká na platbu",  className: "bg-yellow-100 text-yellow-800" },
+    PAID:          { label: "Zaplatená",        className: "bg-green-100 text-green-800" },
+    IN_PRODUCTION: { label: "V produkcii",      className: "bg-blue-100 text-blue-800" },
+    SHIPPED:       { label: "Odoslaná",         className: "bg-purple-100 text-purple-800" },
+    DELIVERED:     { label: "Doručená",         className: "bg-emerald-100 text-emerald-800" },
+    CANCELLED:     { label: "Zrušená",          className: "bg-red-100 text-red-800" },
+  };
+  const s = map[status] ?? { label: status, className: "bg-neutral-100 text-neutral-700" };
+  return (
+    <span className={`inline-block rounded-full px-3 py-1 text-sm font-bold ${s.className}`}>
+      {s.label}
+    </span>
   );
 }
 
