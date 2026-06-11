@@ -55,7 +55,29 @@ export default function AdminOrdersClient({
 }) {
   const [activeFilter, setActiveFilter] = useState<FilterType>("ALL");
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [changingId, setChangingId] = useState<string | null>(null);
   const router = useRouter();
+
+  async function handleStatusChange(orderId: string, newStatus: string) {
+    setChangingId(orderId);
+    try {
+      const res = await fetch("/api/admin/order-status", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId, status: newStatus }),
+      });
+      if (!res.ok) {
+        const d = await res.json();
+        alert("Chyba: " + (d.error ?? "Neznáma chyba"));
+        return;
+      }
+      router.refresh();
+    } catch {
+      alert("Sieťová chyba.");
+    } finally {
+      setChangingId(null);
+    }
+  }
 
   const filtered =
     activeFilter === "ALL" ? orders : orders.filter((o) => o.status === activeFilter);
@@ -310,6 +332,43 @@ export default function AdminOrdersClient({
                       >
                         Stiahnuť STL
                       </a>
+
+                      {order.status === "PENDING" && (
+                        <button
+                          onClick={() => handleStatusChange(order.id, "PAID")}
+                          disabled={changingId === order.id}
+                          className="w-full rounded-xl bg-green-600 px-3 py-2 text-xs font-bold text-white transition hover:bg-green-700 disabled:opacity-50"
+                        >
+                          {changingId === order.id ? "..." : "Označiť PAID"}
+                        </button>
+                      )}
+                      {order.status === "PAID" && (
+                        <button
+                          onClick={() => handleStatusChange(order.id, "IN_PRODUCTION")}
+                          disabled={changingId === order.id}
+                          className="w-full rounded-xl bg-green-600 px-3 py-2 text-xs font-bold text-white transition hover:bg-green-700 disabled:opacity-50"
+                        >
+                          {changingId === order.id ? "..." : "Spustiť tlač"}
+                        </button>
+                      )}
+                      {order.status === "IN_PRODUCTION" && (
+                        <button
+                          onClick={() => handleStatusChange(order.id, "SHIPPED")}
+                          disabled={changingId === order.id}
+                          className="w-full rounded-xl bg-green-600 px-3 py-2 text-xs font-bold text-white transition hover:bg-green-700 disabled:opacity-50"
+                        >
+                          {changingId === order.id ? "..." : "Označiť ODOSLANÉ"}
+                        </button>
+                      )}
+                      {order.status === "SHIPPED" && (
+                        <button
+                          onClick={() => handleStatusChange(order.id, "DELIVERED")}
+                          disabled={changingId === order.id}
+                          className="w-full rounded-xl bg-green-600 px-3 py-2 text-xs font-bold text-white transition hover:bg-green-700 disabled:opacity-50"
+                        >
+                          {changingId === order.id ? "..." : "Označiť DORUČENÉ"}
+                        </button>
+                      )}
 
                       <div className="mt-auto pt-2 border-t border-neutral-100">
                         <button
