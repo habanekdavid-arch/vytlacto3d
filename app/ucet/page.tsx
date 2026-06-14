@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { getSafeServerSession } from "@/lib/session";
+import AccountEditForm from "@/components/AccountEditForm";
 
 export const dynamic = "force-dynamic";
 
@@ -108,6 +109,38 @@ export default async function AccountPage() {
           className={isCompany && (user.shippingName || user.shippingContact) ? "mt-3" : ""}
         />
       </Section>
+
+      {/* Editácia údajov */}
+      <section className="rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm">
+        <h2 className="text-lg font-extrabold tracking-tight text-neutral-900">
+          Upraviť moje údaje
+        </h2>
+        <p className="mt-1 text-sm text-neutral-500">
+          Fakturačná a dodacia adresa sa predvyplní pri ďalšej objednávke.
+        </p>
+        <AccountEditForm
+          user={{
+            name: user.name ?? null,
+            phone: user.phone ?? null,
+            accountType: user.accountType ?? "PERSON",
+            companyName: user.companyName ?? null,
+            ico: user.ico ?? null,
+            dic: user.dic ?? null,
+            icDph: user.icDph ?? null,
+            contactPerson: user.contactPerson ?? null,
+            billingStreet: user.billingStreet ?? null,
+            billingCity: user.billingCity ?? null,
+            billingZip: user.billingZip ?? null,
+            billingCountry: user.billingCountry ?? null,
+            shippingName: user.shippingName ?? null,
+            shippingContact: user.shippingContact ?? null,
+            shippingStreet: user.shippingStreet ?? null,
+            shippingCity: user.shippingCity ?? null,
+            shippingZip: user.shippingZip ?? null,
+            shippingCountry: user.shippingCountry ?? null,
+          }}
+        />
+      </section>
     </div>
   );
 }
