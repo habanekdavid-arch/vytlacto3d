@@ -5,12 +5,13 @@ import { formatEur, addVat, vatAmount, formatPaidTotal } from "@/lib/vat";
 import CopyOrderButton from "@/components/CopyOrderButton";
 import InvoiceSection from "@/components/InvoiceSection";
 import AdminStatusChanger from "@/components/AdminStatusChanger";
+import EditableField from "@/components/EditableField";
 import { formatDateSK } from "@/lib/formatDate";
 
 export const dynamic = "force-dynamic";
 
 function getValue(value: any) {
-  if (value === null || value === undefined || value === "") return "—";
+  if (value === null || value === undefined || value === "") return "";
   return String(value);
 }
 
@@ -273,10 +274,10 @@ export default async function AdminOrderDetailPage({
           <Panel title="Zákazník">
             <InfoCard
               label="Meno"
-              value={getValue(deliveryAddress.name ?? billingAddress.name)}
+              value={rawDelivery.name ?? rawShipping.name ?? billingAddress.name ?? "—"}
             />
-            <InfoCard label="Email" value={order.customerEmail ?? "—"} />
-            <InfoCard label="Telefón" value={order.phone ?? "—"} />
+            <EditableField orderId={order.id} label="Email" value={order.customerEmail ?? ""} field="customerEmail" />
+            <EditableField orderId={order.id} label="Telefón" value={order.phone ?? ""} field="phone" />
             <InfoCard
               label="Typ účtu"
               value={
@@ -287,39 +288,46 @@ export default async function AdminOrderDetailPage({
                   : "—"
               }
             />
-            <InfoCard
-              label="Kontaktná osoba"
-              value={order.contactPerson ?? "—"}
-            />
+            <EditableField orderId={order.id} label="Kontaktná osoba" value={order.contactPerson ?? ""} field="contactPerson" />
+            <EditableField orderId={order.id} label="Názov súboru" value={order.fileName ?? ""} field="fileName" />
+            <EditableField orderId={order.id} label="Spôsob dopravy" value={order.shippingMethod ?? ""} field="shippingMethod" />
           </Panel>
 
           <Panel title="Firemné údaje">
-            <InfoCard label="Názov spoločnosti" value={order.companyName ?? "—"} />
-            <InfoCard label="IČO" value={order.ico ?? "—"} />
-            <InfoCard label="DIČ" value={order.dic ?? "—"} />
-            <InfoCard label="IČ DPH" value={order.icDph ?? "—"} />
+            <EditableField orderId={order.id} label="Názov spoločnosti" value={order.companyName ?? ""} field="companyName" />
+            <EditableField orderId={order.id} label="IČO" value={order.ico ?? ""} field="ico" />
+            <EditableField orderId={order.id} label="DIČ" value={order.dic ?? ""} field="dic" />
+            <EditableField orderId={order.id} label="IČ DPH" value={order.icDph ?? ""} field="icDph" />
           </Panel>
         </section>
 
         <section className="mt-6 grid gap-6 lg:grid-cols-2">
-          <Panel title="Adresa doručenia">
-            <InfoCard label="Meno" value={getValue(deliveryAddress.name)} />
-            <InfoCard label="Telefón" value={getValue(deliveryAddress.phone ?? order.phone)} />
-            <InfoCard label="Ulica" value={getValue(deliveryAddress.street)} />
-            <InfoCard label="Doplnenie adresy" value={getValue(deliveryAddress.line2)} />
-            <InfoCard label="Mesto" value={getValue(deliveryAddress.city)} />
-            <InfoCard label="PSČ" value={getValue(deliveryAddress.zip)} />
-            <InfoCard label="Krajina" value={getValue(deliveryAddress.country)} />
+          <Panel title="Dodacia adresa zo Stripe">
+            <EditableField orderId={order.id} label="Meno" value={getValue(rawShipping.name)} jsonField="shippingAddress" jsonKey="name" />
+            <EditableField orderId={order.id} label="Telefón" value={getValue(rawShipping.phone)} jsonField="shippingAddress" jsonKey="phone" />
+            <EditableField orderId={order.id} label="Ulica" value={getValue(rawShipping.line1 ?? rawShipping.address)} jsonField="shippingAddress" jsonKey="line1" />
+            <EditableField orderId={order.id} label="Doplnenie adresy" value={getValue(rawShipping.line2)} jsonField="shippingAddress" jsonKey="line2" />
+            <EditableField orderId={order.id} label="Mesto" value={getValue(rawShipping.city)} jsonField="shippingAddress" jsonKey="city" />
+            <EditableField orderId={order.id} label="PSČ" value={getValue(rawShipping.postal_code)} jsonField="shippingAddress" jsonKey="postal_code" />
+            <EditableField orderId={order.id} label="Krajina" value={getValue(rawShipping.country)} jsonField="shippingAddress" jsonKey="country" />
           </Panel>
 
-          <Panel title="Fakturačná adresa">
-            <InfoCard label="Meno" value={getValue(billingAddress.name)} />
-            <InfoCard label="Email" value={getValue(billingAddress.email)} />
-            <InfoCard label="Telefón" value={getValue(billingAddress.phone)} />
-            <InfoCard label="Ulica" value={getValue(billingAddress.street)} />
-            <InfoCard label="Mesto" value={getValue(billingAddress.city)} />
-            <InfoCard label="PSČ" value={getValue(billingAddress.zip)} />
-            <InfoCard label="Krajina" value={getValue(billingAddress.country)} />
+          <Panel title="Dodacia adresa z účtu">
+            <EditableField orderId={order.id} label="Názov" value={getValue(rawDelivery.name)} jsonField="deliveryAddress" jsonKey="name" />
+            <EditableField orderId={order.id} label="Kontaktná osoba" value={getValue(rawDelivery.contact)} jsonField="deliveryAddress" jsonKey="contact" />
+            <EditableField orderId={order.id} label="Ulica" value={getValue(rawDelivery.street)} jsonField="deliveryAddress" jsonKey="street" />
+            <EditableField orderId={order.id} label="Mesto" value={getValue(rawDelivery.city)} jsonField="deliveryAddress" jsonKey="city" />
+            <EditableField orderId={order.id} label="PSČ" value={getValue(rawDelivery.zip)} jsonField="deliveryAddress" jsonKey="zip" />
+            <EditableField orderId={order.id} label="Krajina" value={getValue(rawDelivery.country)} jsonField="deliveryAddress" jsonKey="country" />
+          </Panel>
+        </section>
+
+        <section className="mt-6 grid gap-6 lg:grid-cols-2">
+          <Panel title="Fakturačná adresa z účtu">
+            <EditableField orderId={order.id} label="Ulica" value={getValue(billingAddress.street)} jsonField="billingAddress" jsonKey="street" />
+            <EditableField orderId={order.id} label="Mesto" value={getValue(billingAddress.city)} jsonField="billingAddress" jsonKey="city" />
+            <EditableField orderId={order.id} label="PSČ" value={getValue(billingAddress.zip)} jsonField="billingAddress" jsonKey="zip" />
+            <EditableField orderId={order.id} label="Krajina" value={getValue(billingAddress.country)} jsonField="billingAddress" jsonKey="country" />
           </Panel>
         </section>
 
@@ -340,22 +348,12 @@ export default async function AdminOrderDetailPage({
 
         <section className="mt-6 grid gap-6 lg:grid-cols-2">
           <Panel title="Konfigurácia tlače">
-            <InfoCard label="Materiál" value={getValue(config.material)} />
-            <InfoCard label="Kvalita" value={getValue(config.quality)} />
-            <InfoCard label="Farba" value={getValue(config.color)} />
-            <InfoCard label="Počet kusov" value={getValue(config.quantity)} />
-            <InfoCard
-              label="Infill"
-              value={
-                config.infillPct !== undefined ? `${config.infillPct}%` : "—"
-              }
-            />
-            <InfoCard
-              label="Mierka"
-              value={
-                config.scalePct !== undefined ? `${config.scalePct}%` : "—"
-              }
-            />
+            <EditableField orderId={order.id} label="Materiál" value={getValue(config.material)} jsonField="config" jsonKey="material" />
+            <EditableField orderId={order.id} label="Kvalita" value={getValue(config.quality)} jsonField="config" jsonKey="quality" />
+            <EditableField orderId={order.id} label="Farba" value={getValue(config.color)} jsonField="config" jsonKey="color" />
+            <EditableField orderId={order.id} label="Počet kusov" value={getValue(config.quantity)} jsonField="config" jsonKey="quantity" />
+            <EditableField orderId={order.id} label="Infill" value={config.infillPct !== undefined ? String(config.infillPct) : ""} jsonField="config" jsonKey="infillPct" />
+            <EditableField orderId={order.id} label="Mierka" value={config.scalePct !== undefined ? String(config.scalePct) : ""} jsonField="config" jsonKey="scalePct" />
           </Panel>
 
           <Panel title="Analýza modelu">
