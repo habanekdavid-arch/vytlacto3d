@@ -1,11 +1,5 @@
-import { addVat } from "./vat";
-
-export const SHIPPING_RATES_WITHOUT_VAT = {
+// Finálne ceny dopravy s DPH — suma ktorú zákazník platí
+export const SHIPPING_RATES = {
   PACKETA: 3.99,
   COURIER: 5.99,
-} as const;
-
-export const SHIPPING_RATES_WITH_VAT = {
-  PACKETA: addVat(SHIPPING_RATES_WITHOUT_VAT.PACKETA), // 4.91 €
-  COURIER: addVat(SHIPPING_RATES_WITHOUT_VAT.COURIER),  // 7.37 €
 } as const;

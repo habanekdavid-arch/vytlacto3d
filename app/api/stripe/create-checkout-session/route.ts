@@ -4,7 +4,7 @@ import Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
 import { quote } from "@/lib/pricing";
 import { addVat } from "@/lib/vat";
-import { SHIPPING_RATES_WITH_VAT } from "@/lib/shipping";
+import { SHIPPING_RATES } from "@/lib/shipping";
 import { getSafeServerSession } from "@/lib/session";
 
 export const runtime = "nodejs";
@@ -211,16 +211,14 @@ export async function POST(req: NextRequest) {
               shipping_rate_data: {
                 display_name: "Packeta výdajňa / Z-Box",
                 type: "fixed_amount" as const,
-                fixed_amount: { amount: Math.round(SHIPPING_RATES_WITH_VAT.PACKETA * 100), currency: "eur" },
-                tax_behavior: "inclusive" as const,
+                fixed_amount: { amount: Math.round(SHIPPING_RATES.PACKETA * 100), currency: "eur" },
               },
             }
           : {
               shipping_rate_data: {
                 display_name: "Kuriér",
                 type: "fixed_amount" as const,
-                fixed_amount: { amount: Math.round(SHIPPING_RATES_WITH_VAT.COURIER * 100), currency: "eur" },
-                tax_behavior: "inclusive" as const,
+                fixed_amount: { amount: Math.round(SHIPPING_RATES.COURIER * 100), currency: "eur" },
               },
             },
       ],

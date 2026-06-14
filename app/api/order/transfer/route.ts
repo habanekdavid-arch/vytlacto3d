@@ -4,7 +4,7 @@ import { quote } from "@/lib/pricing";
 import { addVat } from "@/lib/vat";
 import { getSafeServerSession } from "@/lib/session";
 import { generateVariableSymbol, COMPANY_INFO } from "@/lib/company-info";
-import { SHIPPING_RATES_WITH_VAT } from "@/lib/shipping";
+import { SHIPPING_RATES } from "@/lib/shipping";
 import { sendTransferPaymentEmail } from "@/lib/email-transfer";
 
 export const runtime = "nodejs";
@@ -89,8 +89,8 @@ export async function POST(req: NextRequest) {
     });
 
     const shippingCostWithVat = deliveryMethod === "courier"
-      ? SHIPPING_RATES_WITH_VAT.COURIER
-      : SHIPPING_RATES_WITH_VAT.PACKETA;
+      ? SHIPPING_RATES.COURIER
+      : SHIPPING_RATES.PACKETA;
     const productionWithVat = addVat(pricing.total);
     const totalWithVat = Math.round((productionWithVat + shippingCostWithVat) * 100) / 100;
 
