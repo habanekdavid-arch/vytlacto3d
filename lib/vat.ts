@@ -43,6 +43,14 @@ export function formatPaidTotal(paidWithVat: number | null | undefined): string 
   return `${formatEur(paidWithVat)} s DPH`;
 }
 
+/**
+ * Vrátane DPH 23% — pripraví sumu dopravy v centoch pre Stripe shipping_rate_data.
+ * Použiť s tax_behavior: "inclusive" aby Stripe vedel, že suma DPH obsahuje.
+ */
+export function shippingPriceWithVatCents(shippingWithoutVat: number): number {
+  return Math.round(addVat(shippingWithoutVat) * 100);
+}
+
 export function formatPricePair(
   priceWithoutVat: number | null | undefined
 ) {

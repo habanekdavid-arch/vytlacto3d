@@ -11,7 +11,7 @@ import FaqPreview from "@/components/FaqPreview";
 import FloatingCta from "@/components/FloatingCta";
 import ModelSummaryBar from "@/components/ModelSummaryBar";
 import { formatPriceWithVat, formatEur } from "@/lib/vat";
-import { SHIPPING_RATES } from "@/lib/shipping";
+import { SHIPPING_RATES_WITH_VAT } from "@/lib/shipping";
 
 type Uploaded = {
   fileKey: string;
@@ -391,7 +391,7 @@ export default function Home() {
                   <div className="flex-1">
                     <div className="text-sm font-bold text-neutral-900">Packeta výdajňa / Z-Box</div>
                     <div className="mt-0.5 text-xs text-neutral-500">Vyzdvihnutie na výdajnom mieste · SK</div>
-                    <div className="mt-1.5 text-sm font-extrabold text-neutral-900">{formatEur(SHIPPING_RATES.PACKETA)}</div>
+                    <div className="mt-1.5 text-sm font-extrabold text-neutral-900">{formatEur(SHIPPING_RATES_WITH_VAT.PACKETA)}</div>
                   </div>
                   {deliveryMethod === "packeta" && (
                     <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#FFAE00]">
@@ -424,7 +424,7 @@ export default function Home() {
                   <div className="flex-1">
                     <div className="text-sm font-bold text-neutral-900">Kuriér na adresu</div>
                     <div className="mt-0.5 text-xs text-neutral-500">Doručenie domov · SK</div>
-                    <div className="mt-1.5 text-sm font-extrabold text-neutral-900">{formatEur(SHIPPING_RATES.COURIER)}</div>
+                    <div className="mt-1.5 text-sm font-extrabold text-neutral-900">{formatEur(SHIPPING_RATES_WITH_VAT.COURIER)}</div>
                   </div>
                   {deliveryMethod === "courier" && (
                     <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#FFAE00]">

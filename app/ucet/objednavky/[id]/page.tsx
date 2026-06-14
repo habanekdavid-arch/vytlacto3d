@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { formatEur, addVat } from "@/lib/vat";
+import { formatEur, addVat, formatPaidTotal } from "@/lib/vat";
 import { getSafeServerSession } from "@/lib/session";
 import { formatDateSK } from "@/lib/formatDate";
 import ResumeOrderButton from "@/components/ResumeOrderButton";
@@ -137,12 +137,12 @@ export default async function OrderDetailPage({
           />
           <DetailCard
             label="Celkom zaplatené"
-            value={total !== null ? formatEur(total) : "—"}
+            value={total !== null ? formatPaidTotal(total) : "—"}
           />
           <DetailCard label="Doprava" value={order.shippingMethod ?? "—"} />
           <DetailCard
             label="Cena dopravy"
-            value={shippingCostEur !== null ? formatEur(shippingCostEur) : "—"}
+            value={shippingCostEur !== null ? formatPaidTotal(shippingCostEur) : "—"}
           />
         </div>
       </section>
@@ -197,8 +197,8 @@ export default async function OrderDetailPage({
             value={productionGross !== null ? formatEur(productionGross) : "—"}
           />
           <DetailCard
-            label="Doprava"
-            value={shippingCostEur !== null ? formatEur(shippingCostEur) : "—"}
+            label="Doprava s DPH"
+            value={shippingCostEur !== null ? formatPaidTotal(shippingCostEur) : "—"}
           />
           <DetailCard
             label="Celkom s DPH"

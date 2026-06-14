@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { getSafeServerSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
-import { formatEur, addVat, vatAmount } from "@/lib/vat";
+import { formatEur, addVat, vatAmount, formatPaidTotal } from "@/lib/vat";
 import CopyOrderButton from "@/components/CopyOrderButton";
 import InvoiceSection from "@/components/InvoiceSection";
 import AdminStatusChanger from "@/components/AdminStatusChanger";
@@ -212,12 +212,12 @@ export default async function AdminOrderDetailPage({
             <InfoCard label="Vytvorené" value={formatDateSK(order.createdAt)} />
             <InfoCard
               label="Celkom zaplatené"
-              value={total !== null ? formatEur(total) : "—"}
+              value={total !== null ? formatPaidTotal(total) : "—"}
             />
             <InfoCard label="Doprava" value={order.shippingMethod ?? "—"} />
             <InfoCard
               label="Cena dopravy"
-              value={shippingCostEur !== null ? formatEur(shippingCostEur) : "—"}
+              value={shippingCostEur !== null ? formatPaidTotal(shippingCostEur) : "—"}
             />
           </div>
 
@@ -235,8 +235,8 @@ export default async function AdminOrderDetailPage({
                 <span className="col-span-2 font-bold text-neutral-900">{formatEur(addVat(pricing.total))}</span>
                 {shippingCostEur !== null && (
                   <>
-                    <span>Doprava</span>
-                    <span className="col-span-2 font-semibold">{formatEur(shippingCostEur)}</span>
+                    <span>Doprava s DPH</span>
+                    <span className="col-span-2 font-semibold">{formatPaidTotal(shippingCostEur)}</span>
                   </>
                 )}
               </div>
