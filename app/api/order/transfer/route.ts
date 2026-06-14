@@ -4,14 +4,11 @@ import { quote } from "@/lib/pricing";
 import { addVat } from "@/lib/vat";
 import { getSafeServerSession } from "@/lib/session";
 import { generateVariableSymbol, COMPANY_INFO } from "@/lib/company-info";
+import { SHIPPING_RATES_WITH_VAT } from "@/lib/shipping";
 import { sendTransferPaymentEmail } from "@/lib/email-transfer";
 
 export const runtime = "nodejs";
 
-const SHIPPING_COST_EUR: Record<"packeta" | "courier", number> = {
-  packeta: 3.99,
-  courier: 5.99,
-};
 
 async function generateOrderNumber(): Promise<string> {
   const year = new Date().getFullYear();
@@ -91,9 +88,11 @@ export async function POST(req: NextRequest) {
       quantity,
     });
 
-    const shippingCostEur = SHIPPING_COST_EUR[deliveryMethod];
+    const shippingCostWithVat = deliveryMethod === "courier"
+      ? SHIPPING_RATES_WITH_VAT.COURIER
+      : SHIPPING_RATES_WITH_VAT.PACKETA;
     const productionWithVat = addVat(pricing.total);
-    const totalWithVat = Math.round((productionWithVat + shippingCostEur) * 100) / 100;
+    const totalWithVat = Math.round((productionWithVat + shippingCostWithVat) * 100) / 100;
 
     const shippingMethod = deliveryMethod === "courier" ? "Kurier" : "Packeta vyzdvihna / Z-Box";
 
@@ -118,7 +117,7 @@ export async function POST(req: NextRequest) {
         pricing: pricing as any,
         paidTotalEur: totalWithVat,
         shippingMethod,
-        shippingCost: { amount: Math.round(shippingCostEur * 100), currency: "eur" } as any,
+        shippingCost: { amount: Math.round(shippingCostWithVat * 100), currency: "eur" } as any,
         userId,
         customerEmail,
         accountType: dbUser?.accountType ?? null,
