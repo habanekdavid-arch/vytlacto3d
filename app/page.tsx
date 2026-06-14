@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useSession } from "next-auth/react";
 import UploadBox from "@/components/UploadBox";
 import Configurator, { ConfigState } from "@/components/Configurator";
 import StlViewer from "@/components/StlViewer";
@@ -57,6 +58,8 @@ export default function Home() {
   const [packetaPoint, setPacketaPoint] = useState<PacketaPoint | null>(null);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<"CARD" | "TRANSFER">("CARD");
+  const [showTransferModal, setShowTransferModal] = useState(false);
+  const { status: sessionStatus } = useSession();
 
   useEffect(() => {
     const script = document.createElement("script");
@@ -424,6 +427,7 @@ export default function Home() {
               <div className="mt-6">
                 <div className="mb-3 text-sm font-extrabold text-neutral-800">Spôsob platby</div>
                 <div className="grid gap-3 sm:grid-cols-2">
+                  {/* Karta */}
                   <button
                     type="button"
                     onClick={() => setPaymentMethod("CARD")}
@@ -434,8 +438,11 @@ export default function Home() {
                         : "border-neutral-200 bg-white hover:border-neutral-300",
                     ].join(" ")}
                   >
-                    <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#FFAE00]/15 text-lg">
-                      💳
+                    <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#FFAE00]">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+                        <line x1="1" y1="10" x2="23" y2="10"/>
+                      </svg>
                     </div>
                     <div className="flex-1">
                       <div className="text-sm font-bold text-neutral-900">Platba kartou</div>
@@ -450,9 +457,16 @@ export default function Home() {
                     )}
                   </button>
 
+                  {/* Prevod */}
                   <button
                     type="button"
-                    onClick={() => setPaymentMethod("TRANSFER")}
+                    onClick={() => {
+                      if (sessionStatus !== "authenticated") {
+                        setShowTransferModal(true);
+                      } else {
+                        setPaymentMethod("TRANSFER");
+                      }
+                    }}
                     className={[
                       "flex items-start gap-3 rounded-2xl border-2 p-4 text-left transition-all duration-150",
                       paymentMethod === "TRANSFER"
@@ -460,12 +474,23 @@ export default function Home() {
                         : "border-neutral-200 bg-white hover:border-neutral-300",
                     ].join(" ")}
                   >
-                    <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-orange-100 text-lg">
-                      🏦
+                    <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-orange-500">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="3" width="18" height="18" rx="2"/>
+                        <path d="M3 9h18"/>
+                        <path d="M9 21V9"/>
+                      </svg>
                     </div>
                     <div className="flex-1">
                       <div className="text-sm font-bold text-neutral-900">Platba prevodom</div>
-                      <div className="mt-0.5 text-xs text-neutral-500">Bankový prevod · IBAN SK</div>
+                      <div className="mt-0.5 text-xs text-neutral-500">
+                        Bankový prevod · IBAN SK
+                        {sessionStatus !== "authenticated" && (
+                          <span className="ml-1.5 rounded-full bg-orange-100 px-1.5 py-0.5 text-[10px] font-bold text-orange-700">
+                            vyžaduje účet
+                          </span>
+                        )}
+                      </div>
                     </div>
                     {paymentMethod === "TRANSFER" && (
                       <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-orange-400">
@@ -562,6 +587,96 @@ export default function Home() {
         <MaterialPricing />
         <FaqPreview />
       </main>
+
+      {/* Modal: prevod vyžaduje účet */}
+      {showTransferModal && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 px-4"
+          onClick={() => setShowTransferModal(false)}
+        >
+          <div
+            className="w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="bg-neutral-900 px-6 pt-6 pb-5">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/10">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="3" y="3" width="18" height="18" rx="2"/>
+                      <path d="M3 9h18"/>
+                      <path d="M9 21V9"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <div className="text-[11px] font-bold uppercase tracking-widest text-white/40">Platba prevodom</div>
+                    <div className="text-[15px] font-extrabold leading-snug text-white">Vyžaduje prihlásenie</div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowTransferModal(false)}
+                  className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/10 transition hover:bg-white/20"
+                  aria-label="Zatvoriť"
+                >
+                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round">
+                    <line x1="1" y1="1" x2="9" y2="9"/>
+                    <line x1="9" y1="1" x2="1" y2="9"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {/* Body */}
+            <div className="px-6 pt-5 pb-6">
+              <p className="text-[14px] leading-relaxed text-neutral-600">
+                Platbu bankovým prevodom môžu využiť iba registrovaní zákazníci. Účet vám umožní sledovať stav objednávky a variabilný symbol je viazaný na váš profil.
+              </p>
+
+              <ul className="mt-4 space-y-2">
+                {[
+                  "Variabilný symbol spojený s vašou objednávkou",
+                  "Stav platby vidíte v histórii objednávok",
+                  "Predvyplnená adresa pri ďalšej objednávke",
+                ].map((b) => (
+                  <li key={b} className="flex items-start gap-2 text-[13px] text-neutral-700">
+                    <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-[#FFAE00]">
+                      <svg width="8" height="8" viewBox="0 0 12 12" fill="none" stroke="black" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="2 6 5 9 10 3"/>
+                      </svg>
+                    </span>
+                    {b}
+                  </li>
+                ))}
+              </ul>
+
+              <div className="mt-6 flex gap-3">
+                <a
+                  href="/registracia"
+                  className="flex-1 rounded-xl bg-[#FFAE00] px-4 py-2.5 text-center text-[13px] font-extrabold text-black transition hover:bg-[#e09d00]"
+                >
+                  Vytvoriť účet
+                </a>
+                <a
+                  href="/prihlasenie"
+                  className="flex-1 rounded-xl border border-neutral-200 bg-white px-4 py-2.5 text-center text-[13px] font-semibold text-neutral-700 transition hover:bg-neutral-50"
+                >
+                  Prihlásiť sa
+                </a>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowTransferModal(false)}
+                className="mt-3 w-full text-center text-[12px] text-neutral-400 transition hover:text-neutral-600"
+              >
+                Pokračovať s platbou kartou
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
