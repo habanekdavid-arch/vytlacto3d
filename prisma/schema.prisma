@@ -82,6 +82,9 @@ model Order {
 
   reminderSentAt DateTime?
 
+  paymentMethod  String   @default("CARD")
+  variableSymbol String?  @unique
+
   userId String?
   user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
 

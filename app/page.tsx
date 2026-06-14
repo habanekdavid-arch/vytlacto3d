@@ -56,6 +56,7 @@ export default function Home() {
   const [deliveryMethod, setDeliveryMethod] = useState<"packeta" | "courier">("packeta");
   const [packetaPoint, setPacketaPoint] = useState<PacketaPoint | null>(null);
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<"CARD" | "TRANSFER">("CARD");
 
   useEffect(() => {
     const script = document.createElement("script");
@@ -82,6 +83,29 @@ export default function Home() {
     setLatestQuote(q);
     setLatestConfig(cfg);
   }, []);
+
+  async function payByTransfer() {
+    if (!uploaded || !latestConfig) return;
+    setOrderLoading(true);
+    try {
+      const res = await fetch("/api/order/transfer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          uploaded,
+          config: latestConfig,
+          deliveryMethod,
+          packetaPoint: deliveryMethod === "packeta" ? packetaPoint : null,
+        }),
+      });
+      let data: any = null;
+      try { data = await res.json(); } catch { data = { error: "Parse error" }; }
+      if (!res.ok) { alert(data.error || "Chyba pri vytváraní objednávky"); return; }
+      window.location.href = data.redirectUrl;
+    } finally {
+      setOrderLoading(false);
+    }
+  }
 
   async function payByCard() {
     if (!uploaded || !latestConfig) return;
@@ -396,6 +420,70 @@ export default function Home() {
                 </div>
               )}
 
+              {/* Spôsob platby */}
+              <div className="mt-6">
+                <div className="mb-3 text-sm font-extrabold text-neutral-800">Spôsob platby</div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod("CARD")}
+                    className={[
+                      "flex items-start gap-3 rounded-2xl border-2 p-4 text-left transition-all duration-150",
+                      paymentMethod === "CARD"
+                        ? "border-[#FFAE00] bg-[#FFAE00]/5"
+                        : "border-neutral-200 bg-white hover:border-neutral-300",
+                    ].join(" ")}
+                  >
+                    <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#FFAE00]/15 text-lg">
+                      💳
+                    </div>
+                    <div className="flex-1">
+                      <div className="text-sm font-bold text-neutral-900">Platba kartou</div>
+                      <div className="mt-0.5 text-xs text-neutral-500">Okamžité spracovanie cez Stripe</div>
+                    </div>
+                    {paymentMethod === "CARD" && (
+                      <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#FFAE00]">
+                        <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
+                          <path d="M2 6l3 3 5-5" stroke="black" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </div>
+                    )}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod("TRANSFER")}
+                    className={[
+                      "flex items-start gap-3 rounded-2xl border-2 p-4 text-left transition-all duration-150",
+                      paymentMethod === "TRANSFER"
+                        ? "border-orange-400 bg-orange-50"
+                        : "border-neutral-200 bg-white hover:border-neutral-300",
+                    ].join(" ")}
+                  >
+                    <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-orange-100 text-lg">
+                      🏦
+                    </div>
+                    <div className="flex-1">
+                      <div className="text-sm font-bold text-neutral-900">Platba prevodom</div>
+                      <div className="mt-0.5 text-xs text-neutral-500">Bankový prevod · IBAN SK</div>
+                    </div>
+                    {paymentMethod === "TRANSFER" && (
+                      <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-orange-400">
+                        <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
+                          <path d="M2 6l3 3 5-5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </div>
+                    )}
+                  </button>
+                </div>
+
+                {paymentMethod === "TRANSFER" && (
+                  <div className="mt-3 rounded-2xl border border-orange-200 bg-orange-50 px-4 py-3 text-sm text-orange-800">
+                    Platobné údaje (IBAN, variabilný symbol, sumu) dostanete emailom. Výroba začne po prijatí platby na náš účet.
+                  </div>
+                )}
+              </div>
+
               {/* Objednať */}
               <div className="mt-6 space-y-4">
                 <label
@@ -445,13 +533,22 @@ export default function Home() {
                       (deliveryMethod === "packeta" && !packetaPoint) ||
                       !termsAccepted
                     }
-                    onClick={payByCard}
-                    className="rounded-2xl bg-[#FFAE00] px-5 py-3 text-sm font-semibold text-black shadow-sm hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+                    onClick={paymentMethod === "TRANSFER" ? payByTransfer : payByCard}
+                    className={[
+                      "rounded-2xl px-5 py-3 text-sm font-semibold shadow-sm hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed",
+                      paymentMethod === "TRANSFER"
+                        ? "bg-orange-500 text-white"
+                        : "bg-[#FFAE00] text-black",
+                    ].join(" ")}
                   >
-                    {orderLoading ? "Presmerúvam…" : "Objednať a zaplatiť"}
+                    {orderLoading
+                      ? (paymentMethod === "TRANSFER" ? "Vytváram objednávku…" : "Presmerúvam…")
+                      : (paymentMethod === "TRANSFER" ? "Objednať — zaplatiť prevodom" : "Objednať a zaplatiť kartou")}
                   </button>
                   <div className="text-xs text-neutral-500">
-                    {deliveryMethod === "packeta"
+                    {paymentMethod === "TRANSFER"
+                      ? "Platobné údaje dostanete emailom."
+                      : deliveryMethod === "packeta"
                       ? "Fakturačná adresa sa zadáva pri platbe."
                       : "Adresa doručenia a platba v ďalšom kroku."}
                   </div>

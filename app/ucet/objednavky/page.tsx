@@ -141,12 +141,13 @@ function InfoMini({
 
 function StatusBadgeMini({ status }: { status: string }) {
   const map: Record<string, { label: string; className: string }> = {
-    PENDING:       { label: "Čaká na platbu",  className: "bg-yellow-100 text-yellow-800" },
-    PAID:          { label: "Zaplatená",        className: "bg-green-100 text-green-800" },
-    IN_PRODUCTION: { label: "V produkcii",      className: "bg-blue-100 text-blue-800" },
-    SHIPPED:       { label: "Odoslaná",         className: "bg-purple-100 text-purple-800" },
-    DELIVERED:     { label: "Doručená",         className: "bg-emerald-100 text-emerald-800" },
-    CANCELLED:     { label: "Zrušená",          className: "bg-red-100 text-red-800" },
+    PENDING:            { label: "Čaká na platbu",  className: "bg-yellow-100 text-yellow-800" },
+    AWAITING_TRANSFER:  { label: "Čaká na prevod",  className: "bg-orange-100 text-orange-800" },
+    PAID:               { label: "Zaplatená",        className: "bg-green-100 text-green-800" },
+    IN_PRODUCTION:      { label: "V produkcii",      className: "bg-blue-100 text-blue-800" },
+    SHIPPED:            { label: "Odoslaná",         className: "bg-purple-100 text-purple-800" },
+    DELIVERED:          { label: "Doručená",         className: "bg-emerald-100 text-emerald-800" },
+    CANCELLED:          { label: "Zrušená",          className: "bg-red-100 text-red-800" },
   };
   const s = map[status] ?? { label: status, className: "bg-neutral-100 text-neutral-700" };
   return (

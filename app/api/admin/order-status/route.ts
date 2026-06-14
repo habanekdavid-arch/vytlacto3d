@@ -5,6 +5,7 @@ import { sendOrderStatusEmail } from "@/lib/email-status";
 
 const VALID_STATUSES = [
   "PENDING",
+  "AWAITING_TRANSFER",
   "PAID",
   "IN_PRODUCTION",
   "SHIPPED",

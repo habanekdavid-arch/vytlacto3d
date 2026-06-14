@@ -13,6 +13,7 @@ const CONTACT = `
 
 type OrderStatus =
   | "PENDING"
+  | "AWAITING_TRANSFER"
   | "PAID"
   | "IN_PRODUCTION"
   | "SHIPPED"
@@ -36,6 +37,14 @@ function getContent(
   const link = `${baseUrl}/ucet/objednavky/${orderId}`;
 
   const map: Record<OrderStatus, ContentMap & { btnUrl?: string }> = {
+    AWAITING_TRANSFER: {
+      subject: "Platobne udaje k vasej objednavke – VytlacTo3D",
+      heading: "Cakame na vasu platbu prevodom",
+      body: `Objednavka pre subor <strong>${fileName}</strong> bola prijata. Platobne udaje ste dostali emailom. Vyroba zacne po pripísani platby na nas ucet.`,
+      btnText: "Zobrazit objednavku &rarr;",
+      btnColor: "#f97316",
+      btnTextColor: "#fff",
+    },
     PENDING: {
       subject: "Objednavka caka na platbu – VytlacTo3D",
       heading: "Vasa objednavka caka na dokoncenie",
@@ -46,8 +55,8 @@ function getContent(
     },
     PAID: {
       subject: "Platba prijata – VytlacTo3D",
-      heading: "Platba bola uspesna",
-      body: `Vasa platba za <strong>${fileName}</strong> bola prijata. Objednavka caka na spracovanie – coskoro zacneme tlacat.`,
+      heading: "Platba bola uspesne prijata",
+      body: `Vasa platba za <strong>${fileName}</strong> bola prijata (vrátane bankového prevodu). Objednavka caka na spracovanie – coskoro zacneme tlacat.`,
       btnText: "Zobrazit objednavku &rarr;",
       btnColor: "#FFAE00",
       btnTextColor: "#000",

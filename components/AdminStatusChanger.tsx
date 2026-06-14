@@ -4,12 +4,13 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 const STATUSES = [
-  { value: "PENDING",       label: "Čaká na platbu",  color: "bg-yellow-100 text-yellow-800" },
-  { value: "PAID",          label: "Zaplatená",        color: "bg-green-100 text-green-800" },
-  { value: "IN_PRODUCTION", label: "V produkcii",      color: "bg-blue-100 text-blue-800" },
-  { value: "SHIPPED",       label: "Odoslaná",         color: "bg-purple-100 text-purple-800" },
-  { value: "DELIVERED",     label: "Doručená",         color: "bg-emerald-100 text-emerald-800" },
-  { value: "CANCELLED",     label: "Zrušená",          color: "bg-red-100 text-red-800" },
+  { value: "PENDING",            label: "Čaká na platbu",     color: "bg-yellow-100 text-yellow-800" },
+  { value: "AWAITING_TRANSFER",  label: "Čaká na prevod",     color: "bg-orange-100 text-orange-800" },
+  { value: "PAID",               label: "Zaplatená",           color: "bg-green-100 text-green-800" },
+  { value: "IN_PRODUCTION",      label: "V produkcii",         color: "bg-blue-100 text-blue-800" },
+  { value: "SHIPPED",            label: "Odoslaná",            color: "bg-purple-100 text-purple-800" },
+  { value: "DELIVERED",          label: "Doručená",            color: "bg-emerald-100 text-emerald-800" },
+  { value: "CANCELLED",          label: "Zrušená",             color: "bg-red-100 text-red-800" },
 ];
 
 export default function AdminStatusChanger({

@@ -21,6 +21,7 @@ type Order = {
 type Stats = {
   total: number;
   pending: number;
+  awaitingTransfer: number;
   paid: number;
   inProduction: number;
   shipped: number;
@@ -29,15 +30,16 @@ type Stats = {
   revenueTotal: number;
 };
 
-type FilterType = "ALL" | "PENDING" | "PAID" | "IN_PRODUCTION" | "SHIPPED" | "DELIVERED" | "CANCELLED";
+type FilterType = "ALL" | "PENDING" | "AWAITING_TRANSFER" | "PAID" | "IN_PRODUCTION" | "SHIPPED" | "DELIVERED" | "CANCELLED";
 
 const STATUS_LABELS: Record<string, { label: string; classes: string }> = {
-  PENDING:       { label: "Čaká na platbu",  classes: "border-neutral-300 bg-neutral-100 text-neutral-700" },
-  PAID:          { label: "Zaplatená",        classes: "border-[#FFAE00] bg-[#FFAE00] text-black" },
-  IN_PRODUCTION: { label: "V produkcii",      classes: "border-blue-600 bg-blue-600 text-white" },
-  SHIPPED:       { label: "Odoslaná",         classes: "border-blue-600 bg-blue-600 text-white" },
-  DELIVERED:     { label: "Doručená",         classes: "border-green-600 bg-green-600 text-white" },
-  CANCELLED:     { label: "Zrušená",          classes: "border-red-500 bg-red-500 text-white" },
+  PENDING:            { label: "Čaká na platbu",  classes: "border-neutral-300 bg-neutral-100 text-neutral-700" },
+  AWAITING_TRANSFER:  { label: "Čaká na prevod",  classes: "border-orange-400 bg-orange-100 text-orange-800" },
+  PAID:               { label: "Zaplatená",        classes: "border-[#FFAE00] bg-[#FFAE00] text-black" },
+  IN_PRODUCTION:      { label: "V produkcii",      classes: "border-blue-600 bg-blue-600 text-white" },
+  SHIPPED:            { label: "Odoslaná",         classes: "border-blue-600 bg-blue-600 text-white" },
+  DELIVERED:          { label: "Doručená",         classes: "border-green-600 bg-green-600 text-white" },
+  CANCELLED:          { label: "Zrušená",          classes: "border-red-500 bg-red-500 text-white" },
 };
 
 function formatEur(val: number | null) {
@@ -121,13 +123,14 @@ export default function AdminOrdersClient({
   }
 
   const filterCards = [
-    { filter: "ALL" as FilterType,          title: "Všetky",      value: stats.total,        hint: "Všetky objednávky" },
-    { filter: "PENDING" as FilterType,      title: "Čakajúce",    value: stats.pending,      hint: "Status PENDING" },
-    { filter: "PAID" as FilterType,         title: "Zaplatené",   value: stats.paid,         hint: "Status PAID" },
-    { filter: "IN_PRODUCTION" as FilterType,title: "Tlačia sa",   value: stats.inProduction, hint: "Status IN_PRODUCTION" },
-    { filter: "SHIPPED" as FilterType,      title: "Odoslané",    value: stats.shipped,      hint: "Status SHIPPED" },
-    { filter: "DELIVERED" as FilterType,    title: "Doručené",    value: stats.delivered,    hint: "Status DELIVERED" },
-    { filter: "CANCELLED" as FilterType,    title: "Zrušené",     value: stats.cancelled,    hint: "Status CANCELLED" },
+    { filter: "ALL" as FilterType,               title: "Všetky",       value: stats.total,             hint: "Všetky objednávky" },
+    { filter: "PENDING" as FilterType,           title: "Čakajúce",     value: stats.pending,           hint: "Status PENDING" },
+    { filter: "AWAITING_TRANSFER" as FilterType, title: "Prevod",       value: stats.awaitingTransfer,  hint: "Čakajú na bankový prevod" },
+    { filter: "PAID" as FilterType,              title: "Zaplatené",    value: stats.paid,              hint: "Status PAID" },
+    { filter: "IN_PRODUCTION" as FilterType,     title: "Tlačia sa",    value: stats.inProduction,      hint: "Status IN_PRODUCTION" },
+    { filter: "SHIPPED" as FilterType,           title: "Odoslané",     value: stats.shipped,           hint: "Status SHIPPED" },
+    { filter: "DELIVERED" as FilterType,         title: "Doručené",     value: stats.delivered,         hint: "Status DELIVERED" },
+    { filter: "CANCELLED" as FilterType,         title: "Zrušené",      value: stats.cancelled,         hint: "Status CANCELLED" },
   ];
 
   return (
@@ -337,6 +340,15 @@ export default function AdminOrdersClient({
                           className="w-full rounded-xl bg-[#FFAE00] px-3 py-2 text-xs font-bold text-black transition hover:bg-[#e09d00] disabled:opacity-50"
                         >
                           {changingId === order.id ? "..." : "Označiť PAID"}
+                        </button>
+                      )}
+                      {order.status === "AWAITING_TRANSFER" && (
+                        <button
+                          onClick={() => handleStatusChange(order.id, "PAID")}
+                          disabled={changingId === order.id}
+                          className="w-full rounded-xl bg-green-600 px-3 py-2 text-xs font-bold text-white transition hover:bg-green-700 disabled:opacity-50"
+                        >
+                          {changingId === order.id ? "..." : "✓ Platba prijatá"}
                         </button>
                       )}
                       {order.status === "PAID" && (

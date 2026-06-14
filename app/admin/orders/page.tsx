@@ -59,6 +59,7 @@ export default async function AdminOrdersPage() {
   const stats = {
     total: orders.length,
     pending: orders.filter((o) => o.status === "PENDING").length,
+    awaitingTransfer: orders.filter((o) => o.status === "AWAITING_TRANSFER").length,
     paid: orders.filter((o) => o.status === "PAID").length,
     inProduction: orders.filter((o) => o.status === "IN_PRODUCTION").length,
     shipped: orders.filter((o) => o.status === "SHIPPED").length,
