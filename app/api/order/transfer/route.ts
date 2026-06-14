@@ -81,6 +81,7 @@ export async function POST(req: NextRequest) {
     const deliveryMethod: "packeta" | "courier" =
       body?.deliveryMethod === "courier" ? "courier" : "packeta";
     const packetaPoint = deliveryMethod === "packeta" ? (body?.packetaPoint ?? null) : null;
+    const co = body?.contactOverride ?? null; // contact override from the checkout form
 
     const pricing = quote({
       volumeCm3: scaledVolumeCm3,
@@ -121,17 +122,17 @@ export async function POST(req: NextRequest) {
         userId,
         customerEmail,
         accountType: dbUser?.accountType ?? null,
-        phone: dbUser?.phone ?? null,
+        phone: co?.phone || dbUser?.phone || null,
         companyName: dbUser?.companyName ?? null,
         ico: dbUser?.ico ?? null,
         dic: dbUser?.dic ?? null,
         icDph: dbUser?.icDph ?? null,
-        contactPerson: dbUser?.contactPerson ?? null,
+        contactPerson: co?.name || dbUser?.contactPerson || null,
         billingAddress: {
-          street: dbUser?.billingStreet ?? null,
-          city: dbUser?.billingCity ?? null,
-          zip: dbUser?.billingZip ?? null,
-          country: dbUser?.billingCountry ?? null,
+          street: co?.billingStreet || dbUser?.billingStreet || null,
+          city: co?.billingCity || dbUser?.billingCity || null,
+          zip: co?.billingZip || dbUser?.billingZip || null,
+          country: co?.billingCountry || dbUser?.billingCountry || null,
         },
         deliveryAddress:
           deliveryMethod === "packeta" && packetaPoint
@@ -145,12 +146,12 @@ export async function POST(req: NextRequest) {
                 country: "SK",
               }
             : {
-                name: dbUser?.shippingName ?? null,
-                contact: dbUser?.shippingContact ?? null,
-                street: dbUser?.shippingStreet ?? null,
-                city: dbUser?.shippingCity ?? null,
-                zip: dbUser?.shippingZip ?? null,
-                country: dbUser?.shippingCountry ?? null,
+                name: co?.shippingName || dbUser?.shippingName || null,
+                contact: co?.name || dbUser?.shippingContact || null,
+                street: co?.shippingStreet || dbUser?.shippingStreet || null,
+                city: co?.shippingCity || dbUser?.shippingCity || null,
+                zip: co?.shippingZip || dbUser?.shippingZip || null,
+                country: co?.shippingCountry || dbUser?.shippingCountry || null,
               },
       },
       select: { id: true, orderNumber: true, fileName: true, customerEmail: true },

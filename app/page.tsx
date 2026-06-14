@@ -24,6 +24,26 @@ type Uploaded = {
   };
 };
 
+type ContactForm = {
+  name: string;
+  phone: string;
+  shippingName: string;
+  shippingStreet: string;
+  shippingCity: string;
+  shippingZip: string;
+  shippingCountry: string;
+  billingStreet: string;
+  billingCity: string;
+  billingZip: string;
+  billingCountry: string;
+};
+
+const EMPTY_CONTACT: ContactForm = {
+  name: "", phone: "",
+  shippingName: "", shippingStreet: "", shippingCity: "", shippingZip: "", shippingCountry: "Slovensko",
+  billingStreet: "", billingCity: "", billingZip: "", billingCountry: "Slovensko",
+};
+
 type PacketaPoint = {
   id: string;
   name: string;
@@ -60,6 +80,33 @@ export default function Home() {
   const [paymentMethod, setPaymentMethod] = useState<"CARD" | "TRANSFER">("CARD");
   const [showTransferModal, setShowTransferModal] = useState(false);
   const { status: sessionStatus } = useSession();
+  const [contactForm, setContactForm] = useState<ContactForm>(EMPTY_CONTACT);
+  const [editingContact, setEditingContact] = useState(false);
+  const [profileLoaded, setProfileLoaded] = useState(false);
+
+  useEffect(() => {
+    if (sessionStatus !== "authenticated") return;
+    fetch("/api/account/me")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (!data) return;
+        setContactForm({
+          name: data.name ?? "",
+          phone: data.phone ?? "",
+          shippingName: data.shippingName ?? data.name ?? "",
+          shippingStreet: data.shippingStreet ?? "",
+          shippingCity: data.shippingCity ?? "",
+          shippingZip: data.shippingZip ?? "",
+          shippingCountry: data.shippingCountry ?? "Slovensko",
+          billingStreet: data.billingStreet ?? "",
+          billingCity: data.billingCity ?? "",
+          billingZip: data.billingZip ?? "",
+          billingCountry: data.billingCountry ?? "Slovensko",
+        });
+        setProfileLoaded(true);
+      })
+      .catch(() => {});
+  }, [sessionStatus]);
 
   useEffect(() => {
     const script = document.createElement("script");
@@ -99,6 +146,7 @@ export default function Home() {
           config: latestConfig,
           deliveryMethod,
           packetaPoint: deliveryMethod === "packeta" ? packetaPoint : null,
+          contactOverride: profileLoaded ? contactForm : null,
         }),
       });
       let data: any = null;
@@ -123,6 +171,7 @@ export default function Home() {
           config: latestConfig,
           deliveryMethod,
           packetaPoint: deliveryMethod === "packeta" ? packetaPoint : null,
+          contactOverride: profileLoaded ? contactForm : null,
         }),
       });
 
@@ -423,6 +472,106 @@ export default function Home() {
                 </div>
               )}
 
+              {/* Kontaktné a dodacie údaje — iba pre prihlásených */}
+              {sessionStatus === "authenticated" && (
+                <div className="mt-6">
+                  <div className="mb-3 flex items-center justify-between">
+                    <div className="text-sm font-extrabold text-neutral-800">Kontaktné a dodacie údaje</div>
+                    <button
+                      type="button"
+                      onClick={() => setEditingContact((v) => !v)}
+                      className="text-xs font-semibold text-[#FFAE00] hover:text-[#b07a00]"
+                    >
+                      {editingContact ? "Zatvoriť" : "Upraviť"}
+                    </button>
+                  </div>
+
+                  {!editingContact ? (
+                    <div className="rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3">
+                      {contactForm.name || contactForm.phone ? (
+                        <div className="flex items-start gap-3">
+                          <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-neutral-200">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M20 21a8 8 0 0 0-16 0"/>
+                              <circle cx="12" cy="8" r="4"/>
+                            </svg>
+                          </div>
+                          <div className="space-y-0.5 text-sm">
+                            <div className="font-semibold text-neutral-900">{contactForm.name || "—"}</div>
+                            <div className="text-xs text-neutral-500">{contactForm.phone || "—"}</div>
+                            {deliveryMethod === "courier" && contactForm.shippingStreet && (
+                              <div className="mt-1 text-xs text-neutral-600">
+                                {contactForm.shippingName && <span className="font-medium">{contactForm.shippingName} · </span>}
+                                {contactForm.shippingStreet}, {contactForm.shippingCity} {contactForm.shippingZip}
+                              </div>
+                            )}
+                            {deliveryMethod === "courier" && !contactForm.shippingStreet && (
+                              <div className="mt-1 text-xs font-medium text-orange-600">
+                                Dodacia adresa nie je vyplnená — kliknite Upraviť
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-xs text-neutral-400">
+                          Profil sa načítava… alebo kliknite <button type="button" onClick={() => setEditingContact(true)} className="text-[#FFAE00] underline">Upraviť</button>
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="space-y-4 rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <CField
+                          label="Meno a priezvisko"
+                          value={contactForm.name}
+                          onChange={(v) => setContactForm((f) => ({ ...f, name: v }))}
+                        />
+                        <CField
+                          label="Telefón"
+                          value={contactForm.phone}
+                          onChange={(v) => setContactForm((f) => ({ ...f, phone: v }))}
+                        />
+                      </div>
+
+                      {deliveryMethod === "courier" && (
+                        <>
+                          <div className="text-[11px] font-bold uppercase tracking-widest text-neutral-400">
+                            Dodacia adresa
+                          </div>
+                          <div className="grid gap-3 sm:grid-cols-2">
+                            <CField
+                              label="Meno / Firma na balíku"
+                              value={contactForm.shippingName}
+                              onChange={(v) => setContactForm((f) => ({ ...f, shippingName: v }))}
+                            />
+                            <CField
+                              label="Ulica a číslo"
+                              value={contactForm.shippingStreet}
+                              onChange={(v) => setContactForm((f) => ({ ...f, shippingStreet: v }))}
+                            />
+                            <CField
+                              label="Mesto"
+                              value={contactForm.shippingCity}
+                              onChange={(v) => setContactForm((f) => ({ ...f, shippingCity: v }))}
+                            />
+                            <CField
+                              label="PSČ"
+                              value={contactForm.shippingZip}
+                              onChange={(v) => setContactForm((f) => ({ ...f, shippingZip: v }))}
+                            />
+                          </div>
+                        </>
+                      )}
+
+                      <p className="text-[11px] text-neutral-400">
+                        Fakturačnú adresu a firemné údaje upravíte v{" "}
+                        <a href="/ucet" className="text-[#FFAE00] underline">nastaveniach účtu</a>.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Spôsob platby */}
               <div className="mt-6">
                 <div className="mb-3 text-sm font-extrabold text-neutral-800">Spôsob platby</div>
@@ -588,6 +737,7 @@ export default function Home() {
         <FaqPreview />
       </main>
 
+
       {/* Modal: prevod vyžaduje účet */}
       {showTransferModal && (
         <div
@@ -677,6 +827,24 @@ export default function Home() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function CField({
+  label, value, onChange,
+}: {
+  label: string; value: string; onChange: (v: string) => void;
+}) {
+  return (
+    <div>
+      <label className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">{label}</label>
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="mt-1 w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-900 outline-none transition focus:border-[#FFAE00] focus:ring-1 focus:ring-[#FFAE00]/30"
+      />
     </div>
   );
 }
