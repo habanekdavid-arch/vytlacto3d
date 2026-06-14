@@ -14,20 +14,20 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
 });
 
 async function generateOrderNumber(): Promise<string> {
-  const year = new Date().getFullYear();
-  const prefix = `VYT-${year}-`;
+  const PREFIX = "VYT3D-";
+  const START = 1432;
 
   for (let attempt = 0; attempt < 10; attempt++) {
     const count = await prisma.order.count({
-      where: { orderNumber: { startsWith: prefix } },
+      where: { orderNumber: { startsWith: PREFIX } },
     });
-    const seq = String(count + 1).padStart(4, "0");
-    const orderNumber = `${prefix}${seq}`;
+    const seq = START + count;
+    const orderNumber = `${PREFIX}${seq}`;
     const exists = await prisma.order.findUnique({ where: { orderNumber } });
     if (!exists) return orderNumber;
   }
 
-  return `${prefix}${Date.now().toString().slice(-6)}`;
+  return `${PREFIX}${Date.now().toString().slice(-6)}`;
 }
 
 function getBaseUrl(req: NextRequest) {
