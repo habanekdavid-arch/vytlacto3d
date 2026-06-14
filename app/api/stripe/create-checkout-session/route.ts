@@ -201,10 +201,8 @@ export async function POST(req: NextRequest) {
       mode: "payment",
       client_reference_id: order.id,
       billing_address_collection: "required",
+      shipping_address_collection: { allowed_countries: ["SK"] },
       phone_number_collection: { enabled: true },
-      ...(deliveryMethod === "courier"
-        ? { shipping_address_collection: { allowed_countries: ["SK"] } }
-        : {}),
       shipping_options: [
         deliveryMethod === "packeta"
           ? {
