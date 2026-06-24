@@ -57,7 +57,23 @@ export default function AdminOrdersClient({
   const [activeFilter, setActiveFilter] = useState<FilterType>("ALL");
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [changingId, setChangingId] = useState<string | null>(null);
+  const [testEmailStatus, setTestEmailStatus] = useState<"idle" | "sending" | "ok" | "error">("idle");
   const router = useRouter();
+
+  async function sendTestEmail() {
+    setTestEmailStatus("sending");
+    try {
+      const res = await fetch("/api/admin/test-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ to: "habanekdavid@gmail.com" }),
+      });
+      setTestEmailStatus(res.ok ? "ok" : "error");
+    } catch {
+      setTestEmailStatus("error");
+    }
+    setTimeout(() => setTestEmailStatus("idle"), 4000);
+  }
 
   async function handleStatusChange(orderId: string, newStatus: string) {
     setChangingId(orderId);
@@ -151,12 +167,21 @@ export default function AdminOrdersClient({
               Tu klient alebo administrátor vidí všetky objednávky, ich stav, cenu, konfiguráciu aj STL model od zákazníka.
             </p>
           </div>
-          <a
-            href="/"
-            className="rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 shadow-sm hover:bg-neutral-50"
-          >
-            Späť na web
-          </a>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={sendTestEmail}
+              disabled={testEmailStatus === "sending"}
+              className="rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50 disabled:opacity-60"
+            >
+              {testEmailStatus === "sending" ? "Odosiela..." : testEmailStatus === "ok" ? "Email odoslaný ✓" : testEmailStatus === "error" ? "Chyba ✗" : "Testovací email"}
+            </button>
+            <a
+              href="/"
+              className="rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 shadow-sm hover:bg-neutral-50"
+            >
+              Späť na web
+            </a>
+          </div>
         </div>
 
         {/* Stat Cards — filter */}

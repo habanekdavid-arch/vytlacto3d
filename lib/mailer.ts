@@ -11,5 +11,6 @@ export const transporter = nodemailer.createTransport({
 });
 
 export const FROM =
+  process.env.EMAIL_FROM ||
   process.env.RESEND_FROM_EMAIL ||
-  `VytlacTo3D <${process.env.GMAIL_USER}>`;
+  "VytlacTo3D <info@vytlacto3d.sk>";
