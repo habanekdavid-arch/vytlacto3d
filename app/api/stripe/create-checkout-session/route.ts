@@ -288,6 +288,7 @@ export async function POST(req: NextRequest) {
                 display_name: "Packeta výdajňa / Z-Box",
                 type: "fixed_amount" as const,
                 fixed_amount: { amount: Math.round(SHIPPING_RATES.PACKETA * 100), currency: "eur" },
+                tax_behavior: "inclusive" as const,
               },
             }
           : {
@@ -295,6 +296,7 @@ export async function POST(req: NextRequest) {
                 display_name: "Kuriér",
                 type: "fixed_amount" as const,
                 fixed_amount: { amount: Math.round(SHIPPING_RATES.COURIER * 100), currency: "eur" },
+                tax_behavior: "inclusive" as const,
               },
             },
       ],
