@@ -64,8 +64,10 @@ export async function POST(req: NextRequest) {
           where: { id: userId },
           select: {
             id: true,
+            name: true,
             email: true,
             phone: true,
+            stripeCustomerId: true,
             accountType: true,
             companyName: true,
             ico: true,
@@ -199,6 +201,80 @@ export async function POST(req: NextRequest) {
     const totalWithVat = addVat(pricing.total);
     const itemAmountCents = Math.round(totalWithVat * 100);
 
+    const customerName = dbUser?.contactPerson || dbUser?.name || null;
+
+    const hasShippingAddress = !!(
+      dbUser?.shippingStreet &&
+      dbUser?.shippingCity &&
+      dbUser?.shippingZip &&
+      dbUser?.shippingCountry
+    );
+
+    const prefillShipping = hasShippingAddress
+      ? {
+          name: dbUser?.shippingName || dbUser?.shippingContact || customerName || "",
+          address: {
+            line1: dbUser!.shippingStreet!,
+            city: dbUser!.shippingCity!,
+            postal_code: dbUser!.shippingZip!,
+            country: dbUser!.shippingCountry!,
+          },
+        }
+      : null;
+
+    let stripeCustomerId: string | undefined = undefined;
+
+    if (userId && dbUser) {
+      if (dbUser.stripeCustomerId) {
+        stripeCustomerId = dbUser.stripeCustomerId;
+        if (hasShippingAddress) {
+          await stripe.customers.update(stripeCustomerId, {
+            name: customerName || undefined,
+            email: dbUser.email || undefined,
+            phone: dbUser.phone || undefined,
+            shipping: prefillShipping
+              ? { name: prefillShipping.name, address: prefillShipping.address }
+              : undefined,
+            address:
+              dbUser.billingStreet && dbUser.billingCity
+                ? {
+                    line1: dbUser.billingStreet,
+                    city: dbUser.billingCity,
+                    postal_code: dbUser.billingZip || undefined,
+                    country: dbUser.billingCountry || undefined,
+                  }
+                : undefined,
+          });
+        }
+      } else {
+        const newCustomer = await stripe.customers.create({
+          email: dbUser.email || undefined,
+          name: customerName || undefined,
+          phone: dbUser.phone || undefined,
+          shipping: prefillShipping
+            ? { name: prefillShipping.name, address: prefillShipping.address }
+            : undefined,
+          address:
+            dbUser.billingStreet && dbUser.billingCity
+              ? {
+                  line1: dbUser.billingStreet,
+                  city: dbUser.billingCity,
+                  postal_code: dbUser.billingZip || undefined,
+                  country: dbUser.billingCountry || undefined,
+                }
+              : undefined,
+          metadata: { userId },
+        });
+
+        stripeCustomerId = newCustomer.id;
+
+        await prisma.user.update({
+          where: { id: userId },
+          data: { stripeCustomerId: newCustomer.id },
+        });
+      }
+    }
+
     const stripeSession = await stripe.checkout.sessions.create({
       mode: "payment",
       client_reference_id: order.id,
@@ -222,7 +298,18 @@ export async function POST(req: NextRequest) {
               },
             },
       ],
-      customer_email: sessionEmail ?? dbUser?.email ?? undefined,
+      ...(stripeCustomerId
+        ? {
+            customer: stripeCustomerId,
+            customer_update: {
+              shipping: "auto" as const,
+              address: "auto" as const,
+              name: "auto" as const,
+            },
+          }
+        : {
+            customer_email: sessionEmail ?? undefined,
+          }),
       line_items: [
         {
           quantity: 1,

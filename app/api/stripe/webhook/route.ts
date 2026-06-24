@@ -312,6 +312,14 @@ export async function POST(req: NextRequest) {
         console.error("Failed to send admin order email:", adminEmailError);
       }
 
+      const sessionStripeCustomerId = fullSession.customer as string | null;
+      if (sessionStripeCustomerId && matchedUser?.id) {
+        await prisma.user.updateMany({
+          where: { id: matchedUser.id, stripeCustomerId: null },
+          data: { stripeCustomerId: sessionStripeCustomerId },
+        });
+      }
+
       console.log("Order marked as PAID:", {
         orderId,
         userId: updatedOrder.userId,

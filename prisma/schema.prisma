@@ -38,6 +38,8 @@ model User {
   shippingZip     String?
   shippingCountry String?
 
+  stripeCustomerId String? @unique
+
   orders Order[]
 }
 
