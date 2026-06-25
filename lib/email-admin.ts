@@ -83,7 +83,7 @@ export async function sendAdminOrderNotificationEmail({
 
   await transporter.sendMail({
     from: FROM,
-    to: process.env.ADMIN_ORDER_EMAIL || "info@4frommedia.sk",
+    to: process.env.ADMIN_ORDER_EMAIL || "office.4frommedia@gmail.com",
     subject: `🛒 Nová objednávka ${ref} – ${fileName}`,
     html: `
       <div style="font-family:Arial,sans-serif;background:#f7f7f7;padding:32px;">
