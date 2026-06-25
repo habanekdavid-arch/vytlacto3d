@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import UploadBox from "@/components/UploadBox";
 import Configurator, { ConfigState } from "@/components/Configurator";
@@ -59,6 +59,7 @@ type PacketaPoint = {
 export default function Home() {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [activeItemId, setActiveItemId] = useState<string | null>(null);
+  const [cartOpen, setCartOpen] = useState(false);
   const [uploadLoading, setUploadLoading] = useState(false);
   const [orderLoading, setOrderLoading] = useState(false);
   const [deliveryMethod, setDeliveryMethod] = useState<"packeta" | "courier">("packeta");
@@ -70,6 +71,7 @@ export default function Home() {
   const [contactForm, setContactForm] = useState<ContactForm>(EMPTY_CONTACT);
   const [editingContact, setEditingContact] = useState(false);
   const [profileLoaded, setProfileLoaded] = useState(false);
+  const prevAllPricedRef = useRef(false);
 
   useEffect(() => {
     if (sessionStatus !== "authenticated") return;
@@ -117,15 +119,11 @@ export default function Home() {
   }
 
   const updateItemPricing = useCallback((id: string, pricing: CartItemPricing) => {
-    setCartItems((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, pricing } : item))
-    );
+    setCartItems((prev) => prev.map((item) => (item.id === id ? { ...item, pricing } : item)));
   }, []);
 
   const updateItemConfig = useCallback((id: string, config: CartItemConfig) => {
-    setCartItems((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, config } : item))
-    );
+    setCartItems((prev) => prev.map((item) => (item.id === id ? { ...item, config } : item)));
   }, []);
 
   const handleQuote = useCallback(
@@ -179,6 +177,14 @@ export default function Home() {
   const cartTotalNet = cartItems.reduce((s, i) => s + (i.pricing?.total ?? 0), 0);
   const shippingCostWithVat = deliveryMethod === "courier" ? SHIPPING_RATES.COURIER : SHIPPING_RATES.PACKETA;
   const grandTotal = addVat(cartTotalNet) + shippingCostWithVat;
+
+  // Auto-open cart drawer when all items first become priced
+  useEffect(() => {
+    if (allItemsPriced && !prevAllPricedRef.current) {
+      setCartOpen(true);
+    }
+    prevAllPricedRef.current = allItemsPriced;
+  }, [allItemsPriced]);
 
   async function payByTransfer() {
     if (!allItemsPriced) return;
@@ -246,6 +252,347 @@ export default function Home() {
     <div className="min-h-screen bg-white text-neutral-900">
       <FloatingCta />
 
+      {/* ─── Floating cart button ─── */}
+      <button
+        type="button"
+        onClick={() => setCartOpen(true)}
+        className="fixed right-5 top-5 z-40 flex items-center gap-2 rounded-2xl border border-neutral-200 bg-white px-4 py-2.5 shadow-lg transition hover:border-[#FFAE00] hover:shadow-xl"
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
+          <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+        </svg>
+        <span className="text-sm font-bold text-neutral-800">Košík</span>
+        {cartItems.length > 0 && (
+          <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[#FFAE00] px-1 text-xs font-bold text-black">
+            {cartItems.length}
+          </span>
+        )}
+        {allItemsPriced && (
+          <span className="text-sm font-extrabold text-neutral-900">
+            {formatEur(grandTotal)}
+          </span>
+        )}
+      </button>
+
+      {/* ─── Cart drawer ─── */}
+      {cartOpen && (
+        <>
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm"
+            onClick={() => setCartOpen(false)}
+          />
+          {/* Panel */}
+          <div className="fixed right-0 top-0 z-[70] flex h-full w-full max-w-[440px] flex-col bg-white shadow-2xl">
+            {/* Drawer header */}
+            <div className="flex items-center justify-between border-b border-neutral-100 px-6 py-4">
+              <div className="flex items-center gap-2">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
+                  <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+                </svg>
+                <span className="text-base font-extrabold text-neutral-900">Košík</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setCartOpen(false)}
+                className="flex h-8 w-8 items-center justify-center rounded-full text-neutral-400 transition hover:bg-neutral-100 hover:text-neutral-700"
+              >
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+                  <line x1="1" y1="1" x2="13" y2="13"/><line x1="13" y1="1" x2="1" y2="13"/>
+                </svg>
+              </button>
+            </div>
+
+            {/* Scrollable content */}
+            <div className="flex-1 overflow-y-auto">
+              <div className="p-5 space-y-5">
+                {/* Cart items list */}
+                <CartSidebar
+                  items={cartItems}
+                  activeItemId={activeItemId}
+                  onSelect={(id) => { setActiveItemId(id); setCartOpen(false); }}
+                  onRemove={removeItem}
+                  onAddNew={() => { setActiveItemId(null); setCartOpen(false); }}
+                />
+
+                {/* Checkout panel — only when all items have pricing */}
+                {allItemsPriced && (
+                  <div className="space-y-5">
+
+                    {/* Delivery */}
+                    <div>
+                      <div className="mb-3 text-sm font-extrabold text-neutral-800">Spôsob doručenia</div>
+                      <div className="grid gap-2 grid-cols-2">
+                        <button
+                          type="button"
+                          onClick={() => setDeliveryMethod("packeta")}
+                          className={[
+                            "flex flex-col gap-1 rounded-2xl border-2 p-3 text-left transition-all",
+                            deliveryMethod === "packeta" ? "border-[#FFAE00] bg-[#FFAE00]/5" : "border-neutral-200 bg-white hover:border-neutral-300",
+                          ].join(" ")}
+                        >
+                          <div className="flex items-center justify-between">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-[#b07a00]">
+                              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                              <polyline points="9 22 9 12 15 12 15 22"/>
+                            </svg>
+                            {deliveryMethod === "packeta" && (
+                              <div className="flex h-4 w-4 items-center justify-center rounded-full bg-[#FFAE00]">
+                                <svg width="8" height="8" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                              </div>
+                            )}
+                          </div>
+                          <div className="text-xs font-bold text-neutral-900">Packeta</div>
+                          <div className="text-xs font-extrabold text-neutral-900">{formatEur(SHIPPING_RATES.PACKETA)}</div>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setDeliveryMethod("courier")}
+                          className={[
+                            "flex flex-col gap-1 rounded-2xl border-2 p-3 text-left transition-all",
+                            deliveryMethod === "courier" ? "border-[#FFAE00] bg-[#FFAE00]/5" : "border-neutral-200 bg-white hover:border-neutral-300",
+                          ].join(" ")}
+                        >
+                          <div className="flex items-center justify-between">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-neutral-500">
+                              <rect x="1" y="3" width="15" height="13" rx="1"/>
+                              <path d="M16 8h4l3 5v3h-7V8z"/>
+                              <circle cx="5.5" cy="18.5" r="2.5"/>
+                              <circle cx="18.5" cy="18.5" r="2.5"/>
+                            </svg>
+                            {deliveryMethod === "courier" && (
+                              <div className="flex h-4 w-4 items-center justify-center rounded-full bg-[#FFAE00]">
+                                <svg width="8" height="8" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                              </div>
+                            )}
+                          </div>
+                          <div className="text-xs font-bold text-neutral-900">Kuriér</div>
+                          <div className="text-xs font-extrabold text-neutral-900">{formatEur(SHIPPING_RATES.COURIER)}</div>
+                        </button>
+                      </div>
+
+                      {deliveryMethod === "packeta" && (
+                        <div className="mt-2">
+                          {packetaPoint ? (
+                            <div className="flex items-center gap-2 rounded-2xl border border-green-200 bg-green-50 px-3 py-2">
+                              <svg className="shrink-0 text-green-600" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+                              </svg>
+                              <div className="flex-1 min-w-0">
+                                <div className="truncate text-xs font-bold text-neutral-900">{packetaPoint.name}</div>
+                                <div className="truncate text-[11px] text-neutral-600">{packetaPoint.city}</div>
+                              </div>
+                              <button type="button" onClick={openPacketaWidget} className="shrink-0 rounded-lg border border-neutral-200 bg-white px-2 py-1 text-[11px] font-semibold text-neutral-600 hover:bg-neutral-50">
+                                Zmeniť
+                              </button>
+                            </div>
+                          ) : (
+                            <button type="button" onClick={openPacketaWidget} className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-neutral-300 bg-neutral-50 px-3 py-3 text-xs font-semibold text-neutral-600 transition hover:border-[#FFAE00] hover:bg-[#FFAE00]/5">
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+                              </svg>
+                              Vybrať výdajné miesto →
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Contact info */}
+                    {sessionStatus === "authenticated" && (
+                      <div>
+                        <div className="mb-2 flex items-center justify-between">
+                          <div className="text-sm font-extrabold text-neutral-800">Kontaktné údaje</div>
+                          <button type="button" onClick={() => setEditingContact((v) => !v)} className="text-xs font-semibold text-[#FFAE00] hover:text-[#b07a00]">
+                            {editingContact ? "Zatvoriť" : "Upraviť"}
+                          </button>
+                        </div>
+                        {!editingContact ? (
+                          <div className="rounded-2xl border border-neutral-200 bg-neutral-50 px-3 py-2">
+                            {contactForm.name ? (
+                              <div className="space-y-0.5 text-xs">
+                                <div className="font-semibold text-neutral-900">{contactForm.name}</div>
+                                {contactForm.phone && <div className="text-neutral-500">{contactForm.phone}</div>}
+                                {deliveryMethod === "courier" && contactForm.shippingStreet && (
+                                  <div className="text-neutral-600">{contactForm.shippingStreet}, {contactForm.shippingCity}</div>
+                                )}
+                                {deliveryMethod === "courier" && !contactForm.shippingStreet && (
+                                  <div className="font-medium text-orange-600">Dodacia adresa chýba — kliknite Upraviť</div>
+                                )}
+                              </div>
+                            ) : (
+                              <p className="text-xs text-neutral-400">
+                                Profil sa načítava… alebo{" "}
+                                <button type="button" onClick={() => setEditingContact(true)} className="text-[#FFAE00] underline">Upraviť</button>
+                              </p>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="space-y-3 rounded-2xl border border-neutral-200 bg-neutral-50 p-3">
+                            <div className="grid gap-2 grid-cols-2">
+                              <CField label="Meno" value={contactForm.name} onChange={(v) => setContactForm((f) => ({ ...f, name: v }))} />
+                              <CField label="Telefón" value={contactForm.phone} onChange={(v) => setContactForm((f) => ({ ...f, phone: v }))} />
+                            </div>
+                            {deliveryMethod === "courier" && (
+                              <>
+                                <div className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">Dodacia adresa</div>
+                                <div className="grid gap-2 grid-cols-2">
+                                  <CField label="Meno na balíku" value={contactForm.shippingName} onChange={(v) => setContactForm((f) => ({ ...f, shippingName: v }))} />
+                                  <CField label="Ulica" value={contactForm.shippingStreet} onChange={(v) => setContactForm((f) => ({ ...f, shippingStreet: v }))} />
+                                  <CField label="Mesto" value={contactForm.shippingCity} onChange={(v) => setContactForm((f) => ({ ...f, shippingCity: v }))} />
+                                  <CField label="PSČ" value={contactForm.shippingZip} onChange={(v) => setContactForm((f) => ({ ...f, shippingZip: v }))} />
+                                </div>
+                              </>
+                            )}
+                            <p className="text-[10px] text-neutral-400">
+                              Firemné údaje a fakturačnú adresu upravíte v{" "}
+                              <a href="/ucet" className="text-[#FFAE00] underline">nastaveniach účtu</a>.
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Payment method */}
+                    <div>
+                      <div className="mb-3 text-sm font-extrabold text-neutral-800">Spôsob platby</div>
+                      <div className="grid gap-2 grid-cols-2">
+                        <button
+                          type="button"
+                          onClick={() => setPaymentMethod("CARD")}
+                          className={[
+                            "flex flex-col gap-1 rounded-2xl border-2 p-3 text-left transition-all",
+                            paymentMethod === "CARD" ? "border-[#FFAE00] bg-[#FFAE00]/5" : "border-neutral-200 bg-white hover:border-neutral-300",
+                          ].join(" ")}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#FFAE00]">
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/>
+                              </svg>
+                            </div>
+                            {paymentMethod === "CARD" && (
+                              <div className="flex h-4 w-4 items-center justify-center rounded-full bg-[#FFAE00]">
+                                <svg width="8" height="8" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                              </div>
+                            )}
+                          </div>
+                          <div className="text-xs font-bold text-neutral-900">Platba kartou</div>
+                          <div className="text-[11px] text-neutral-500">Stripe</div>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (sessionStatus !== "authenticated") { setShowTransferModal(true); }
+                            else { setPaymentMethod("TRANSFER"); }
+                          }}
+                          className={[
+                            "flex flex-col gap-1 rounded-2xl border-2 p-3 text-left transition-all",
+                            paymentMethod === "TRANSFER" ? "border-orange-400 bg-orange-50" : "border-neutral-200 bg-white hover:border-neutral-300",
+                          ].join(" ")}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-orange-500">
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/>
+                              </svg>
+                            </div>
+                            {paymentMethod === "TRANSFER" && (
+                              <div className="flex h-4 w-4 items-center justify-center rounded-full bg-orange-400">
+                                <svg width="8" height="8" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                              </div>
+                            )}
+                          </div>
+                          <div className="text-xs font-bold text-neutral-900">Prevod</div>
+                          <div className="text-[11px] text-neutral-500">
+                            IBAN SK{" "}
+                            {sessionStatus !== "authenticated" && (
+                              <span className="rounded-full bg-orange-100 px-1 py-0.5 text-[10px] font-bold text-orange-700">účet</span>
+                            )}
+                          </div>
+                        </button>
+                      </div>
+                      {paymentMethod === "TRANSFER" && (
+                        <div className="mt-2 rounded-2xl border border-orange-200 bg-orange-50 px-3 py-2 text-xs text-orange-800">
+                          Platobné údaje (IBAN, VS, sumu) dostanete emailom. Výroba začne po prijatí platby.
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Price summary */}
+                    <div className="rounded-2xl bg-neutral-50 px-4 py-3 text-sm">
+                      <div className="flex justify-between text-neutral-600">
+                        <span>Výroba ({cartItems.length} {cartItems.length === 1 ? "model" : "modely/modelov"})</span>
+                        <span className="font-semibold">{formatEur(addVat(cartTotalNet))}</span>
+                      </div>
+                      <div className="flex justify-between text-neutral-600">
+                        <span>Doprava</span>
+                        <span className="font-semibold">{formatEur(shippingCostWithVat)}</span>
+                      </div>
+                      <div className="mt-2 flex justify-between border-t border-neutral-200 pt-2 text-base font-extrabold text-neutral-900">
+                        <span>Celkom s DPH</span>
+                        <span>{formatEur(grandTotal)}</span>
+                      </div>
+                    </div>
+
+                    {/* Terms + Order button */}
+                    <div className="space-y-3">
+                      <label className={[
+                        "flex cursor-pointer items-start gap-3 rounded-2xl border-2 p-3 transition-colors",
+                        termsAccepted ? "border-[#FFAE00] bg-[#FFAE00]/5" : "border-neutral-200 bg-white hover:border-neutral-300",
+                      ].join(" ")}>
+                        <div className={[
+                          "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border-2 transition-colors",
+                          termsAccepted ? "border-[#FFAE00] bg-[#FFAE00]" : "border-neutral-300 bg-white",
+                        ].join(" ")}>
+                          {termsAccepted && (
+                            <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
+                              <path d="M2 6l3 3 5-5" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                          )}
+                        </div>
+                        <input type="checkbox" checked={termsAccepted} onChange={(e) => setTermsAccepted(e.target.checked)} className="sr-only" />
+                        <span className="text-xs leading-5 text-neutral-700">
+                          Súhlasím so{" "}
+                          <a href="/podmienky" target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="font-semibold text-neutral-900 underline hover:text-[#b07a00]">VOP</a>
+                        </span>
+                      </label>
+
+                      <button
+                        disabled={
+                          !allItemsPriced || orderLoading ||
+                          (deliveryMethod === "packeta" && !packetaPoint) ||
+                          !termsAccepted
+                        }
+                        onClick={paymentMethod === "TRANSFER" ? payByTransfer : payByCard}
+                        className={[
+                          "w-full rounded-2xl px-5 py-3.5 text-sm font-extrabold shadow-sm transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50",
+                          paymentMethod === "TRANSFER" ? "bg-orange-500 text-white" : "bg-[#FFAE00] text-black",
+                        ].join(" ")}
+                      >
+                        {orderLoading
+                          ? (paymentMethod === "TRANSFER" ? "Vytváram objednávku…" : "Presmerúvam…")
+                          : (paymentMethod === "TRANSFER" ? "Objednať — zaplatiť prevodom" : "Objednať a zaplatiť kartou")}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {cartItems.length === 0 && (
+                  <div className="rounded-2xl border-2 border-dashed border-neutral-200 px-5 py-8 text-center text-sm text-neutral-400">
+                    Pridajte modely do košíka nahraním STL súboru.
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
       <main className="mx-auto max-w-6xl px-6 pb-20 pt-10">
         <section className="mb-12 text-center">
           <div className="inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-3 py-1 text-sm text-neutral-700 shadow-sm">
@@ -269,67 +616,101 @@ export default function Home() {
             <div>
               <div className="text-sm font-semibold text-neutral-500">Konfigurátor</div>
               <h2 className="mt-1 text-2xl font-extrabold tracking-tight">
-                Nahraj modely a nastav parametre tlače
+                Nahraj model a nastav parametre tlače
               </h2>
               <p className="mt-2 max-w-2xl text-sm text-neutral-600">
-                Môžete nahrať viacero modelov — každý s vlastnými parametrami — a objednať ich naraz.
+                Zákazník si vykliká parametre modelu a konfigurátor ich automaticky premietne do ceny.
               </p>
             </div>
+            {/* Cart summary chip — opens drawer */}
+            {cartItems.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setCartOpen(true)}
+                className="flex items-center gap-2 rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-2 text-sm font-semibold text-neutral-700 shadow-sm transition hover:border-[#FFAE00] hover:bg-[#FFAE00]/5"
+              >
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#FFAE00] text-xs font-bold text-black">
+                  {cartItems.length}
+                </span>
+                {allItemsPriced
+                  ? <span>Košík · <span className="font-extrabold text-neutral-900">{formatEur(grandTotal)}</span></span>
+                  : <span>Košík</span>}
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="9 18 15 12 9 6"/>
+                </svg>
+              </button>
+            )}
           </div>
 
-          <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[1fr_360px]">
-            {/* ─── Left column: upload / configure ─── */}
-            <div className="space-y-4">
-              {/* Upload box — shown when no active item */}
-              {!activeItem && (
-                <div className="rounded-3xl border border-neutral-200 bg-neutral-50 p-5">
-                  <div className="mb-4 flex items-center gap-3">
-                    <div className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-black text-sm font-bold text-white">
-                      +
-                    </div>
-                    <div className="text-lg font-extrabold">Nahraj STL / OBJ / SVG model</div>
+          <div className="mt-6 space-y-4">
+            {/* Upload box — shown when no active item */}
+            {!activeItem && (
+              <div className="rounded-3xl border border-neutral-200 bg-neutral-50 p-5">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-black text-sm font-bold text-white">1</div>
+                  <div>
+                    <div className="text-sm font-semibold text-neutral-500">Krok 1</div>
+                    <div className="text-lg font-extrabold">Nahraj STL</div>
                   </div>
-                  <UploadBox
-                    onUploadingChange={setUploadLoading}
-                    onUploaded={(u) => addToCart(u)}
-                  />
-                  {uploadLoading && (
-                    <div className="mt-4 rounded-2xl border border-[#FFAE00]/40 bg-[#FFAE00]/10 p-4">
-                      <div className="flex items-center gap-3">
-                        <div className="h-5 w-5 animate-spin rounded-full border-2 border-neutral-300 border-t-[#FFAE00]" />
-                        <div>
-                          <div className="text-sm font-bold text-neutral-900">Nahrávam a analyzujem model</div>
-                          <div className="text-xs text-neutral-600">Počkajte chvíľu, pripravujeme 3D náhľad a výpočet parametrov.</div>
-                        </div>
+                </div>
+                <UploadBox
+                  onUploadingChange={setUploadLoading}
+                  onUploaded={(u) => addToCart(u)}
+                />
+                {uploadLoading && (
+                  <div className="mt-4 rounded-2xl border border-[#FFAE00]/40 bg-[#FFAE00]/10 p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="h-5 w-5 animate-spin rounded-full border-2 border-neutral-300 border-t-[#FFAE00]" />
+                      <div>
+                        <div className="text-sm font-bold text-neutral-900">Nahrávam a analyzujem model</div>
+                        <div className="text-xs text-neutral-600">Počkajte chvíľu, pripravujeme 3D náhľad a výpočet parametrov.</div>
                       </div>
                     </div>
-                  )}
-                </div>
-              )}
-
-              {/* Active item: 3D viewer + configurator */}
-              {activeItem && scaledAnalysis && (
-                <>
-                  <ModelSummaryBar
-                    dimsX={scaledAnalysis.dimsXmm}
-                    dimsY={scaledAnalysis.dimsYmm}
-                    dimsZ={scaledAnalysis.dimsZmm}
-                    volume={scaledAnalysis.volumeCm3}
-                    totalWithVat={formatPriceWithVat(activeItem.pricing?.total ?? null)}
-                  />
-
-                  <div className="rounded-3xl border border-neutral-200 bg-white p-5">
-                    <div className="mb-3 text-sm font-semibold text-neutral-500">3D náhľad</div>
-                    <StlViewer
-                      key={`${activeItem.fileKey}-${activeItem.config.scalePct}-${activeItem.config.color}`}
-                      fileKey={activeItem.fileKey}
-                      title="Model sa dá otáčať a zoomovať"
-                      colorId={activeItem.config.color}
-                      height={380}
-                      scalePct={activeItem.config.scalePct}
-                    />
                   </div>
+                )}
+              </div>
+            )}
 
+            {/* Active item: viewer + configurator */}
+            {activeItem && scaledAnalysis && (
+              <>
+                <ModelSummaryBar
+                  dimsX={scaledAnalysis.dimsXmm}
+                  dimsY={scaledAnalysis.dimsYmm}
+                  dimsZ={scaledAnalysis.dimsZmm}
+                  volume={scaledAnalysis.volumeCm3}
+                  totalWithVat={formatPriceWithVat(activeItem.pricing?.total ?? null)}
+                />
+
+                <div className="rounded-3xl border border-neutral-200 bg-white p-5">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-black text-sm font-bold text-white">2</div>
+                    <div>
+                      <div className="text-sm font-semibold text-neutral-500">Krok 2</div>
+                      <div className="text-lg font-extrabold">3D náhľad</div>
+                    </div>
+                  </div>
+                  <StlViewer
+                    key={`${activeItem.fileKey}-${activeItem.config.scalePct}-${activeItem.config.color}`}
+                    fileKey={activeItem.fileKey}
+                    title="Model sa dá otáčať a zoomovať"
+                    colorId={activeItem.config.color}
+                    height={380}
+                    scalePct={activeItem.config.scalePct}
+                  />
+                </div>
+
+                <div className="rounded-3xl border border-neutral-200 bg-white p-5">
+                  <div className="flex items-center justify-between gap-3 mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-black text-sm font-bold text-white">3</div>
+                      <div>
+                        <div className="text-sm font-semibold text-neutral-500">Krok 3</div>
+                        <div className="text-lg font-extrabold">Nastav parametre tlače</div>
+                      </div>
+                    </div>
+                    <div className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-semibold text-neutral-600">aktuálne</div>
+                  </div>
                   <Configurator
                     key={activeItemId}
                     analysis={{
@@ -341,313 +722,20 @@ export default function Home() {
                     initialConfig={activeItem.config}
                     onQuote={handleQuote}
                   />
-
-                  <button
-                    type="button"
-                    onClick={() => setActiveItemId(null)}
-                    className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-neutral-300 bg-neutral-50 px-5 py-4 text-sm font-semibold text-neutral-600 transition hover:border-[#FFAE00] hover:bg-[#FFAE00]/5 hover:text-neutral-900"
-                  >
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
-                      <line x1="8" y1="2" x2="8" y2="14" />
-                      <line x1="2" y1="8" x2="14" y2="8" />
-                    </svg>
-                    Pridať ďalší model
-                  </button>
-                </>
-              )}
-            </div>
-
-            {/* ─── Right column: cart + checkout ─── */}
-            <div className="space-y-4 lg:self-start">
-              <CartSidebar
-                items={cartItems}
-                activeItemId={activeItemId}
-                onSelect={setActiveItemId}
-                onRemove={removeItem}
-                onAddNew={() => setActiveItemId(null)}
-              />
-
-              {/* Checkout panel */}
-              {allItemsPriced && (
-                <div className="rounded-3xl border border-neutral-200 bg-white p-5 space-y-5">
-
-                  {/* Delivery */}
-                  <div>
-                    <div className="mb-3 text-sm font-extrabold text-neutral-800">Spôsob doručenia</div>
-                    <div className="grid gap-2 grid-cols-2">
-                      <button
-                        type="button"
-                        onClick={() => setDeliveryMethod("packeta")}
-                        className={[
-                          "flex flex-col gap-1 rounded-2xl border-2 p-3 text-left transition-all",
-                          deliveryMethod === "packeta" ? "border-[#FFAE00] bg-[#FFAE00]/5" : "border-neutral-200 bg-white hover:border-neutral-300",
-                        ].join(" ")}
-                      >
-                        <div className="flex items-center justify-between">
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-[#b07a00]">
-                            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-                            <polyline points="9 22 9 12 15 12 15 22"/>
-                          </svg>
-                          {deliveryMethod === "packeta" && (
-                            <div className="flex h-4 w-4 items-center justify-center rounded-full bg-[#FFAE00]">
-                              <svg width="8" height="8" viewBox="0 0 12 12" fill="none">
-                                <path d="M2 6l3 3 5-5" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                              </svg>
-                            </div>
-                          )}
-                        </div>
-                        <div className="text-xs font-bold text-neutral-900">Packeta</div>
-                        <div className="text-xs font-extrabold text-neutral-900">{formatEur(SHIPPING_RATES.PACKETA)}</div>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setDeliveryMethod("courier")}
-                        className={[
-                          "flex flex-col gap-1 rounded-2xl border-2 p-3 text-left transition-all",
-                          deliveryMethod === "courier" ? "border-[#FFAE00] bg-[#FFAE00]/5" : "border-neutral-200 bg-white hover:border-neutral-300",
-                        ].join(" ")}
-                      >
-                        <div className="flex items-center justify-between">
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-neutral-500">
-                            <rect x="1" y="3" width="15" height="13" rx="1"/>
-                            <path d="M16 8h4l3 5v3h-7V8z"/>
-                            <circle cx="5.5" cy="18.5" r="2.5"/>
-                            <circle cx="18.5" cy="18.5" r="2.5"/>
-                          </svg>
-                          {deliveryMethod === "courier" && (
-                            <div className="flex h-4 w-4 items-center justify-center rounded-full bg-[#FFAE00]">
-                              <svg width="8" height="8" viewBox="0 0 12 12" fill="none">
-                                <path d="M2 6l3 3 5-5" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                              </svg>
-                            </div>
-                          )}
-                        </div>
-                        <div className="text-xs font-bold text-neutral-900">Kuriér</div>
-                        <div className="text-xs font-extrabold text-neutral-900">{formatEur(SHIPPING_RATES.COURIER)}</div>
-                      </button>
-                    </div>
-
-                    {deliveryMethod === "packeta" && (
-                      <div className="mt-2">
-                        {packetaPoint ? (
-                          <div className="flex items-center gap-2 rounded-2xl border border-green-200 bg-green-50 px-3 py-2">
-                            <svg className="shrink-0 text-green-600" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-                              <circle cx="12" cy="10" r="3"/>
-                            </svg>
-                            <div className="flex-1 min-w-0">
-                              <div className="truncate text-xs font-bold text-neutral-900">{packetaPoint.name}</div>
-                              <div className="truncate text-[11px] text-neutral-600">{packetaPoint.city}</div>
-                            </div>
-                            <button type="button" onClick={openPacketaWidget} className="shrink-0 rounded-lg border border-neutral-200 bg-white px-2 py-1 text-[11px] font-semibold text-neutral-600 hover:bg-neutral-50">
-                              Zmeniť
-                            </button>
-                          </div>
-                        ) : (
-                          <button type="button" onClick={openPacketaWidget} className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-neutral-300 bg-neutral-50 px-3 py-3 text-xs font-semibold text-neutral-600 transition hover:border-[#FFAE00] hover:bg-[#FFAE00]/5">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-                              <circle cx="12" cy="10" r="3"/>
-                            </svg>
-                            Vybrať výdajné miesto →
-                          </button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Contact info */}
-                  {sessionStatus === "authenticated" && (
-                    <div>
-                      <div className="mb-2 flex items-center justify-between">
-                        <div className="text-sm font-extrabold text-neutral-800">Kontaktné údaje</div>
-                        <button type="button" onClick={() => setEditingContact((v) => !v)} className="text-xs font-semibold text-[#FFAE00] hover:text-[#b07a00]">
-                          {editingContact ? "Zatvoriť" : "Upraviť"}
-                        </button>
-                      </div>
-
-                      {!editingContact ? (
-                        <div className="rounded-2xl border border-neutral-200 bg-neutral-50 px-3 py-2">
-                          {contactForm.name ? (
-                            <div className="space-y-0.5 text-xs">
-                              <div className="font-semibold text-neutral-900">{contactForm.name}</div>
-                              {contactForm.phone && <div className="text-neutral-500">{contactForm.phone}</div>}
-                              {deliveryMethod === "courier" && contactForm.shippingStreet && (
-                                <div className="text-neutral-600">{contactForm.shippingStreet}, {contactForm.shippingCity}</div>
-                              )}
-                              {deliveryMethod === "courier" && !contactForm.shippingStreet && (
-                                <div className="font-medium text-orange-600">Dodacia adresa chýba — kliknite Upraviť</div>
-                              )}
-                            </div>
-                          ) : (
-                            <p className="text-xs text-neutral-400">
-                              Profil sa načítava… alebo <button type="button" onClick={() => setEditingContact(true)} className="text-[#FFAE00] underline">Upraviť</button>
-                            </p>
-                          )}
-                        </div>
-                      ) : (
-                        <div className="space-y-3 rounded-2xl border border-neutral-200 bg-neutral-50 p-3">
-                          <div className="grid gap-2 grid-cols-2">
-                            <CField label="Meno" value={contactForm.name} onChange={(v) => setContactForm((f) => ({ ...f, name: v }))} />
-                            <CField label="Telefón" value={contactForm.phone} onChange={(v) => setContactForm((f) => ({ ...f, phone: v }))} />
-                          </div>
-                          {deliveryMethod === "courier" && (
-                            <>
-                              <div className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">Dodacia adresa</div>
-                              <div className="grid gap-2 grid-cols-2">
-                                <CField label="Meno na balíku" value={contactForm.shippingName} onChange={(v) => setContactForm((f) => ({ ...f, shippingName: v }))} />
-                                <CField label="Ulica" value={contactForm.shippingStreet} onChange={(v) => setContactForm((f) => ({ ...f, shippingStreet: v }))} />
-                                <CField label="Mesto" value={contactForm.shippingCity} onChange={(v) => setContactForm((f) => ({ ...f, shippingCity: v }))} />
-                                <CField label="PSČ" value={contactForm.shippingZip} onChange={(v) => setContactForm((f) => ({ ...f, shippingZip: v }))} />
-                              </div>
-                            </>
-                          )}
-                          <p className="text-[10px] text-neutral-400">
-                            Firemné údaje a fakturačnú adresu upravíte v{" "}
-                            <a href="/ucet" className="text-[#FFAE00] underline">nastaveniach účtu</a>.
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Payment method */}
-                  <div>
-                    <div className="mb-3 text-sm font-extrabold text-neutral-800">Spôsob platby</div>
-                    <div className="grid gap-2 grid-cols-2">
-                      <button
-                        type="button"
-                        onClick={() => setPaymentMethod("CARD")}
-                        className={[
-                          "flex flex-col gap-1 rounded-2xl border-2 p-3 text-left transition-all",
-                          paymentMethod === "CARD" ? "border-[#FFAE00] bg-[#FFAE00]/5" : "border-neutral-200 bg-white hover:border-neutral-300",
-                        ].join(" ")}
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#FFAE00]">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
-                              <line x1="1" y1="10" x2="23" y2="10"/>
-                            </svg>
-                          </div>
-                          {paymentMethod === "CARD" && (
-                            <div className="flex h-4 w-4 items-center justify-center rounded-full bg-[#FFAE00]">
-                              <svg width="8" height="8" viewBox="0 0 12 12" fill="none">
-                                <path d="M2 6l3 3 5-5" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                              </svg>
-                            </div>
-                          )}
-                        </div>
-                        <div className="text-xs font-bold text-neutral-900">Platba kartou</div>
-                        <div className="text-[11px] text-neutral-500">Stripe</div>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (sessionStatus !== "authenticated") { setShowTransferModal(true); }
-                          else { setPaymentMethod("TRANSFER"); }
-                        }}
-                        className={[
-                          "flex flex-col gap-1 rounded-2xl border-2 p-3 text-left transition-all",
-                          paymentMethod === "TRANSFER" ? "border-orange-400 bg-orange-50" : "border-neutral-200 bg-white hover:border-neutral-300",
-                        ].join(" ")}
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-orange-500">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <rect x="3" y="3" width="18" height="18" rx="2"/>
-                              <path d="M3 9h18"/>
-                              <path d="M9 21V9"/>
-                            </svg>
-                          </div>
-                          {paymentMethod === "TRANSFER" && (
-                            <div className="flex h-4 w-4 items-center justify-center rounded-full bg-orange-400">
-                              <svg width="8" height="8" viewBox="0 0 12 12" fill="none">
-                                <path d="M2 6l3 3 5-5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                              </svg>
-                            </div>
-                          )}
-                        </div>
-                        <div className="text-xs font-bold text-neutral-900">Prevod</div>
-                        <div className="text-[11px] text-neutral-500">
-                          IBAN SK{" "}
-                          {sessionStatus !== "authenticated" && (
-                            <span className="rounded-full bg-orange-100 px-1 py-0.5 text-[10px] font-bold text-orange-700">účet</span>
-                          )}
-                        </div>
-                      </button>
-                    </div>
-
-                    {paymentMethod === "TRANSFER" && (
-                      <div className="mt-2 rounded-2xl border border-orange-200 bg-orange-50 px-3 py-2 text-xs text-orange-800">
-                        Platobné údaje (IBAN, VS, sumu) dostanete emailom. Výroba začne po prijatí platby.
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Price summary */}
-                  <div className="rounded-2xl bg-neutral-50 px-4 py-3 text-sm">
-                    <div className="flex justify-between text-neutral-600">
-                      <span>Výroba ({cartItems.length} {cartItems.length === 1 ? "model" : "modely/modelov"})</span>
-                      <span className="font-semibold">{formatEur(addVat(cartTotalNet))}</span>
-                    </div>
-                    <div className="flex justify-between text-neutral-600">
-                      <span>Doprava</span>
-                      <span className="font-semibold">{formatEur(shippingCostWithVat)}</span>
-                    </div>
-                    <div className="mt-2 flex justify-between border-t border-neutral-200 pt-2 text-base font-extrabold text-neutral-900">
-                      <span>Celkom s DPH</span>
-                      <span>{formatEur(grandTotal)}</span>
-                    </div>
-                  </div>
-
-                  {/* Terms + Order button */}
-                  <div className="space-y-3">
-                    <label className={[
-                      "flex cursor-pointer items-start gap-3 rounded-2xl border-2 p-3 transition-colors",
-                      termsAccepted ? "border-[#FFAE00] bg-[#FFAE00]/5" : "border-neutral-200 bg-white hover:border-neutral-300",
-                    ].join(" ")}>
-                      <div className={[
-                        "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border-2 transition-colors",
-                        termsAccepted ? "border-[#FFAE00] bg-[#FFAE00]" : "border-neutral-300 bg-white",
-                      ].join(" ")}>
-                        {termsAccepted && (
-                          <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
-                            <path d="M2 6l3 3 5-5" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                          </svg>
-                        )}
-                      </div>
-                      <input type="checkbox" checked={termsAccepted} onChange={(e) => setTermsAccepted(e.target.checked)} className="sr-only" />
-                      <span className="text-xs leading-5 text-neutral-700">
-                        Súhlasím so{" "}
-                        <a href="/podmienky" target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="font-semibold text-neutral-900 underline hover:text-[#b07a00]">
-                          VOP
-                        </a>
-                      </span>
-                    </label>
-
-                    <button
-                      disabled={
-                        !allItemsPriced || orderLoading ||
-                        (deliveryMethod === "packeta" && !packetaPoint) ||
-                        !termsAccepted
-                      }
-                      onClick={paymentMethod === "TRANSFER" ? payByTransfer : payByCard}
-                      className={[
-                        "w-full rounded-2xl px-5 py-3 text-sm font-extrabold shadow-sm transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50",
-                        paymentMethod === "TRANSFER" ? "bg-orange-500 text-white" : "bg-[#FFAE00] text-black",
-                      ].join(" ")}
-                    >
-                      {orderLoading
-                        ? (paymentMethod === "TRANSFER" ? "Vytváram objednávku…" : "Presmerúvam…")
-                        : (paymentMethod === "TRANSFER" ? "Objednať — zaplatiť prevodom" : "Objednať a zaplatiť kartou")}
-                    </button>
-                  </div>
                 </div>
-              )}
-            </div>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveItemId(null)}
+                  className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-neutral-300 bg-neutral-50 px-5 py-4 text-sm font-semibold text-neutral-600 transition hover:border-[#FFAE00] hover:bg-[#FFAE00]/5 hover:text-neutral-900"
+                >
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+                    <line x1="8" y1="2" x2="8" y2="14"/><line x1="2" y1="8" x2="14" y2="8"/>
+                  </svg>
+                  Pridať ďalší model
+                </button>
+              </>
+            )}
           </div>
         </section>
 
@@ -658,22 +746,14 @@ export default function Home() {
 
       {/* Modal: prevod vyžaduje účet */}
       {showTransferModal && (
-        <div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 px-4"
-          onClick={() => setShowTransferModal(false)}
-        >
-          <div
-            className="w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 px-4" onClick={() => setShowTransferModal(false)}>
+          <div className="w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="bg-neutral-900 px-6 pt-6 pb-5">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/10">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="3" y="3" width="18" height="18" rx="2"/>
-                      <path d="M3 9h18"/>
-                      <path d="M9 21V9"/>
+                      <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/>
                     </svg>
                   </div>
                   <div>
@@ -681,14 +761,9 @@ export default function Home() {
                     <div className="text-[15px] font-extrabold leading-snug text-white">Vyžaduje prihlásenie</div>
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setShowTransferModal(false)}
-                  className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/10 transition hover:bg-white/20"
-                >
+                <button type="button" onClick={() => setShowTransferModal(false)} className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/10 transition hover:bg-white/20">
                   <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round">
-                    <line x1="1" y1="1" x2="9" y2="9"/>
-                    <line x1="9" y1="1" x2="1" y2="9"/>
+                    <line x1="1" y1="1" x2="9" y2="9"/><line x1="9" y1="1" x2="1" y2="9"/>
                   </svg>
                 </button>
               </div>
@@ -710,18 +785,10 @@ export default function Home() {
                 ))}
               </ul>
               <div className="mt-6 flex gap-3">
-                <a href="/registracia" className="flex-1 rounded-xl bg-[#FFAE00] px-4 py-2.5 text-center text-[13px] font-extrabold text-black transition hover:bg-[#e09d00]">
-                  Vytvoriť účet
-                </a>
-                <a href="/prihlasenie" className="flex-1 rounded-xl border border-neutral-200 bg-white px-4 py-2.5 text-center text-[13px] font-semibold text-neutral-700 transition hover:bg-neutral-50">
-                  Prihlásiť sa
-                </a>
+                <a href="/registracia" className="flex-1 rounded-xl bg-[#FFAE00] px-4 py-2.5 text-center text-[13px] font-extrabold text-black transition hover:bg-[#e09d00]">Vytvoriť účet</a>
+                <a href="/prihlasenie" className="flex-1 rounded-xl border border-neutral-200 bg-white px-4 py-2.5 text-center text-[13px] font-semibold text-neutral-700 transition hover:bg-neutral-50">Prihlásiť sa</a>
               </div>
-              <button
-                type="button"
-                onClick={() => setShowTransferModal(false)}
-                className="mt-3 w-full text-center text-[12px] text-neutral-400 transition hover:text-neutral-600"
-              >
+              <button type="button" onClick={() => setShowTransferModal(false)} className="mt-3 w-full text-center text-[12px] text-neutral-400 transition hover:text-neutral-600">
                 Pokračovať s platbou kartou
               </button>
             </div>
