@@ -138,7 +138,7 @@ export default async function InvoicePrintPage({
               {seller.ico   && <p>IČO: <span className="font-semibold">{seller.ico}</span></p>}
               {seller.dic   && <p>DIČ: <span className="font-semibold">{seller.dic}</span></p>}
               {seller.icDph && <p>IČ DPH: <span className="font-semibold">{seller.icDph}</span></p>}
-              {seller.email && <p>{seller.email}</p>}
+              <p>info@4frommedia.sk</p>
             </div>
           </div>
 
@@ -268,7 +268,7 @@ export default async function InvoicePrintPage({
               Daňový doklad vystavený v zmysle §74 zákona č. 222/2004 Z.z. o dani z pridanej hodnoty.
             </span>
             <span className="text-right">
-              {seller.email && <span>{seller.email}</span>}
+              <span>info@4frommedia.sk</span>
               {seller.phone && <span> · {seller.phone}</span>}
             </span>
           </div>
