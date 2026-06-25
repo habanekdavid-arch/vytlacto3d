@@ -34,7 +34,10 @@ export default async function AdminOrdersPage() {
     redirect("/");
   }
 
-  const ordersRaw = await prisma.order.findMany({ orderBy: { createdAt: "desc" } });
+  const ordersRaw = await prisma.order.findMany({
+    orderBy: { createdAt: "desc" },
+    include: { _count: { select: { orderItems: true } } },
+  });
 
   const orders = ordersRaw.map((order) => ({
     id: order.id,
@@ -48,6 +51,7 @@ export default async function AdminOrdersPage() {
     paidTotalEur: order.paidTotalEur ?? null,
     createdAtText: formatDateSK(order.createdAt),
     configLabel: getConfigLabel(order.config),
+    modelCount: order._count.orderItems,
   }));
 
   // paidTotalEur je zo Stripe — už obsahuje DPH, sčítame priamo

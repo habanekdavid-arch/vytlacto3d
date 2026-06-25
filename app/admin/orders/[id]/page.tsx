@@ -139,22 +139,44 @@ export default async function AdminOrderDetailPage({
     `  PSČ     : ${v(deliveryAddress.zip)}`,
     `  Krajina : ${v(deliveryAddress.country)}`,
     "",
-    "KONFIGURÁCIA TLAČE",
-    sep,
-    `  Materiál    : ${v(config.material)}`,
-    `  Kvalita     : ${v(config.quality)}`,
-    `  Farba       : ${v(config.color)}`,
-    `  Počet kusov : ${v(config.quantity)}`,
-    `  Infill      : ${config.infillPct !== undefined ? `${config.infillPct}%` : "—"}`,
-    `  Mierka      : ${config.scalePct !== undefined ? `${config.scalePct}%` : "—"}`,
-    "",
-    "ANALÝZA MODELU",
-    sep,
-    `  Rozmer X : ${analysis.dimsXmm !== undefined ? `${analysis.dimsXmm} mm` : "—"}`,
-    `  Rozmer Y : ${analysis.dimsYmm !== undefined ? `${analysis.dimsYmm} mm` : "—"}`,
-    `  Rozmer Z : ${analysis.dimsZmm !== undefined ? `${analysis.dimsZmm} mm` : "—"}`,
-    `  Objem    : ${analysis.volumeCm3 !== undefined ? `${analysis.volumeCm3} cm³` : "—"}`,
-    "",
+    ...(order.orderItems.length > 0
+      ? [
+          `MODELY V OBJEDNÁVKE (${order.orderItems.length})`,
+          sep,
+          ...order.orderItems.flatMap((oi, idx) => {
+            const ic = oi.config as Record<string, any>;
+            const ip = oi.pricing as Record<string, any>;
+            const ia = oi.analysis as Record<string, any>;
+            return [
+              `  [${idx + 1}] ${oi.fileName}`,
+              `      Materiál : ${v(ic.material)}  Kvalita: ${v(ic.quality)}  Farba: ${v(ic.color)}`,
+              `      Množstvo : ${v(ic.quantity)} ks  Infill: ${ic.infillPct ?? "—"}%  Mierka: ${ic.scalePct ?? 100}%`,
+              `      Rozmery  : ${ia?.dimsXmm !== undefined ? `${Number(ia.dimsXmm).toFixed(0)}×${Number(ia.dimsYmm).toFixed(0)}×${Number(ia.dimsZmm).toFixed(0)} mm` : "—"}  Objem: ${ia?.volumeCm3 !== undefined ? `${Number(ia.volumeCm3).toFixed(2)} cm³` : "—"}`,
+              ...(typeof ip.gramsPerPart === "number" ? [`      Materiál : ${ip.gramsPerPart.toFixed(1)} g/ks  Čas: ${Math.round(ip.printTimeMinPerPart ?? 0)} min/ks`] : []),
+              ...(typeof ip.total === "number" ? [`      Cena     : ${formatEur(ip.total)} bez DPH  |  ${formatEur(addVat(ip.total))} s DPH`] : []),
+              "",
+            ];
+          }),
+        ]
+      : [
+          "KONFIGURÁCIA TLAČE",
+          sep,
+          `  Materiál    : ${v(config.material)}`,
+          `  Kvalita     : ${v(config.quality)}`,
+          `  Farba       : ${v(config.color)}`,
+          `  Počet kusov : ${v(config.quantity)}`,
+          `  Infill      : ${config.infillPct !== undefined ? `${config.infillPct}%` : "—"}`,
+          `  Mierka      : ${config.scalePct !== undefined ? `${config.scalePct}%` : "—"}`,
+          "",
+          "ANALÝZA MODELU",
+          sep,
+          `  Rozmer X : ${analysis.dimsXmm !== undefined ? `${analysis.dimsXmm} mm` : "—"}`,
+          `  Rozmer Y : ${analysis.dimsYmm !== undefined ? `${analysis.dimsYmm} mm` : "—"}`,
+          `  Rozmer Z : ${analysis.dimsZmm !== undefined ? `${analysis.dimsZmm} mm` : "—"}`,
+          `  Objem    : ${analysis.volumeCm3 !== undefined ? `${analysis.volumeCm3} cm³` : "—"}`,
+          "",
+        ]
+    ),
     "CENOVÝ ROZPIS",
     sep,
     ...(productionGross !== null ? [
@@ -347,8 +369,8 @@ export default async function AdminOrderDetailPage({
           </Panel>
         </section>
 
-        {/* OrderItems — shown only for multi-model orders */}
-        {order.orderItems.length > 1 && (
+        {/* OrderItems — always shown when items exist */}
+        {order.orderItems.length > 0 && (
           <section className="mt-6 rounded-3xl bg-white p-6 shadow-[0_12px_40px_rgba(0,0,0,0.06)]">
             <h2 className="text-lg font-extrabold text-neutral-900">
               Modely v objednávke ({order.orderItems.length})
@@ -357,23 +379,39 @@ export default async function AdminOrderDetailPage({
               {order.orderItems.map((item, idx) => {
                 const ic = item.config as Record<string, any>;
                 const ip = item.pricing as Record<string, any>;
+                const ia = item.analysis as Record<string, any>;
                 return (
                   <div key={item.id} className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
-                    <div className="mb-2 flex items-center gap-2">
+                    <div className="mb-3 flex items-center gap-2">
                       <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[#FFAE00] text-xs font-bold text-black">{idx + 1}</span>
                       <span className="font-semibold text-neutral-900">{item.fileName}</span>
+                      {typeof ip.total === "number" && (
+                        <span className="ml-auto text-sm font-extrabold text-neutral-900">{formatEur(ip.total)} bez DPH → {formatEur(addVat(ip.total))} s DPH</span>
+                      )}
                     </div>
-                    <div className="grid gap-2 text-xs sm:grid-cols-3">
+                    <div className="grid gap-2 text-xs sm:grid-cols-4">
                       <InfoCard label="Materiál" value={String(ic.material ?? "—")} />
                       <InfoCard label="Kvalita" value={String(ic.quality ?? "—")} />
                       <InfoCard label="Farba" value={String(ic.color ?? "—")} />
                       <InfoCard label="Počet ks" value={String(ic.quantity ?? "—")} />
                       <InfoCard label="Infill" value={ic.infillPct !== undefined ? `${ic.infillPct}%` : "—"} />
                       <InfoCard label="Mierka" value={ic.scalePct !== undefined ? `${ic.scalePct}%` : "—"} />
-                      {typeof ip.total === "number" && (
-                        <InfoCard label="Cena bez DPH" value={formatEur(ip.total)} />
-                      )}
+                      {ia?.volumeCm3 !== undefined && <InfoCard label="Objem" value={`${Number(ia.volumeCm3).toFixed(2)} cm³`} />}
+                      {ia?.dimsXmm !== undefined && <InfoCard label="Rozmery" value={`${Number(ia.dimsXmm).toFixed(0)}×${Number(ia.dimsYmm).toFixed(0)}×${Number(ia.dimsZmm).toFixed(0)} mm`} />}
                     </div>
+                    {typeof ip.total === "number" && (
+                      <div className="mt-3 grid gap-2 text-xs sm:grid-cols-4 border-t border-neutral-200 pt-3">
+                        {typeof ip.gramsPerPart === "number" && <InfoCard label="Gram / ks" value={`${ip.gramsPerPart.toFixed(1)} g`} />}
+                        {typeof ip.printTimeMinPerPart === "number" && <InfoCard label="Čas tlače / ks" value={`${Math.round(ip.printTimeMinPerPart)} min`} />}
+                        {typeof ip.materialCostPerPart === "number" && <InfoCard label="Materiál / ks" value={formatEur(ip.materialCostPerPart)} />}
+                        {typeof ip.machineCostPerPart === "number" && <InfoCard label="Stroj / ks" value={formatEur(ip.machineCostPerPart)} />}
+                        {typeof ip.setupFee === "number" && <InfoCard label="Nastavenie" value={formatEur(ip.setupFee)} />}
+                        {typeof ip.quantityDiscountPct === "number" && ip.quantityDiscountPct > 0 && <InfoCard label="Zľava množstvo" value={`${ip.quantityDiscountPct}%`} />}
+                        {typeof ip.productionSubtotal === "number" && <InfoCard label="Výroba celkom" value={formatEur(ip.productionSubtotal)} />}
+                        <InfoCard label="Cena bez DPH" value={formatEur(ip.total)} />
+                        <InfoCard label="Cena s DPH" value={formatEur(addVat(ip.total))} />
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -427,10 +465,21 @@ export default async function AdminOrderDetailPage({
           </div>
 
           <div className="mt-4 grid gap-4 lg:grid-cols-3">
-            <JsonBox title="Pricing JSON" value={formatJson(pricing)} />
-            <JsonBox title="Config JSON" value={formatJson(config)} />
+            <JsonBox title="Pricing JSON (order)" value={formatJson(pricing)} />
+            <JsonBox title="Config JSON (order)" value={formatJson(config)} />
             <JsonBox title="Shipping JSON" value={formatJson(rawShipping)} />
           </div>
+          {order.orderItems.length > 0 && (
+            <div className="mt-4 grid gap-4 lg:grid-cols-2">
+              {order.orderItems.map((item, idx) => (
+                <JsonBox
+                  key={item.id}
+                  title={`Model ${idx + 1}: ${item.fileName}`}
+                  value={JSON.stringify({ config: item.config, pricing: item.pricing, analysis: item.analysis }, null, 2)}
+                />
+              ))}
+            </div>
+          )}
         </section>
 
         <InvoiceSection

@@ -16,6 +16,7 @@ type Order = {
   paidTotalEur: number | null;
   createdAtText: string;
   configLabel: string;
+  modelCount: number;
 };
 
 type Stats = {
@@ -264,10 +265,17 @@ export default function AdminOrdersClient({
 
                     {/* Stĺpec 1: Identifikácia */}
                     <div>
-                      <div className="text-lg font-extrabold text-neutral-900">
-                        {order.orderNumber ?? (
-                          <span className="font-mono text-sm text-neutral-500">
-                            {order.id.slice(0, 16)}…
+                      <div className="flex items-center gap-2">
+                        <div className="text-lg font-extrabold text-neutral-900">
+                          {order.orderNumber ?? (
+                            <span className="font-mono text-sm text-neutral-500">
+                              {order.id.slice(0, 16)}…
+                            </span>
+                          )}
+                        </div>
+                        {order.modelCount > 1 && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-[#FFAE00] px-2 py-0.5 text-xs font-bold text-black">
+                            {order.modelCount} modely
                           </span>
                         )}
                       </div>
