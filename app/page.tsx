@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
 import UploadBox from "@/components/UploadBox";
 import Configurator, { ConfigState } from "@/components/Configurator";
@@ -71,7 +71,6 @@ export default function Home() {
   const [contactForm, setContactForm] = useState<ContactForm>(EMPTY_CONTACT);
   const [editingContact, setEditingContact] = useState(false);
   const [profileLoaded, setProfileLoaded] = useState(false);
-  const prevAllPricedRef = useRef(false);
 
   useEffect(() => {
     if (sessionStatus !== "authenticated") return;
@@ -178,14 +177,6 @@ export default function Home() {
   const shippingCostWithVat = deliveryMethod === "courier" ? SHIPPING_RATES.COURIER : SHIPPING_RATES.PACKETA;
   const grandTotal = addVat(cartTotalNet) + shippingCostWithVat;
 
-  // Auto-open cart drawer when all items first become priced
-  useEffect(() => {
-    if (allItemsPriced && !prevAllPricedRef.current) {
-      setCartOpen(true);
-    }
-    prevAllPricedRef.current = allItemsPriced;
-  }, [allItemsPriced]);
-
   async function payByTransfer() {
     if (!allItemsPriced) return;
     setOrderLoading(true);
@@ -252,28 +243,22 @@ export default function Home() {
     <div className="min-h-screen bg-white text-neutral-900">
       <FloatingCta />
 
-      {/* ─── Floating cart button ─── */}
-      <button
-        type="button"
-        onClick={() => setCartOpen(true)}
-        className="fixed right-5 top-5 z-40 flex items-center gap-2 rounded-2xl border border-neutral-200 bg-white px-4 py-2.5 shadow-lg transition hover:border-[#FFAE00] hover:shadow-xl"
-      >
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
-          <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
-        </svg>
-        <span className="text-sm font-bold text-neutral-800">Košík</span>
-        {cartItems.length > 0 && (
-          <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[#FFAE00] px-1 text-xs font-bold text-black">
+      {/* ─── Floating cart button — visible only when cart has items ─── */}
+      {cartItems.length > 0 && (
+        <button
+          type="button"
+          onClick={() => setCartOpen(true)}
+          className="fixed right-5 top-5 z-40 flex items-center justify-center rounded-2xl border border-neutral-200 bg-white p-3 shadow-lg transition hover:border-[#FFAE00] hover:shadow-xl"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
+            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+          </svg>
+          <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[#FFAE00] px-1 text-xs font-bold text-black">
             {cartItems.length}
           </span>
-        )}
-        {allItemsPriced && (
-          <span className="text-sm font-extrabold text-neutral-900">
-            {formatEur(grandTotal)}
-          </span>
-        )}
-      </button>
+        </button>
+      )}
 
       {/* ─── Cart drawer ─── */}
       {cartOpen && (
@@ -622,24 +607,6 @@ export default function Home() {
                 Zákazník si vykliká parametre modelu a konfigurátor ich automaticky premietne do ceny.
               </p>
             </div>
-            {/* Cart summary chip — opens drawer */}
-            {cartItems.length > 0 && (
-              <button
-                type="button"
-                onClick={() => setCartOpen(true)}
-                className="flex items-center gap-2 rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-2 text-sm font-semibold text-neutral-700 shadow-sm transition hover:border-[#FFAE00] hover:bg-[#FFAE00]/5"
-              >
-                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#FFAE00] text-xs font-bold text-black">
-                  {cartItems.length}
-                </span>
-                {allItemsPriced
-                  ? <span>Košík · <span className="font-extrabold text-neutral-900">{formatEur(grandTotal)}</span></span>
-                  : <span>Košík</span>}
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="9 18 15 12 9 6"/>
-                </svg>
-              </button>
-            )}
           </div>
 
           <div className="mt-6 space-y-4">
