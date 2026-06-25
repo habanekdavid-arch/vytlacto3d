@@ -90,7 +90,8 @@ model Order {
   userId String?
   user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
 
-  invoices Invoice[]
+  invoices   Invoice[]
+  orderItems OrderItem[]
 
   @@index([orderNumber])
   @@index([userId])
@@ -98,6 +99,22 @@ model Order {
   @@index([status])
   @@index([customerEmail])
   @@index([stripeSessionId])
+}
+
+model OrderItem {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  fileKey   String
+  fileName  String
+  analysis  Json
+  config    Json
+  pricing   Json
+
+  @@index([orderId])
 }
 
 model Invoice {

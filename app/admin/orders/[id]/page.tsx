@@ -43,6 +43,7 @@ export default async function AdminOrderDetailPage({
 
   const order = await prisma.order.findUnique({
     where: { id },
+    include: { orderItems: { orderBy: { createdAt: "asc" } } },
   });
 
   if (!order) {
@@ -345,6 +346,40 @@ export default async function AdminOrderDetailPage({
             />
           </Panel>
         </section>
+
+        {/* OrderItems — shown only for multi-model orders */}
+        {order.orderItems.length > 1 && (
+          <section className="mt-6 rounded-3xl bg-white p-6 shadow-[0_12px_40px_rgba(0,0,0,0.06)]">
+            <h2 className="text-lg font-extrabold text-neutral-900">
+              Modely v objednávke ({order.orderItems.length})
+            </h2>
+            <div className="mt-4 space-y-4">
+              {order.orderItems.map((item, idx) => {
+                const ic = item.config as Record<string, any>;
+                const ip = item.pricing as Record<string, any>;
+                return (
+                  <div key={item.id} className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
+                    <div className="mb-2 flex items-center gap-2">
+                      <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[#FFAE00] text-xs font-bold text-black">{idx + 1}</span>
+                      <span className="font-semibold text-neutral-900">{item.fileName}</span>
+                    </div>
+                    <div className="grid gap-2 text-xs sm:grid-cols-3">
+                      <InfoCard label="Materiál" value={String(ic.material ?? "—")} />
+                      <InfoCard label="Kvalita" value={String(ic.quality ?? "—")} />
+                      <InfoCard label="Farba" value={String(ic.color ?? "—")} />
+                      <InfoCard label="Počet ks" value={String(ic.quantity ?? "—")} />
+                      <InfoCard label="Infill" value={ic.infillPct !== undefined ? `${ic.infillPct}%` : "—"} />
+                      <InfoCard label="Mierka" value={ic.scalePct !== undefined ? `${ic.scalePct}%` : "—"} />
+                      {typeof ip.total === "number" && (
+                        <InfoCard label="Cena bez DPH" value={formatEur(ip.total)} />
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
 
         <section className="mt-6 grid gap-6 lg:grid-cols-2">
           <Panel title="Konfigurácia tlače">

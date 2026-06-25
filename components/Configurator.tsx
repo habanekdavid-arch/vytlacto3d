@@ -36,19 +36,23 @@ export type ConfigState = {
 
 export default function Configurator({
   analysis,
+  initialConfig,
   onQuote,
 }: {
   analysis: Analysis;
+  initialConfig?: ConfigState;
   onQuote: (q: Quote, config: ConfigState) => void;
 }) {
-  const [config, setConfig] = useState<ConfigState>({
-    material: "PLA",
-    quality: "STANDARD",
-    infillPct: 20,
-    color: "black",
-    quantity: 1,
-    scalePct: 100,
-  });
+  const [config, setConfig] = useState<ConfigState>(
+    initialConfig ?? {
+      material: "PLA",
+      quality: "STANDARD",
+      infillPct: 20,
+      color: "black",
+      quantity: 1,
+      scalePct: 100,
+    }
+  );
 
   const [quote, setQuote] = useState<Quote | null>(null);
   const [loading, setLoading] = useState(false);

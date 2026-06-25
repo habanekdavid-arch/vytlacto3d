@@ -51,6 +51,7 @@ export default async function OrderDetailPage({
       stripeSessionId: true,
       orderNumber: true,
       phone: true,
+      orderItems: { orderBy: { createdAt: "asc" }, select: { id: true, fileName: true, config: true, pricing: true } },
     },
   });
 
@@ -146,6 +147,37 @@ export default async function OrderDetailPage({
           />
         </div>
       </section>
+
+      {/* Multi-model: show individual items */}
+      {order.orderItems.length > 1 && (
+        <section className="rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm">
+          <div className="text-sm font-semibold text-neutral-500">Modely v objednávke ({order.orderItems.length})</div>
+          <div className="mt-4 space-y-4">
+            {order.orderItems.map((item, idx) => {
+              const ic = (item.config ?? {}) as Record<string, any>;
+              const ip = (item.pricing ?? {}) as Record<string, any>;
+              return (
+                <div key={item.id} className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
+                  <div className="mb-2 flex items-center gap-2">
+                    <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[#FFAE00] text-xs font-bold text-black">{idx + 1}</span>
+                    <span className="text-sm font-semibold text-neutral-900">{item.fileName}</span>
+                    {typeof ip.total === "number" && (
+                      <span className="ml-auto text-sm font-extrabold text-neutral-900">{formatEur(addVat(ip.total))}</span>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap gap-2 text-xs text-neutral-600">
+                    {ic.material && <span className="rounded-full bg-neutral-200 px-2 py-0.5 font-semibold">{ic.material}</span>}
+                    {ic.quality && <span className="rounded-full bg-neutral-200 px-2 py-0.5 font-semibold">{ic.quality}</span>}
+                    {ic.color && <span className="rounded-full bg-neutral-200 px-2 py-0.5 font-semibold">{ic.color}</span>}
+                    {ic.quantity && <span className="rounded-full bg-neutral-200 px-2 py-0.5 font-semibold">{ic.quantity} ks</span>}
+                    {ic.scalePct && <span className="rounded-full bg-neutral-200 px-2 py-0.5 font-semibold">{ic.scalePct}%</span>}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       <section className="rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm">
         <div className="text-sm font-semibold text-neutral-500">Konfigurácia</div>

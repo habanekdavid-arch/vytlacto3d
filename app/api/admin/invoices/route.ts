@@ -43,7 +43,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Missing orderId" }, { status: 400 });
   }
 
-  const order = await prisma.order.findUnique({ where: { id: orderId } });
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    include: { orderItems: { orderBy: { createdAt: "asc" } } },
+  });
   if (!order) {
     return NextResponse.json({ error: "Order not found" }, { status: 404 });
   }
@@ -66,16 +69,37 @@ export async function POST(req: NextRequest) {
       : addVat(productionNet) + shippingEur;
 
   const config = (order.config ?? {}) as Record<string, any>;
+  const orderItems = order.orderItems ?? [];
+
+  const productionItems =
+    orderItems.length > 1
+      ? orderItems.map((oi) => {
+          const ic = oi.config as Record<string, any>;
+          const ip = oi.pricing as Record<string, any>;
+          const itemNet = typeof ip.total === "number" ? ip.total : 0;
+          const qty = Number(ic.quantity ?? 1);
+          return {
+            description: `3D tlač: ${oi.fileName}${ic.material ? ` (${ic.material}` : ""}${ic.quality ? `, ${ic.quality}` : ""}${ic.color ? `, ${ic.color}` : ""}${ic.material || ic.quality || ic.color ? ")" : ""}`,
+            quantity: qty,
+            unitNet: Math.round((itemNet / qty) * 100) / 100,
+            vatRate: 23,
+            totalNet: itemNet,
+            totalGross: addVat(itemNet),
+          };
+        })
+      : [
+          {
+            description: `3D tlač: ${order.fileName}${config.material ? ` (${config.material}` : ""}${config.quality ? `, ${config.quality}` : ""}${config.color ? `, ${config.color}` : ""}${config.material || config.quality || config.color ? ")" : ""}`,
+            quantity: config.quantity ?? 1,
+            unitNet: Math.round((productionNet / (config.quantity ?? 1)) * 100) / 100,
+            vatRate: 23,
+            totalNet: productionNet,
+            totalGross: addVat(productionNet),
+          },
+        ];
 
   const items = [
-    {
-      description: `3D tlač: ${order.fileName}${config.material ? ` (${config.material}` : ""}${config.quality ? `, ${config.quality}` : ""}${config.color ? `, ${config.color}` : ""}${config.material || config.quality || config.color ? ")" : ""}`,
-      quantity: config.quantity ?? 1,
-      unitNet: Math.round((productionNet / (config.quantity ?? 1)) * 100) / 100,
-      vatRate: 23,
-      totalNet: productionNet,
-      totalGross: addVat(productionNet),
-    },
+    ...productionItems,
     ...(shippingEur > 0
       ? [
           {

@@ -42,19 +42,22 @@ function getBaseUrl(req: NextRequest) {
   return "http://localhost:3000";
 }
 
+type RawItem = {
+  fileKey: string;
+  fileName: string;
+  fileSize?: number;
+  analysis: { volumeCm3: number; dimsXmm?: number; dimsYmm?: number; dimsZmm?: number };
+  config: { material: string; quality: string; infillPct?: number; quantity?: number; scalePct?: number; color?: string };
+};
+
 export async function POST(req: NextRequest) {
   try {
     if (!process.env.STRIPE_SECRET_KEY) {
-      return NextResponse.json(
-        { error: "Missing STRIPE_SECRET_KEY" },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Missing STRIPE_SECRET_KEY" }, { status: 500 });
     }
 
     const session = await getSafeServerSession();
-    const sessionUser = session?.user as
-      | { id?: string; email?: string | null }
-      | undefined;
+    const sessionUser = session?.user as { id?: string; email?: string | null } | undefined;
 
     const userId = sessionUser?.id ?? null;
     const sessionEmail = sessionUser?.email ?? null;
@@ -90,55 +93,71 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json().catch(() => null);
 
-    const deliveryMethod: "packeta" | "courier" = body?.deliveryMethod === "courier" ? "courier" : "packeta";
+    const deliveryMethod: "packeta" | "courier" =
+      body?.deliveryMethod === "courier" ? "courier" : "packeta";
     const packetaPoint = deliveryMethod === "packeta" ? (body?.packetaPoint ?? null) : null;
-    const co = body?.contactOverride ?? null; // contact override from the checkout form
+    const co = body?.contactOverride ?? null;
 
-    if (!body?.uploaded?.fileKey || !body?.uploaded?.fileName) {
-      return NextResponse.json({ error: "Missing uploaded data" }, { status: 400 });
+    // Normalise to items array — supports both new {items:[]} and legacy {uploaded,config}
+    let rawItems: RawItem[];
+    if (Array.isArray(body?.items) && body.items.length > 0) {
+      rawItems = body.items;
+    } else if (body?.uploaded?.fileKey) {
+      rawItems = [{
+        fileKey: body.uploaded.fileKey,
+        fileName: body.uploaded.fileName,
+        fileSize: body.uploaded.fileSize,
+        analysis: body.uploaded.analysis,
+        config: body.config,
+      }];
+    } else {
+      return NextResponse.json({ error: "Missing items or uploaded data" }, { status: 400 });
     }
 
-    if (!body?.uploaded?.analysis?.volumeCm3) {
-      return NextResponse.json({ error: "Missing analysis.volumeCm3" }, { status: 400 });
+    // Validate + calculate server-side pricing for each item
+    const pricedItems = [];
+    for (const item of rawItems) {
+      const rawVol = Number(item.analysis?.volumeCm3);
+      if (!Number.isFinite(rawVol) || rawVol <= 0) {
+        return NextResponse.json({ error: `Invalid volumeCm3 for ${item.fileName}` }, { status: 400 });
+      }
+      const qty = Number(item.config?.quantity ?? 1);
+      const infill = Number(item.config?.infillPct ?? 20);
+      const scale = Number(item.config?.scalePct ?? 100);
+      if (!Number.isFinite(qty) || qty < 1) {
+        return NextResponse.json({ error: `Quantity must be >= 1 for ${item.fileName}` }, { status: 400 });
+      }
+      if (!Number.isFinite(infill) || infill < 5 || infill > 50) {
+        return NextResponse.json({ error: `Invalid infillPct for ${item.fileName}` }, { status: 400 });
+      }
+      if (!Number.isFinite(scale) || scale < 10 || scale > 200) {
+        return NextResponse.json({ error: `Invalid scalePct for ${item.fileName}` }, { status: 400 });
+      }
+      if (!item.config?.material || !item.config?.quality) {
+        return NextResponse.json({ error: `Missing material/quality for ${item.fileName}` }, { status: 400 });
+      }
+
+      const scaleFactor = scale / 100;
+      const scaledVol = rawVol * Math.pow(scaleFactor, 3);
+
+      const serverPricing = quote({
+        volumeCm3: scaledVol,
+        material: item.config.material as any,
+        quality: item.config.quality as any,
+        infillPct: infill,
+        quantity: qty,
+      });
+
+      pricedItems.push({ item, serverPricing, scaledVol, infill, scale, rawVol, qty });
     }
 
-    if (!body?.config?.material || !body?.config?.quality) {
-      return NextResponse.json({ error: "Missing config" }, { status: 400 });
-    }
+    const totalNet = pricedItems.reduce((s, pi) => s + pi.serverPricing.total, 0);
+    const totalWithVat = addVat(totalNet);
 
-    const rawVolumeCm3 = Number(body.uploaded.analysis.volumeCm3);
-    const quantity = Number(body.config.quantity ?? 1);
-    const infillPct = Number(body.config.infillPct ?? 20);
-    const scalePct = Number(body.config.scalePct ?? 100);
-    const scaleFactor = scalePct / 100;
-    const scaledVolumeCm3 = rawVolumeCm3 * Math.pow(scaleFactor, 3);
-
-    if (!Number.isFinite(rawVolumeCm3) || rawVolumeCm3 <= 0) {
-      return NextResponse.json({ error: "Invalid volumeCm3" }, { status: 400 });
-    }
-
-    if (!Number.isFinite(quantity) || quantity < 1) {
-      return NextResponse.json({ error: "Quantity must be >= 1" }, { status: 400 });
-    }
-
-    if (!Number.isFinite(infillPct) || infillPct < 5 || infillPct > 50) {
-      return NextResponse.json(
-        { error: "Invalid infillPct. Allowed range is 5–50." },
-        { status: 400 }
-      );
-    }
-
-    if (!Number.isFinite(scalePct) || scalePct < 10 || scalePct > 200) {
-      return NextResponse.json({ error: "Invalid scalePct" }, { status: 400 });
-    }
-
-    const pricing = quote({
-      volumeCm3: scaledVolumeCm3,
-      material: body.config.material,
-      quality: body.config.quality,
-      infillPct,
-      quantity,
-    });
+    const first = pricedItems[0];
+    const combinedPricing = pricedItems.length === 1
+      ? first.serverPricing
+      : { ...first.serverPricing, total: totalNet };
 
     const orderNumber = await generateOrderNumber();
 
@@ -146,20 +165,16 @@ export async function POST(req: NextRequest) {
       data: {
         orderNumber,
         status: "PENDING",
-        fileKey: body.uploaded.fileKey,
-        fileName: body.uploaded.fileName,
+        fileKey: first.item.fileKey,
+        fileName: first.item.fileName,
         analysis: {
-          ...body.uploaded.analysis,
-          originalVolumeCm3: rawVolumeCm3,
-          scaledVolumeCm3,
-          scalePct,
+          ...first.item.analysis,
+          originalVolumeCm3: first.rawVol,
+          scaledVolumeCm3: first.scaledVol,
+          scalePct: first.scale,
         },
-        config: {
-          ...body.config,
-          infillPct,
-          scalePct,
-        },
-        pricing: pricing as any,
+        config: { ...first.item.config, infillPct: first.infill, scalePct: first.scale },
+        pricing: combinedPricing as any,
         userId,
         customerEmail: sessionEmail ?? dbUser?.email ?? null,
         accountType: dbUser?.accountType ?? null,
@@ -175,39 +190,46 @@ export async function POST(req: NextRequest) {
           zip: co?.billingZip || dbUser?.billingZip || null,
           country: co?.billingCountry || dbUser?.billingCountry || null,
         },
-        deliveryAddress: deliveryMethod === "packeta" && packetaPoint
-          ? {
-              type: "packeta",
-              packetaPointId: String(packetaPoint.id),
-              packetaPointName: packetaPoint.name,
-              street: packetaPoint.nameStreet ?? null,
-              city: packetaPoint.city ?? null,
-              zip: packetaPoint.zip ?? null,
-              country: "SK",
-            }
-          : {
-              name: co?.shippingName || dbUser?.shippingName || null,
-              contact: co?.name || dbUser?.shippingContact || null,
-              street: co?.shippingStreet || dbUser?.shippingStreet || null,
-              city: co?.shippingCity || dbUser?.shippingCity || null,
-              zip: co?.shippingZip || dbUser?.shippingZip || null,
-              country: co?.shippingCountry || dbUser?.shippingCountry || null,
-            },
+        deliveryAddress:
+          deliveryMethod === "packeta" && packetaPoint
+            ? {
+                type: "packeta",
+                packetaPointId: String(packetaPoint.id),
+                packetaPointName: packetaPoint.name,
+                street: packetaPoint.nameStreet ?? null,
+                city: packetaPoint.city ?? null,
+                zip: packetaPoint.zip ?? null,
+                country: "SK",
+              }
+            : {
+                name: co?.shippingName || dbUser?.shippingName || null,
+                contact: co?.name || dbUser?.shippingContact || null,
+                street: co?.shippingStreet || dbUser?.shippingStreet || null,
+                city: co?.shippingCity || dbUser?.shippingCity || null,
+                zip: co?.shippingZip || dbUser?.shippingZip || null,
+                country: co?.shippingCountry || dbUser?.shippingCountry || null,
+              },
       },
       select: { id: true },
     });
 
-    const baseUrl = getBaseUrl(req);
-    const totalWithVat = addVat(pricing.total);
-    const itemAmountCents = Math.round(totalWithVat * 100);
+    // Create one OrderItem per model
+    await prisma.orderItem.createMany({
+      data: pricedItems.map((pi) => ({
+        orderId: order.id,
+        fileKey: pi.item.fileKey,
+        fileName: pi.item.fileName,
+        analysis: pi.item.analysis as any,
+        config: { ...pi.item.config, infillPct: pi.infill, scalePct: pi.scale } as any,
+        pricing: pi.serverPricing as any,
+      })),
+    });
 
+    const baseUrl = getBaseUrl(req);
     const customerName = dbUser?.contactPerson || dbUser?.name || null;
 
     const hasShippingAddress = !!(
-      dbUser?.shippingStreet &&
-      dbUser?.shippingCity &&
-      dbUser?.shippingZip &&
-      dbUser?.shippingCountry
+      dbUser?.shippingStreet && dbUser?.shippingCity && dbUser?.shippingZip && dbUser?.shippingCountry
     );
 
     const prefillShipping = hasShippingAddress
@@ -309,26 +331,21 @@ export async function POST(req: NextRequest) {
               name: "auto" as const,
             },
           }
-        : {
-            customer_email: sessionEmail ?? undefined,
-          }),
-      line_items: [
-        {
-          quantity: 1,
-          price_data: {
-            currency: "eur",
-            unit_amount: itemAmountCents,
-            product_data: {
-              name: `3D tlac: ${body.uploaded.fileName}`,
-              description: `${totalWithVat.toFixed(2)} EUR s DPH | mierka ${scalePct}% | vypln ${infillPct}%`,
-            },
+        : { customer_email: sessionEmail ?? undefined }),
+      line_items: pricedItems.map((pi) => ({
+        quantity: 1,
+        price_data: {
+          currency: "eur",
+          unit_amount: Math.round(addVat(pi.serverPricing.total) * 100),
+          product_data: {
+            name: `3D tlac: ${pi.item.fileName}`,
+            description: `${pi.item.config.material}, ${pi.item.config.quality}, ${pi.qty}ks | mierka ${pi.scale}%`,
           },
         },
-      ],
+      })),
       metadata: {
         orderId: order.id,
-        scalePct: String(scalePct),
-        infillPct: String(infillPct),
+        itemCount: String(pricedItems.length),
         userId: userId ?? "",
         customerEmail: sessionEmail ?? dbUser?.email ?? "",
         isTestOrder: "false",
@@ -342,14 +359,11 @@ export async function POST(req: NextRequest) {
       payment_intent_data: {
         metadata: {
           orderId: order.id,
-          scalePct: String(scalePct),
-          infillPct: String(infillPct),
+          itemCount: String(pricedItems.length),
           userId: userId ?? "",
           customerEmail: sessionEmail ?? dbUser?.email ?? "",
           isTestOrder: "false",
           deliveryMethod,
-          packetaPointId: packetaPoint?.id ? String(packetaPoint.id) : "",
-          packetaPointName: packetaPoint?.name ?? "",
         },
       },
       success_url: `${baseUrl}/success?orderId=${order.id}&session_id={CHECKOUT_SESSION_ID}`,
@@ -358,9 +372,7 @@ export async function POST(req: NextRequest) {
 
     await prisma.order.update({
       where: { id: order.id },
-      data: {
-        stripeSessionId: stripeSession.id,
-      },
+      data: { stripeSessionId: stripeSession.id },
     });
 
     return NextResponse.json({
@@ -371,10 +383,6 @@ export async function POST(req: NextRequest) {
     });
   } catch (e: any) {
     console.error("create-checkout-session error:", e);
-
-    return NextResponse.json(
-      { error: e?.message || "Checkout failed" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: e?.message || "Checkout failed" }, { status: 500 });
   }
 }
