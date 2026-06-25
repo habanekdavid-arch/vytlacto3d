@@ -245,7 +245,8 @@ export default async function AdminOrderDetailPage({
             />
           </div>
 
-          {typeof pricing.total === "number" && (
+          {/* Show DPH breakdown only when no orderItems panel (which already shows it per-model) */}
+          {typeof pricing.total === "number" && order.orderItems.length === 0 && (
             <div className="mt-4 rounded-2xl bg-neutral-50 px-5 py-4 text-sm">
               <div className="text-xs font-bold uppercase tracking-wide text-neutral-500 mb-3">
                 Rozpis DPH (výroba)
