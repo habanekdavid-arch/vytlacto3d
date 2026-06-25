@@ -101,6 +101,8 @@ export default function AccountEditForm({ user }: { user: UserData }) {
     );
   }
 
+  const isCompany = form.accountType === "COMPANY";
+
   return (
     <div className="mt-6 space-y-6 rounded-2xl border border-neutral-200 bg-neutral-50 p-5">
 
@@ -110,16 +112,10 @@ export default function AccountEditForm({ user }: { user: UserData }) {
           Typ účtu
         </div>
         <div className="flex gap-2">
-          <TypeBtn
-            active={form.accountType === "PERSON"}
-            onClick={() => update("accountType", "PERSON")}
-          >
+          <TypeBtn active={!isCompany} onClick={() => update("accountType", "PERSON")}>
             Fyzická osoba
           </TypeBtn>
-          <TypeBtn
-            active={form.accountType === "COMPANY"}
-            onClick={() => update("accountType", "COMPANY")}
-          >
+          <TypeBtn active={isCompany} onClick={() => update("accountType", "COMPANY")}>
             Firma
           </TypeBtn>
         </div>
@@ -133,18 +129,34 @@ export default function AccountEditForm({ user }: { user: UserData }) {
         <div className="grid gap-3 md:grid-cols-2">
           <Field label="Meno a priezvisko" value={form.name} onChange={(v) => update("name", v)} />
           <Field label="Telefón" value={form.phone} onChange={(v) => update("phone", v)} />
-          <Field label="Kontaktná osoba" value={form.contactPerson} onChange={(v) => update("contactPerson", v)} />
+          {isCompany && (
+            <Field label="Kontaktná osoba" value={form.contactPerson} onChange={(v) => update("contactPerson", v)} />
+          )}
         </div>
       </div>
 
-      {/* Firemné údaje */}
-      {form.accountType === "COMPANY" && (
+      {/* Firemné údaje (COMPANY) / Živnosť (PERSON) */}
+      {isCompany ? (
         <div>
           <div className="text-xs font-bold uppercase tracking-wide text-neutral-500 mb-2">
             Firemné údaje
           </div>
           <div className="grid gap-3 md:grid-cols-2">
             <Field label="Názov firmy" value={form.companyName} onChange={(v) => update("companyName", v)} />
+            <Field label="IČO" value={form.ico} onChange={(v) => update("ico", v)} />
+            <Field label="DIČ" value={form.dic} onChange={(v) => update("dic", v)} />
+            <Field label="IČ DPH" value={form.icDph} onChange={(v) => update("icDph", v)} />
+          </div>
+        </div>
+      ) : (
+        <div>
+          <div className="text-xs font-bold uppercase tracking-wide text-neutral-500 mb-2">
+            Živnosť / SZČO (voliteľné)
+          </div>
+          <p className="mb-3 text-xs text-neutral-400">
+            Vyplňte len ak potrebujete faktúru na IČO.
+          </p>
+          <div className="grid gap-3 md:grid-cols-2">
             <Field label="IČO" value={form.ico} onChange={(v) => update("ico", v)} />
             <Field label="DIČ" value={form.dic} onChange={(v) => update("dic", v)} />
             <Field label="IČ DPH" value={form.icDph} onChange={(v) => update("icDph", v)} />
@@ -157,6 +169,11 @@ export default function AccountEditForm({ user }: { user: UserData }) {
         <div className="text-xs font-bold uppercase tracking-wide text-neutral-500 mb-2">
           Fakturačná adresa
         </div>
+        {!isCompany && (
+          <p className="mb-3 text-xs text-neutral-400">
+            Ak je rovnaká ako dodacia, môžete ju nechať prázdnu.
+          </p>
+        )}
         <div className="grid gap-3 md:grid-cols-2">
           <Field label="Ulica a číslo" value={form.billingStreet} onChange={(v) => update("billingStreet", v)} />
           <Field label="Mesto" value={form.billingCity} onChange={(v) => update("billingCity", v)} />
@@ -180,8 +197,12 @@ export default function AccountEditForm({ user }: { user: UserData }) {
           </button>
         </div>
         <div className="grid gap-3 md:grid-cols-2">
-          <Field label="Meno / Firma" value={form.shippingName} onChange={(v) => update("shippingName", v)} />
-          <Field label="Kontaktná osoba" value={form.shippingContact} onChange={(v) => update("shippingContact", v)} />
+          {isCompany && (
+            <>
+              <Field label="Meno / Firma" value={form.shippingName} onChange={(v) => update("shippingName", v)} />
+              <Field label="Kontaktná osoba" value={form.shippingContact} onChange={(v) => update("shippingContact", v)} />
+            </>
+          )}
           <Field label="Ulica a číslo" value={form.shippingStreet} onChange={(v) => update("shippingStreet", v)} />
           <Field label="Mesto" value={form.shippingCity} onChange={(v) => update("shippingCity", v)} />
           <Field label="PSČ" value={form.shippingZip} onChange={(v) => update("shippingZip", v)} />

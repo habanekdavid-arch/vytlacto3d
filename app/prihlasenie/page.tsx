@@ -35,6 +35,8 @@ function LoginPageInner() {
     return searchParams.get("callbackUrl") || "/ucet/objednavky";
   }, [searchParams]);
 
+  const registered = searchParams.get("registered") === "1";
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -90,6 +92,12 @@ function LoginPageInner() {
             Prihláste sa a zobrazte si svoje objednávky, ich stav a históriu.
           </p>
         </div>
+
+        {registered && (
+          <div className="mb-5 rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-semibold text-green-700">
+            Registrácia prebehla úspešne. Môžete sa prihlásiť.
+          </div>
+        )}
 
         <form onSubmit={handleLogin} className="space-y-4">
           <div>

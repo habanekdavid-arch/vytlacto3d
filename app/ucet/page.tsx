@@ -42,6 +42,21 @@ export default async function AccountPage() {
 
   const isCompany = user.accountType === "COMPANY";
 
+  const missingFields: string[] = [];
+  if (!user.name) missingFields.push("Meno a priezvisko");
+  if (!user.phone) missingFields.push("Telefón");
+  if (!user.shippingStreet) missingFields.push("Doručovacia ulica");
+  if (!user.shippingCity) missingFields.push("Doručovacie mesto");
+  if (!user.shippingZip) missingFields.push("PSČ");
+  if (isCompany) {
+    if (!user.companyName) missingFields.push("Názov spoločnosti");
+    if (!user.ico) missingFields.push("IČO");
+    if (!user.contactPerson) missingFields.push("Kontaktná osoba");
+    if (!user.billingStreet) missingFields.push("Fakturačná ulica");
+    if (!user.billingCity) missingFields.push("Fakturačné mesto");
+    if (!user.billingZip) missingFields.push("Fakturačné PSČ");
+  }
+
   return (
     <div className="space-y-5">
       {/* Osobné údaje */}
@@ -109,6 +124,21 @@ export default async function AccountPage() {
           className={isCompany && (user.shippingName || user.shippingContact) ? "mt-3" : ""}
         />
       </Section>
+
+      {/* Chýbajúce údaje – amber banner */}
+      {missingFields.length > 0 && (
+        <div className="rounded-3xl border border-amber-200 bg-amber-50 p-5">
+          <div className="text-sm font-bold text-amber-800">Doplňte chýbajúce údaje</div>
+          <p className="mt-1 text-xs text-amber-700">
+            Nasledujúce polia sú prázdne. Bez nich nemôže byť adresa predvyplnená pri objednávke:
+          </p>
+          <ul className="mt-2 flex flex-wrap gap-2">
+            {missingFields.map(f => (
+              <li key={f} className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800">{f}</li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {/* Editácia údajov */}
       <section className="rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm">
