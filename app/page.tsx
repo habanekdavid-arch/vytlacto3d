@@ -14,6 +14,7 @@ import ModelSummaryBar from "@/components/ModelSummaryBar";
 import { CartItem, CartItemConfig, CartItemPricing } from "@/lib/types";
 import { formatPriceWithVat, formatEur, addVat } from "@/lib/vat";
 import { SHIPPING_RATES } from "@/lib/shipping";
+import { useCartUi } from "@/lib/cart-ui-context";
 
 type Uploaded = {
   fileKey: string;
@@ -57,9 +58,9 @@ type PacketaPoint = {
 };
 
 export default function Home() {
+  const { setCartCount, isCartOpen: cartOpen, openCart, closeCart } = useCartUi();
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [activeItemId, setActiveItemId] = useState<string | null>(null);
-  const [cartOpen, setCartOpen] = useState(false);
   const [uploadLoading, setUploadLoading] = useState(false);
   const [orderLoading, setOrderLoading] = useState(false);
   const [deliveryMethod, setDeliveryMethod] = useState<"packeta" | "courier">("packeta");
@@ -116,6 +117,10 @@ export default function Home() {
       { country: "sk", language: "sk" }
     );
   }
+
+  useEffect(() => {
+    setCartCount(cartItems.length);
+  }, [cartItems.length, setCartCount]);
 
   const updateItemPricing = useCallback((id: string, pricing: CartItemPricing) => {
     setCartItems((prev) => prev.map((item) => (item.id === id ? { ...item, pricing } : item)));
@@ -243,30 +248,13 @@ export default function Home() {
     <div className="min-h-screen bg-white text-neutral-900">
       <FloatingCta />
 
-      {/* ─── Floating cart button — visible only when cart has items ─── */}
-      {cartItems.length > 0 && (
-        <button
-          type="button"
-          onClick={() => setCartOpen(true)}
-          className="fixed right-5 top-5 z-40 flex items-center justify-center rounded-2xl border border-neutral-200 bg-white p-3 shadow-lg transition hover:border-[#FFAE00] hover:shadow-xl"
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
-            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
-          </svg>
-          <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[#FFAE00] px-1 text-xs font-bold text-black">
-            {cartItems.length}
-          </span>
-        </button>
-      )}
-
       {/* ─── Cart drawer ─── */}
       {cartOpen && (
         <>
           {/* Backdrop */}
           <div
             className="fixed inset-0 z-[60] bg-black/40"
-            onClick={() => setCartOpen(false)}
+            onClick={closeCart}
           />
           {/* Panel */}
           <div className="fixed right-0 top-0 z-[70] flex h-full w-full max-w-[440px] flex-col bg-white shadow-2xl">
@@ -281,7 +269,7 @@ export default function Home() {
               </div>
               <button
                 type="button"
-                onClick={() => setCartOpen(false)}
+                onClick={closeCart}
                 className="flex h-8 w-8 items-center justify-center rounded-full text-neutral-400 transition hover:bg-neutral-100 hover:text-neutral-700"
               >
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
@@ -297,9 +285,9 @@ export default function Home() {
                 <CartSidebar
                   items={cartItems}
                   activeItemId={activeItemId}
-                  onSelect={(id) => { setActiveItemId(id); setCartOpen(false); }}
+                  onSelect={(id) => { setActiveItemId(id); closeCart(); }}
                   onRemove={removeItem}
-                  onAddNew={() => { setActiveItemId(null); setCartOpen(false); }}
+                  onAddNew={() => { setActiveItemId(null); closeCart(); }}
                 />
 
                 {/* Checkout panel — only when all items have pricing */}
