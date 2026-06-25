@@ -6,6 +6,7 @@ import { getSafeServerSession } from "@/lib/session";
 import { generateVariableSymbol, COMPANY_INFO } from "@/lib/company-info";
 import { SHIPPING_RATES } from "@/lib/shipping";
 import { sendTransferPaymentEmail } from "@/lib/email-transfer";
+import { sendAdminOrderNotificationEmail } from "@/lib/email-admin";
 
 export const runtime = "nodejs";
 
@@ -176,6 +177,47 @@ export async function POST(req: NextRequest) {
       } catch (err) {
         console.error("Transfer email failed:", err);
       }
+    }
+
+    try {
+      await sendAdminOrderNotificationEmail({
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+        fileName: order.fileName,
+        customerEmail,
+        totalEur: totalWithVat,
+        shippingMethod,
+        shippingCostEur: shippingCostWithVat,
+        phone: co?.phone || dbUser?.phone || null,
+        accountType: dbUser?.accountType ?? null,
+        companyName: dbUser?.companyName ?? null,
+        ico: dbUser?.ico ?? null,
+        dic: dbUser?.dic ?? null,
+        icDph: dbUser?.icDph ?? null,
+        contactPerson: co?.name || dbUser?.contactPerson || null,
+        deliveryAddress:
+          deliveryMethod === "packeta" && packetaPoint
+            ? {
+                type: "packeta",
+                packetaPointName: packetaPoint.name,
+                street: packetaPoint.nameStreet ?? null,
+                city: packetaPoint.city ?? null,
+                zip: packetaPoint.zip ?? null,
+                country: "SK",
+              }
+            : {
+                name: co?.shippingName || dbUser?.shippingName || null,
+                street: co?.shippingStreet || dbUser?.shippingStreet || null,
+                city: co?.shippingCity || dbUser?.shippingCity || null,
+                zip: co?.shippingZip || dbUser?.shippingZip || null,
+                country: co?.shippingCountry || dbUser?.shippingCountry || null,
+              },
+        config: { ...body.config, infillPct, scalePct },
+        pricing: pricing as any,
+        createdAt: new Date(),
+      });
+    } catch (err) {
+      console.error("Admin transfer notification email failed:", err);
     }
 
     return NextResponse.json({
