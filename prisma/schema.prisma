@@ -124,6 +124,10 @@ model Invoice {
   totalVat   Float
   totalGross Float
 
+  variableSymbol  String?
+  deliveredAt     DateTime?
+  deliveryAddress Json?
+
   note      String?
 
   createdAt DateTime @default(now())

@@ -110,7 +110,10 @@ export async function POST(req: NextRequest) {
     city: billing.city ?? delivery.city ?? null,
     zip: billing.zip ?? billing.postal_code ?? delivery.zip ?? null,
     country: billing.country ?? delivery.country ?? null,
+    paymentMethod: order.paymentMethod ?? "CARD",
   };
+
+  const deliveredAt = order.updatedAt ?? order.createdAt ?? new Date();
 
   const invoiceNumber = await generateInvoiceNumber(isTest);
   const issuedAt = new Date();
@@ -124,12 +127,15 @@ export async function POST(req: NextRequest) {
       orderId,
       issuedAt,
       dueAt,
+      deliveredAt,
+      variableSymbol: order.variableSymbol ?? null,
       sellerSnapshot: getSellerInfo() as any,
       customerSnapshot: customerSnapshot as any,
       items: items as any,
       totalNet,
       totalVat: totalVatAmt,
       totalGross,
+      deliveryAddress: delivery as any,
     },
   });
 

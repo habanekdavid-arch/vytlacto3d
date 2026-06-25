@@ -9,6 +9,7 @@ export function getSellerInfo() {
     dic:     process.env.SELLER_DIC     ?? "",
     icDph:   process.env.SELLER_IC_DPH  ?? "",
     iban:    process.env.SELLER_IBAN    ?? "",
+    swift:   process.env.SELLER_SWIFT   ?? "",
     bank:    process.env.SELLER_BANK    ?? "",
     email:   process.env.SELLER_EMAIL   ?? "info@vytlacto3d.sk",
     phone:   process.env.SELLER_PHONE   ?? "",
