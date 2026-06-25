@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { forwardRef, useImperativeHandle, useRef, useState } from "react";
 import { upload } from "@vercel/blob/client";
 
 type Uploaded = {
@@ -15,14 +15,17 @@ type Uploaded = {
   };
 };
 
-export default function UploadBox({
-  onUploaded,
-  onUploadingChange,
-}: {
+export type UploadBoxHandle = { triggerOpen: () => void };
+
+const UploadBox = forwardRef<UploadBoxHandle, {
   onUploaded: (data: Uploaded) => void;
   onUploadingChange?: (value: boolean) => void;
-}) {
+}>(function UploadBox({ onUploaded, onUploadingChange }, ref) {
   const inputRef = useRef<HTMLInputElement | null>(null);
+
+  useImperativeHandle(ref, () => ({
+    triggerOpen: () => inputRef.current?.click(),
+  }));
   const [dragging, setDragging] = useState(false);
   const [error, setError] = useState<string>("");
   const [svgThicknessMm, setSvgThicknessMm] = useState(10);
@@ -259,4 +262,6 @@ export default function UploadBox({
       )}
     </div>
   );
-}
+});
+
+export default UploadBox;

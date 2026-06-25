@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
-import UploadBox from "@/components/UploadBox";
+import UploadBox, { UploadBoxHandle } from "@/components/UploadBox";
 import Configurator, { ConfigState } from "@/components/Configurator";
 import StlViewer from "@/components/StlViewer";
 import CartSidebar from "@/components/CartSidebar";
@@ -59,6 +59,7 @@ type PacketaPoint = {
 
 export default function Home() {
   const { setCartCount, isCartOpen: cartOpen, openCart, closeCart } = useCartUi();
+  const uploadBoxRef = useRef<UploadBoxHandle>(null);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [activeItemId, setActiveItemId] = useState<string | null>(null);
   const [uploadLoading, setUploadLoading] = useState(false);
@@ -598,8 +599,8 @@ export default function Home() {
           </div>
 
           <div className="mt-6 space-y-4">
-            {/* Upload box — shown when no active item */}
-            {!activeItem && (
+            {/* Upload box — always mounted, hidden when active item exists */}
+            <div className={activeItem ? "hidden" : ""}>
               <div className="rounded-3xl border border-neutral-200 bg-neutral-50 p-5">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-black text-sm font-bold text-white">1</div>
@@ -609,6 +610,7 @@ export default function Home() {
                   </div>
                 </div>
                 <UploadBox
+                  ref={uploadBoxRef}
                   onUploadingChange={setUploadLoading}
                   onUploaded={(u) => addToCart(u)}
                 />
@@ -624,7 +626,7 @@ export default function Home() {
                   </div>
                 )}
               </div>
-            )}
+            </div>
 
             {/* Active item: viewer + configurator */}
             {activeItem && scaledAnalysis && (
@@ -679,16 +681,35 @@ export default function Home() {
                   />
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => setActiveItemId(null)}
-                  className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-neutral-300 bg-neutral-50 px-5 py-4 text-sm font-semibold text-neutral-600 transition hover:border-[#FFAE00] hover:bg-[#FFAE00]/5 hover:text-neutral-900"
-                >
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
-                    <line x1="8" y1="2" x2="8" y2="14"/><line x1="2" y1="8" x2="14" y2="8"/>
-                  </svg>
-                  Pridať ďalší model
-                </button>
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      uploadBoxRef.current?.triggerOpen();
+                      setActiveItemId(null);
+                    }}
+                    className="flex flex-1 items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-neutral-300 bg-neutral-50 px-5 py-4 text-sm font-semibold text-neutral-600 transition hover:border-[#FFAE00] hover:bg-[#FFAE00]/5 hover:text-neutral-900"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+                      <line x1="8" y1="2" x2="8" y2="14"/><line x1="2" y1="8" x2="14" y2="8"/>
+                    </svg>
+                    Pridať ďalší model
+                  </button>
+
+                  {cartItems.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={openCart}
+                      className="flex items-center justify-center gap-2 rounded-2xl bg-[#FFAE00] px-6 py-4 text-sm font-extrabold text-black shadow-sm transition hover:bg-[#e09d00]"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
+                        <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+                      </svg>
+                      Objednať
+                    </button>
+                  )}
+                </div>
               </>
             )}
           </div>
