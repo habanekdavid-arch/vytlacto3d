@@ -35,17 +35,14 @@ export default async function InvoicePrintPage({
   });
   if (!invoice) redirect("/admin/orders");
 
-  const seller      = invoice.sellerSnapshot  as Record<string, any>;
-  const customer    = invoice.customerSnapshot as Record<string, any>;
-  const items       = invoice.items            as Array<Record<string, any>>;
-  const delivery    = invoice.deliveryAddress  as Record<string, any> | null;
-  const isCN        = invoice.type === "CREDIT_NOTE";
-  const deliveredAt = invoice.deliveredAt ?? invoice.issuedAt;
-  const paymentMethod: string = customer.paymentMethod ?? "CARD";
+  const seller   = invoice.sellerSnapshot  as Record<string, any>;
+  const customer = invoice.customerSnapshot as Record<string, any>;
+  const items    = invoice.items            as Array<Record<string, any>>;
+  const isCN     = invoice.type === "CREDIT_NOTE";
 
   return (
     <>
-      {/* ── toolbar – hidden on print ── */}
+      {/* Toolbar — skrytý pri tlači */}
       <div className="print:hidden flex items-center gap-3 bg-neutral-50 border-b border-neutral-200 px-6 py-3">
         <a
           href={`/admin/orders/${invoice.orderId}`}
@@ -61,230 +58,202 @@ export default async function InvoicePrintPage({
         )}
       </div>
 
-      {/* ── A4 invoice ── */}
+      {/* A4 faktúra — garantovaná jedna strana */}
       <div
         id="invoice"
         className="mx-auto bg-white text-neutral-900"
-        style={{ width: "210mm", minHeight: "297mm", maxHeight: "297mm", padding: "10mm 14mm 8mm", fontSize: "11px" }}
+        style={{
+          width: "210mm",
+          height: "297mm",
+          maxHeight: "297mm",
+          padding: "8mm 12mm 6mm",
+          boxSizing: "border-box",
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
+          fontFamily: "Arial, Helvetica, sans-serif",
+        }}
       >
-
-        {/* Header row */}
-        <div className="flex items-start justify-between">
+        {/* ─── HLAVIČKA ─── */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
           <div>
-            <p className="text-[20px] font-extrabold tracking-tight leading-tight">
+            <p style={{ fontSize: 20, fontWeight: 900, letterSpacing: -0.5, margin: 0, lineHeight: 1.1 }}>
               {isCN ? "DOBROPIS" : "FAKTÚRA"}
             </p>
-            <p className="text-[10px] text-neutral-500 mt-0.5">
-              {isCN ? "Dobropis – daňový doklad" : "Daňový doklad"}
+            <p style={{ fontSize: 9, color: "#888", margin: "2px 0 0" }}>
+              {isCN ? "Dobropis – daňový doklad" : "Daňový doklad – §74 zákona č. 222/2004 Z.z."}
             </p>
             {isCN && invoice.creditNoteFor && (
-              <p className="text-[10px] text-neutral-500">
-                k faktúre č.&nbsp;<strong>{invoice.creditNoteFor.invoiceNumber}</strong>
+              <p style={{ fontSize: 9, color: "#888", margin: "1px 0 0" }}>
+                k faktúre č. <strong>{invoice.creditNoteFor.invoiceNumber}</strong>
               </p>
             )}
           </div>
-          <div className="text-right">
-            <p className="text-[20px] font-extrabold text-[#FFAE00]">VytlacTo3D</p>
+          <div style={{ textAlign: "right" }}>
+            <p style={{ fontSize: 20, fontWeight: 900, color: "#FFAE00", margin: 0 }}>VytlačTo3D</p>
+            <p style={{ fontSize: 9, color: "#aaa", margin: "2px 0 0" }}>vytlacto3d.sk</p>
             {invoice.isTest && (
-              <p className="text-[9px] font-bold text-amber-600 mt-0.5">TESTOVACÍ DOKLAD</p>
+              <p style={{ fontSize: 8, fontWeight: 700, color: "#d97706", margin: "2px 0 0" }}>TESTOVACÍ DOKLAD</p>
             )}
           </div>
         </div>
 
-        {/* Metadata strip */}
-        <div className="mt-3 flex flex-wrap gap-4 rounded-xl bg-neutral-50 px-4 py-3 text-[10px]">
-          <div>
-            <p className="text-neutral-400 font-semibold uppercase tracking-wide text-[9px]">Číslo dokladu</p>
-            <p className="font-extrabold text-[13px] text-neutral-900 mt-0.5">{invoice.invoiceNumber}</p>
-          </div>
-          {invoice.order?.orderNumber && (
-            <div>
-              <p className="text-neutral-400 font-semibold uppercase tracking-wide text-[9px]">Č. objednávky</p>
-              <p className="font-semibold text-neutral-700 mt-0.5">{invoice.order.orderNumber}</p>
+        {/* ─── METADATA PRUH ─── */}
+        <div style={{
+          marginTop: 8, display: "flex", gap: 20, flexWrap: "wrap",
+          background: "#f9f9f9", borderRadius: 8, padding: "6px 12px",
+          fontSize: 8.5,
+        }}>
+          {[
+            { label: "Číslo dokladu", value: invoice.invoiceNumber, bold: true, large: true },
+            invoice.order?.orderNumber ? { label: "Č. objednávky", value: String(invoice.order.orderNumber) } : null,
+            { label: "Dátum vystavenia", value: date(invoice.issuedAt) },
+            { label: "Dátum dodania", value: date(invoice.issuedAt) },
+            { label: "Dátum splatnosti", value: date(invoice.dueAt), bold: true },
+            invoice.variableSymbol ? { label: "Variabilný symbol", value: String(invoice.variableSymbol), bold: true, mono: true } : null,
+          ].filter(Boolean).map((item: any, i) => (
+            <div key={i}>
+              <p style={{ color: "#999", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.3, margin: 0, fontSize: 7.5 }}>{item.label}</p>
+              <p style={{ fontWeight: item.bold ? 800 : 600, fontSize: item.large ? 12 : 9, margin: "1px 0 0", fontFamily: item.mono ? "monospace" : "inherit", color: "#111" }}>{item.value}</p>
             </div>
-          )}
-          <div>
-            <p className="text-neutral-400 font-semibold uppercase tracking-wide text-[9px]">Dátum vystavenia</p>
-            <p className="font-semibold text-neutral-700 mt-0.5">{date(invoice.issuedAt)}</p>
-          </div>
-          <div>
-            <p className="text-neutral-400 font-semibold uppercase tracking-wide text-[9px]">Dátum dodania</p>
-            <p className="font-semibold text-neutral-700 mt-0.5">{date(deliveredAt)}</p>
-          </div>
-          <div>
-            <p className="text-neutral-400 font-semibold uppercase tracking-wide text-[9px]">Dátum splatnosti</p>
-            <p className="font-extrabold text-neutral-900 mt-0.5">{date(invoice.dueAt)}</p>
-          </div>
-          {invoice.variableSymbol && (
-            <div>
-              <p className="text-neutral-400 font-semibold uppercase tracking-wide text-[9px]">Variabilný symbol</p>
-              <p className="font-extrabold text-[12px] font-mono text-neutral-900 mt-0.5">{invoice.variableSymbol}</p>
-            </div>
-          )}
+          ))}
         </div>
 
-        {/* Seller / Customer */}
-        <div className="mt-3 grid grid-cols-2 gap-6">
-          {/* Seller */}
+        {/* ─── DODÁVATEĽ / ODBERATEĽ ─── */}
+        <div style={{ marginTop: 8, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+          {/* Dodávateľ */}
           <div>
-            <p className="text-[9px] font-bold uppercase tracking-widest text-neutral-400 mb-1.5">Dodávateľ</p>
-            <p className="font-extrabold text-[12px]">{seller.name}</p>
-            {seller.street  && <p className="text-[10px] text-neutral-600 mt-0.5">{seller.street}</p>}
-            {(seller.zip || seller.city) && (
-              <p className="text-[10px] text-neutral-600">{[seller.zip, seller.city].filter(Boolean).join(" ")}</p>
-            )}
-            {seller.country && <p className="text-[10px] text-neutral-600">{seller.country}</p>}
-            <div className="mt-1.5 text-[10px] text-neutral-600 space-y-0.5">
-              {seller.ico   && <p>IČO: <span className="font-semibold">{seller.ico}</span></p>}
-              {seller.dic   && <p>DIČ: <span className="font-semibold">{seller.dic}</span></p>}
-              {seller.icDph && <p>IČ DPH: <span className="font-semibold">{seller.icDph}</span></p>}
-              <p>info@4frommedia.sk</p>
+            <p style={{ fontSize: 7.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, color: "#aaa", margin: "0 0 3px" }}>Dodávateľ</p>
+            <p style={{ fontSize: 10.5, fontWeight: 800, margin: 0 }}>{seller.name}</p>
+            {seller.street  && <p style={{ fontSize: 8.5, color: "#555", margin: "1px 0 0" }}>{seller.street}</p>}
+            {(seller.zip || seller.city) && <p style={{ fontSize: 8.5, color: "#555", margin: 0 }}>{[seller.zip, seller.city].filter(Boolean).join(" ")}</p>}
+            {seller.country && <p style={{ fontSize: 8.5, color: "#555", margin: 0 }}>{seller.country}</p>}
+            <div style={{ marginTop: 4, fontSize: 8.5, color: "#555", lineHeight: 1.5 }}>
+              {seller.ico   && <p style={{ margin: 0 }}>IČO: <strong>{seller.ico}</strong></p>}
+              {seller.dic   && <p style={{ margin: 0 }}>DIČ: <strong>{seller.dic}</strong></p>}
+              {seller.icDph && <p style={{ margin: 0 }}>IČ DPH: <strong>{seller.icDph}</strong></p>}
+              {seller.iban  && <p style={{ margin: 0 }}>IBAN: <strong>{seller.iban}</strong></p>}
+              {seller.swift && <p style={{ margin: 0 }}>SWIFT: <strong>{seller.swift}</strong></p>}
+              {seller.bank  && <p style={{ margin: 0 }}>{seller.bank}</p>}
+              <p style={{ margin: 0 }}>info@4frommedia.sk</p>
             </div>
           </div>
 
-          {/* Customer */}
+          {/* Odberateľ */}
           <div>
-            <p className="text-[9px] font-bold uppercase tracking-widest text-neutral-400 mb-1.5">Odberateľ</p>
-            <p className="font-extrabold text-[12px]">
-              {customer.companyName ?? customer.name ?? "—"}
-            </p>
-            {customer.companyName && customer.name && (
-              <p className="text-[10px] text-neutral-500">{customer.name}</p>
-            )}
-            {customer.street && <p className="text-[10px] text-neutral-600 mt-0.5">{customer.street}</p>}
-            {(customer.zip || customer.city) && (
-              <p className="text-[10px] text-neutral-600">{[customer.zip, customer.city].filter(Boolean).join(" ")}</p>
-            )}
-            {customer.country && <p className="text-[10px] text-neutral-600">{customer.country}</p>}
-            <div className="mt-1.5 text-[10px] text-neutral-600 space-y-0.5">
-              {customer.email && <p>{customer.email}</p>}
-              {customer.phone && <p>{customer.phone}</p>}
-              {customer.ico   && <p>IČO: <span className="font-semibold">{customer.ico}</span></p>}
-              {customer.dic   && <p>DIČ: <span className="font-semibold">{customer.dic}</span></p>}
-              {customer.icDph && <p>IČ DPH: <span className="font-semibold">{customer.icDph}</span></p>}
+            <p style={{ fontSize: 7.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, color: "#aaa", margin: "0 0 3px" }}>Odberateľ</p>
+            <p style={{ fontSize: 10.5, fontWeight: 800, margin: 0 }}>{customer.companyName ?? customer.name ?? "—"}</p>
+            {customer.companyName && customer.name && <p style={{ fontSize: 8.5, color: "#777", margin: "1px 0 0" }}>{customer.name}</p>}
+            {customer.street && <p style={{ fontSize: 8.5, color: "#555", margin: "1px 0 0" }}>{customer.street}</p>}
+            {(customer.zip || customer.city) && <p style={{ fontSize: 8.5, color: "#555", margin: 0 }}>{[customer.zip, customer.city].filter(Boolean).join(" ")}</p>}
+            {customer.country && <p style={{ fontSize: 8.5, color: "#555", margin: 0 }}>{customer.country}</p>}
+            <div style={{ marginTop: 4, fontSize: 8.5, color: "#555", lineHeight: 1.5 }}>
+              {customer.email && <p style={{ margin: 0 }}>{customer.email}</p>}
+              {customer.phone && <p style={{ margin: 0 }}>{customer.phone}</p>}
+              {customer.ico   && <p style={{ margin: 0 }}>IČO: <strong>{customer.ico}</strong></p>}
+              {customer.dic   && <p style={{ margin: 0 }}>DIČ: <strong>{customer.dic}</strong></p>}
+              {customer.icDph && <p style={{ margin: 0 }}>IČ DPH: <strong>{customer.icDph}</strong></p>}
             </div>
           </div>
         </div>
 
-        {/* Miesto dodania */}
-        {delivery?.street && (
-          <div className="mt-2 rounded-xl border border-neutral-100 bg-neutral-50 px-4 py-2 text-[10px]">
-            <span className="font-bold text-neutral-500 uppercase tracking-wide text-[9px]">Miesto dodania: </span>
-            <span className="text-neutral-700">
-              {[delivery.street, delivery.zip, delivery.city, delivery.country].filter(Boolean).join(", ")}
-            </span>
-          </div>
-        )}
-
-        {/* Items table */}
-        <table className="mt-3 w-full border-collapse text-[10px]">
+        {/* ─── TABUĽKA POLOŽIEK ─── */}
+        <table style={{ marginTop: 10, width: "100%", borderCollapse: "collapse", fontSize: 8.5 }}>
           <thead>
-            <tr className="border-b-2 border-neutral-900">
-              <th className="pb-1.5 text-left font-bold text-neutral-700">Popis</th>
-              <th className="pb-1.5 text-right font-bold text-neutral-700 w-8">Ks</th>
-              <th className="pb-1.5 text-right font-bold text-neutral-700 w-24">Jedn. cena</th>
-              <th className="pb-1.5 text-right font-bold text-neutral-700 w-10">DPH</th>
-              <th className="pb-1.5 text-right font-bold text-neutral-700 w-24">Základ</th>
-              <th className="pb-1.5 text-right font-bold text-neutral-700 w-24">Spolu</th>
+            <tr style={{ borderBottom: "2px solid #111" }}>
+              <th style={{ textAlign: "left", padding: "3px 6px 3px 0", fontWeight: 700, color: "#444" }}>Popis tovaru / služby</th>
+              <th style={{ textAlign: "right", padding: "3px 0", fontWeight: 700, color: "#444", width: 28 }}>Ks</th>
+              <th style={{ textAlign: "right", padding: "3px 0", fontWeight: 700, color: "#444", width: 72 }}>Jedn. cena</th>
+              <th style={{ textAlign: "right", padding: "3px 0", fontWeight: 700, color: "#444", width: 36 }}>DPH</th>
+              <th style={{ textAlign: "right", padding: "3px 0", fontWeight: 700, color: "#444", width: 72 }}>Základ DPH</th>
+              <th style={{ textAlign: "right", padding: "3px 0", fontWeight: 700, color: "#444", width: 72 }}>Cena s DPH</th>
             </tr>
           </thead>
           <tbody>
             {items.map((item, i) => (
-              <tr key={i} className="border-b border-neutral-100">
-                <td className="py-1.5 pr-3 text-neutral-800">{item.description}</td>
-                <td className="py-1.5 text-right text-neutral-600">{item.quantity}</td>
-                <td className="py-1.5 text-right text-neutral-600">{eur(item.unitNet)}</td>
-                <td className="py-1.5 text-right text-neutral-500">{item.vatRate} %</td>
-                <td className="py-1.5 text-right text-neutral-600">{eur(item.totalNet)}</td>
-                <td className="py-1.5 text-right font-semibold">{eur(item.totalGross)}</td>
+              <tr key={i} style={{ borderBottom: "1px solid #f0f0f0" }}>
+                <td style={{ padding: "4px 6px 4px 0", color: "#333", maxWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.description}</td>
+                <td style={{ textAlign: "right", padding: "4px 0", color: "#555" }}>{item.quantity}</td>
+                <td style={{ textAlign: "right", padding: "4px 0", color: "#555" }}>{eur(item.unitNet)}</td>
+                <td style={{ textAlign: "right", padding: "4px 0", color: "#777" }}>{item.vatRate} %</td>
+                <td style={{ textAlign: "right", padding: "4px 0", color: "#555" }}>{eur(item.totalNet)}</td>
+                <td style={{ textAlign: "right", padding: "4px 0", fontWeight: 600 }}>{eur(item.totalGross)}</td>
               </tr>
             ))}
           </tbody>
         </table>
 
-        {/* Totals */}
-        <div className="mt-3 flex justify-end">
-          <div className="w-60 text-[10px]">
-            <div className="flex justify-between py-1 text-neutral-600 border-b border-neutral-100">
+        {/* ─── MEDZERA (flex-grow zatlačí zvyšok dolu) ─── */}
+        <div style={{ flex: 1 }} />
+
+        {/* ─── SÚČTY ─── */}
+        <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 6 }}>
+          <div style={{ width: 220, fontSize: 8.5 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", padding: "3px 0", borderBottom: "1px solid #eee", color: "#555" }}>
               <span>Základ DPH 23 %</span>
               <span>{eur(invoice.totalNet)}</span>
             </div>
-            <div className="flex justify-between py-1 text-neutral-600 border-b border-neutral-100">
+            <div style={{ display: "flex", justifyContent: "space-between", padding: "3px 0", borderBottom: "1px solid #eee", color: "#555" }}>
               <span>DPH 23 %</span>
               <span>{eur(invoice.totalVat)}</span>
             </div>
-            <div className="flex justify-between pt-2 text-[13px] font-extrabold text-neutral-900">
-              <span>Celková suma</span>
+            <div style={{ display: "flex", justifyContent: "space-between", padding: "5px 0 0", fontSize: 13, fontWeight: 900, color: "#111" }}>
+              <span>CELKOM K ÚHRADE</span>
               <span>{eur(invoice.totalGross)}</span>
             </div>
           </div>
         </div>
 
-        {/* Platobné údaje */}
-        {(seller.iban || seller.swift) && (
-          <div className="mt-3 rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-[10px]">
-            <div className="flex flex-wrap gap-x-5 gap-y-1 text-neutral-600">
-              <div>
-                <span className="font-semibold text-neutral-500">Spôsob úhrady: </span>
-                <span>{paymentMethod === "TRANSFER" ? "Bankový prevod" : "Platobná karta"}</span>
-              </div>
-              {seller.iban && (
-                <div>
-                  <span className="font-semibold text-neutral-500">IBAN: </span>
-                  <span className="font-mono font-semibold">{seller.iban}</span>
-                </div>
-              )}
-              {seller.swift && (
-                <div>
-                  <span className="font-semibold text-neutral-500">SWIFT/BIC: </span>
-                  <span className="font-mono font-semibold">{seller.swift}</span>
-                </div>
-              )}
-              {seller.bank && (
-                <div>
-                  <span className="font-semibold text-neutral-500">Banka: </span>
-                  <span>{seller.bank}</span>
-                </div>
-              )}
-              {invoice.variableSymbol && (
-                <div>
-                  <span className="font-semibold text-neutral-500">VS: </span>
-                  <span className="font-mono font-semibold">{invoice.variableSymbol}</span>
-                </div>
-              )}
-            </div>
+        {/* ─── PLATOBNÉ ÚDAJE ─── */}
+        {(seller.iban || customer.paymentMethod) && (
+          <div style={{
+            marginTop: 8, background: "#f9f9f9", borderRadius: 6,
+            padding: "6px 12px", fontSize: 8.5, color: "#555",
+            display: "flex", flexWrap: "wrap", gap: "4px 20px",
+          }}>
+            <span><strong>Spôsob úhrady:</strong> {customer.paymentMethod === "TRANSFER" ? "Bankový prevod" : "Platobná karta"}</span>
+            {seller.iban  && <span>IBAN: <strong style={{ fontFamily: "monospace" }}>{seller.iban}</strong></span>}
+            {seller.swift && <span>SWIFT: <strong>{seller.swift}</strong></span>}
+            {seller.bank  && <span>{seller.bank}</span>}
+            {invoice.variableSymbol && (
+              <span>VS: <strong style={{ fontFamily: "monospace" }}>{invoice.variableSymbol}</strong></span>
+            )}
           </div>
         )}
 
-        {/* Note */}
+        {/* ─── POZNÁMKA ─── */}
         {invoice.note && (
-          <div className="mt-2 text-[10px] text-neutral-500 italic">{invoice.note}</div>
+          <p style={{ marginTop: 5, fontSize: 8, color: "#888", fontStyle: "italic" }}>{invoice.note}</p>
         )}
 
-        {/* Footer */}
-        <div className="mt-4 border-t border-neutral-200 pt-2.5 text-[8px] text-neutral-400">
-          <div className="flex justify-between">
-            <span>
-              Daňový doklad vystavený v zmysle §74 zákona č. 222/2004 Z.z. o dani z pridanej hodnoty.
-            </span>
-            <span className="text-right">
-              <span>info@4frommedia.sk</span>
-              {seller.phone && <span> · {seller.phone}</span>}
-            </span>
-          </div>
-          <div className="mt-0.5 text-neutral-300">
-            Tovar/služba bola dodaná dňom uvedeným v poli „Dátum dodania".
-            Faktúra je splatná do dátumu uvedeného v poli „Dátum splatnosti".
-          </div>
+        {/* ─── FOOTER ─── */}
+        <div style={{ marginTop: 6, borderTop: "1px solid #e5e5e5", paddingTop: 5, display: "flex", justifyContent: "space-between", fontSize: 7.5, color: "#bbb" }}>
+          <span>Daňový doklad vystavený v zmysle §74 zákona č. 222/2004 Z.z. o dani z pridanej hodnoty.</span>
+          <span>info@4frommedia.sk</span>
         </div>
       </div>
 
       <style dangerouslySetInnerHTML={{ __html: `
         @media print {
-          @page { size: A4 portrait; margin: 0; }
-          body  { margin: 0; }
-          #invoice { page-break-inside: avoid; }
+          @page {
+            size: A4 portrait;
+            margin: 0;
+          }
+          html, body {
+            margin: 0;
+            padding: 0;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
           .print\\:hidden { display: none !important; }
+          #invoice {
+            width: 210mm !important;
+            height: 297mm !important;
+            max-height: 297mm !important;
+            overflow: hidden !important;
+            page-break-after: avoid;
+            page-break-inside: avoid;
+          }
         }
       ` }} />
     </>
