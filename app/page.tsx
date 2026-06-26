@@ -731,20 +731,6 @@ export default function Home() {
                 </div>
 
                 <div className="flex gap-3">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      uploadBoxRef.current?.triggerOpen();
-                      setActiveItemId(null);
-                    }}
-                    className="flex flex-[3] items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-neutral-300 bg-neutral-50 px-4 py-4 text-sm font-semibold text-neutral-600 transition hover:border-[#FFAE00] hover:bg-[#FFAE00]/5 hover:text-neutral-900"
-                  >
-                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
-                      <line x1="8" y1="2" x2="8" y2="14"/><line x1="2" y1="8" x2="14" y2="8"/>
-                    </svg>
-                    Pridať model
-                  </button>
-
                   {cartItems.length > 0 && (
                     <button
                       type="button"
@@ -758,6 +744,20 @@ export default function Home() {
                       Objednať
                     </button>
                   )}
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      uploadBoxRef.current?.triggerOpen();
+                      setActiveItemId(null);
+                    }}
+                    className="flex flex-[3] items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-neutral-300 bg-neutral-50 px-4 py-4 text-sm font-semibold text-neutral-600 transition hover:border-[#FFAE00] hover:bg-[#FFAE00]/5 hover:text-neutral-900"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+                      <line x1="8" y1="2" x2="8" y2="14"/><line x1="2" y1="8" x2="14" y2="8"/>
+                    </svg>
+                    Pridať model
+                  </button>
                 </div>
               </>
             )}
