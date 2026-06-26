@@ -153,3 +153,42 @@ model Invoice {
   @@index([orderId])
   @@index([invoiceNumber])
 }
+
+model BlogPost {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  published   Boolean  @default(true)
+
+  slug        String   @unique
+  title       String
+  subtitle    String
+  description String
+  image       String
+  publishedAt String
+  readingTime String
+  featured    Boolean  @default(false)
+  sections    Json
+  cta         String?
+}
+
+model Realizacia {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  published   Boolean  @default(true)
+
+  slug        String   @unique
+  title       String
+  subtitle    String
+  description String
+  image       String
+  category    String
+  year        String
+  material    String
+  size        String
+  leadTime    String
+  seoKeywords Json
+  featured    Boolean  @default(false)
+  content     Json
+}

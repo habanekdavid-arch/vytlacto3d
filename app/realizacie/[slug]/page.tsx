@@ -1,13 +1,14 @@
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getRealization, realizacie } from "@/lib/realizacie";
+import { prisma } from "@/lib/prisma";
 
-export async function generateStaticParams() {
-  return realizacie.map((item) => ({
-    slug: item.slug,
-  }));
-}
+export const dynamic = "force-dynamic";
+
+type ContentSection = {
+  heading: string;
+  paragraphs: string[];
+};
 
 export async function generateMetadata({
   params,
@@ -15,24 +16,20 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const project = getRealization(slug);
+  const project = await prisma.realizacia.findUnique({ where: { slug } });
 
-  if (!project) {
-    return {
-      title: "Realizácia nenájdená | VytlačTo3D",
-    };
-  }
+  if (!project) return { title: "Realizácia nenájdená | VytlačTo3D" };
 
   return {
-  title: `${project.title} | Realizácie VytlačTo3D`,
-  description: project.description,
-  keywords: project.seoKeywords,
-  openGraph: {
-    title: project.title,
+    title: `${project.title} | Realizácie VytlačTo3D`,
     description: project.description,
-    images: [project.image],
-  },
-};
+    keywords: project.seoKeywords as string[],
+    openGraph: {
+      title: project.title,
+      description: project.description,
+      images: [project.image],
+    },
+  };
 }
 
 export default async function RealizationDetailPage({
@@ -41,15 +38,17 @@ export default async function RealizationDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const project = getRealization(slug);
+  const project = await prisma.realizacia.findUnique({ where: { slug, published: true } });
 
-  if (!project) {
-    notFound();
-  }
+  if (!project) notFound();
 
-  const otherProjects = realizacie
-    .filter((item) => item.slug !== project.slug)
-    .slice(0, 3);
+  const otherProjects = await prisma.realizacia.findMany({
+    where: { published: true, slug: { not: slug } },
+    take: 3,
+    orderBy: { createdAt: "asc" },
+  });
+
+  const content = project.content as ContentSection[];
 
   return (
     <main className="mx-auto max-w-7xl px-6 py-12">
@@ -101,18 +100,15 @@ export default async function RealizationDetailPage({
 
         <section className="border-t border-neutral-200 px-6 py-12 md:px-12">
           <div className="mx-auto max-w-4xl space-y-12">
-            {project.content.map((section) => (
-              <section key={section.heading}>
+            {content.map((section, idx) => (
+              <section key={idx}>
                 <h2 className="text-3xl font-extrabold tracking-tight text-neutral-900">
                   {section.heading}
                 </h2>
 
                 <div className="mt-5 space-y-4">
-                  {section.paragraphs.map((paragraph, index) => (
-                    <p
-                      key={index}
-                      className="text-base leading-8 text-neutral-600"
-                    >
+                  {section.paragraphs.map((paragraph, i) => (
+                    <p key={i} className="text-base leading-8 text-neutral-600">
                       {paragraph}
                     </p>
                   ))}
@@ -123,56 +119,58 @@ export default async function RealizationDetailPage({
         </section>
       </article>
 
-      <section className="mt-16">
-        <div className="mb-6 flex items-end justify-between gap-4">
-          <div>
-            <div className="text-sm font-semibold text-[#FFAE00]">
-              Ďalšie realizácie
+      {otherProjects.length > 0 && (
+        <section className="mt-16">
+          <div className="mb-6 flex items-end justify-between gap-4">
+            <div>
+              <div className="text-sm font-semibold text-[#FFAE00]">
+                Ďalšie realizácie
+              </div>
+              <h2 className="mt-2 text-3xl font-extrabold tracking-tight">
+                Pozrite si aj ďalšie projekty
+              </h2>
             </div>
-            <h2 className="mt-2 text-3xl font-extrabold tracking-tight">
-              Pozrite si aj ďalšie projekty
-            </h2>
+
+            <Link
+              href="/realizacie"
+              className="hidden rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm font-bold text-neutral-900 shadow-sm transition hover:bg-neutral-50 md:inline-flex"
+            >
+              Všetky realizácie
+            </Link>
           </div>
 
-          <Link
-            href="/realizacie"
-            className="hidden rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm font-bold text-neutral-900 shadow-sm transition hover:bg-neutral-50 md:inline-flex"
-          >
-            Všetky realizácie
-          </Link>
-        </div>
-
-        <div className="grid gap-6 md:grid-cols-3">
-          {otherProjects.map((item) => (
-            <Link
-              key={item.slug}
-              href={`/realizacie/${item.slug}`}
-              className="group overflow-hidden rounded-3xl border border-neutral-200 bg-white shadow-sm transition duration-500 hover:-translate-y-2 hover:shadow-xl"
-            >
-              <div className="relative h-64">
-                <Image
-                  src={item.image}
-                  alt={item.title}
-                  fill
-                  className="object-cover transition duration-700 group-hover:scale-110"
-                />
-              </div>
-
-              <div className="p-5">
-                <div className="text-xs font-bold text-[#FFAE00]">
-                  {item.category}
+          <div className="grid gap-6 md:grid-cols-3">
+            {otherProjects.map((item) => (
+              <Link
+                key={item.slug}
+                href={`/realizacie/${item.slug}`}
+                className="group overflow-hidden rounded-3xl border border-neutral-200 bg-white shadow-sm transition duration-500 hover:-translate-y-2 hover:shadow-xl"
+              >
+                <div className="relative h-64">
+                  <Image
+                    src={item.image}
+                    alt={item.title}
+                    fill
+                    className="object-cover transition duration-700 group-hover:scale-110"
+                  />
                 </div>
-                <h3 className="mt-2 text-xl font-extrabold text-neutral-900">
-                  {item.title}
-                </h3>
-                <p className="mt-2 text-sm leading-6 text-neutral-600">
-                  {item.subtitle}
-                </p>
-              </div>
-            </Link>
-          ))}
-        </div>
-      </section>
+
+                <div className="p-5">
+                  <div className="text-xs font-bold text-[#FFAE00]">
+                    {item.category}
+                  </div>
+                  <h3 className="mt-2 text-xl font-extrabold text-neutral-900">
+                    {item.title}
+                  </h3>
+                  <p className="mt-2 text-sm leading-6 text-neutral-600">
+                    {item.subtitle}
+                  </p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
     </main>
   );
 }

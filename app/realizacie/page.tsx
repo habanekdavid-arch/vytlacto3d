@@ -1,6 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
-import { realizacie } from "@/lib/realizacie";
+import { prisma } from "@/lib/prisma";
+
+export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "Realizácie 3D tlače | VytlačTo3D",
@@ -8,7 +10,12 @@ export const metadata = {
     "Ukážky realizácií 3D tlače, prototypov, technických dielov, náhradných dielov a zákazkovej výroby na mieru.",
 };
 
-export default function RealizaciePage() {
+export default async function RealizaciePage() {
+  const realizacie = await prisma.realizacia.findMany({
+    where: { published: true },
+    orderBy: { createdAt: "asc" },
+  });
+
   return (
     <main className="mx-auto max-w-7xl px-6 py-12">
       <section className="mb-14 text-center">

@@ -1,6 +1,8 @@
 import Link from "next/link";
 import Image from "next/image";
-import { blogPosts } from "@/lib/blog-posts";
+import { prisma } from "@/lib/prisma";
+
+export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "Blog o 3D tlači",
@@ -8,9 +10,22 @@ export const metadata = {
     "Články o 3D tlači, cenách 3D tlače, materiáloch, STL súboroch a možnostiach výroby na mieru.",
 };
 
-export default function BlogPage() {
-  const featuredPost = blogPosts.find((post) => post.featured) ?? blogPosts[0];
-  const otherPosts = blogPosts.filter((post) => post.slug !== featuredPost.slug);
+export default async function BlogPage() {
+  const allPosts = await prisma.blogPost.findMany({
+    where: { published: true },
+    orderBy: { publishedAt: "desc" },
+  });
+
+  const featuredPost = allPosts.find((p) => p.featured) ?? allPosts[0];
+  const otherPosts = allPosts.filter((p) => p.id !== featuredPost?.id);
+
+  if (!featuredPost) {
+    return (
+      <main className="mx-auto max-w-6xl px-6 py-12">
+        <p className="text-neutral-500">Žiadne články.</p>
+      </main>
+    );
+  }
 
   return (
     <main className="mx-auto max-w-6xl px-6 py-12">
@@ -69,54 +84,56 @@ export default function BlogPage() {
         </Link>
       </section>
 
-      <section>
-        <h2 className="mb-6 text-2xl font-bold text-neutral-900 animate-fade-up" style={{ animationDelay: "160ms" }}>
-          Ďalšie články
-        </h2>
+      {otherPosts.length > 0 && (
+        <section>
+          <h2 className="mb-6 text-2xl font-bold text-neutral-900 animate-fade-up" style={{ animationDelay: "160ms" }}>
+            Ďalšie články
+          </h2>
 
-        <div className="grid gap-6 md:grid-cols-2">
-          {otherPosts.map((post, index) => (
-            <Link
-              key={post.slug}
-              href={`/blog/${post.slug}`}
-              className="group overflow-hidden rounded-3xl border border-neutral-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-neutral-300 hover:shadow-xl animate-fade-up"
-              style={{ animationDelay: `${220 + index * 80}ms` }}
-            >
-              <div className="relative h-56 overflow-hidden">
-                <Image
-                  src={post.image}
-                  alt={post.title}
-                  fill
-                  className="object-cover transition-transform duration-700 group-hover:scale-105"
-                />
-              </div>
-
-              <div className="p-6">
-                <h3 className="text-xl font-bold text-neutral-900 transition-colors duration-200 group-hover:text-[#FFAE00]">
-                  {post.title}
-                </h3>
-                <p className="mt-2 text-sm font-medium text-neutral-700">
-                  {post.subtitle}
-                </p>
-                <p className="mt-3 text-sm leading-relaxed text-neutral-600">
-                  {post.description}
-                </p>
-
-                <div className="mt-5 flex items-center justify-between">
-                  <div className="flex items-center gap-4 text-xs text-neutral-500">
-                    <span>{post.readingTime}</span>
-                    <span>•</span>
-                    <span>{post.publishedAt}</span>
-                  </div>
-                  <span className="inline-flex items-center gap-1 text-xs font-semibold text-neutral-400 transition-all duration-200 group-hover:gap-2 group-hover:text-neutral-700">
-                    Čítať <span className="transition-transform duration-200 group-hover:translate-x-0.5">→</span>
-                  </span>
+          <div className="grid gap-6 md:grid-cols-2">
+            {otherPosts.map((post, index) => (
+              <Link
+                key={post.slug}
+                href={`/blog/${post.slug}`}
+                className="group overflow-hidden rounded-3xl border border-neutral-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-neutral-300 hover:shadow-xl animate-fade-up"
+                style={{ animationDelay: `${220 + index * 80}ms` }}
+              >
+                <div className="relative h-56 overflow-hidden">
+                  <Image
+                    src={post.image}
+                    alt={post.title}
+                    fill
+                    className="object-cover transition-transform duration-700 group-hover:scale-105"
+                  />
                 </div>
-              </div>
-            </Link>
-          ))}
-        </div>
-      </section>
+
+                <div className="p-6">
+                  <h3 className="text-xl font-bold text-neutral-900 transition-colors duration-200 group-hover:text-[#FFAE00]">
+                    {post.title}
+                  </h3>
+                  <p className="mt-2 text-sm font-medium text-neutral-700">
+                    {post.subtitle}
+                  </p>
+                  <p className="mt-3 text-sm leading-relaxed text-neutral-600">
+                    {post.description}
+                  </p>
+
+                  <div className="mt-5 flex items-center justify-between">
+                    <div className="flex items-center gap-4 text-xs text-neutral-500">
+                      <span>{post.readingTime}</span>
+                      <span>•</span>
+                      <span>{post.publishedAt}</span>
+                    </div>
+                    <span className="inline-flex items-center gap-1 text-xs font-semibold text-neutral-400 transition-all duration-200 group-hover:gap-2 group-hover:text-neutral-700">
+                      Čítať <span className="transition-transform duration-200 group-hover:translate-x-0.5">→</span>
+                    </span>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
     </main>
   );
 }

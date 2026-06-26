@@ -1,12 +1,14 @@
 import Image from "next/image";
 import { notFound } from "next/navigation";
-import { blogPosts, getBlogPost } from "@/lib/blog-posts";
+import { prisma } from "@/lib/prisma";
 
-export async function generateStaticParams() {
-  return blogPosts.map((post) => ({
-    slug: post.slug,
-  }));
-}
+export const dynamic = "force-dynamic";
+
+type BlogSection = {
+  heading: string;
+  paragraphs?: string[];
+  bullets?: string[];
+};
 
 export async function generateMetadata({
   params,
@@ -14,13 +16,9 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const post = getBlogPost(slug);
+  const post = await prisma.blogPost.findUnique({ where: { slug } });
 
-  if (!post) {
-    return {
-      title: "Článok nenájdený",
-    };
-  }
+  if (!post) return { title: "Článok nenájdený" };
 
   return {
     title: `${post.title} | VytlačTo3D`,
@@ -39,11 +37,11 @@ export default async function BlogPostPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const post = getBlogPost(slug);
+  const post = await prisma.blogPost.findUnique({ where: { slug, published: true } });
 
-  if (!post) {
-    notFound();
-  }
+  if (!post) notFound();
+
+  const sections = post.sections as BlogSection[];
 
   return (
     <main className="mx-auto max-w-4xl px-6 py-12">
@@ -76,25 +74,22 @@ export default async function BlogPostPage({
           </div>
 
           <div className="mt-10 space-y-10">
-            {post.sections.map((section) => (
-              <section key={section.heading}>
+            {sections.map((section, idx) => (
+              <section key={idx}>
                 <h2 className="text-2xl font-bold tracking-tight text-neutral-900">
                   {section.heading}
                 </h2>
 
-                {section.paragraphs?.map((paragraph, index) => (
-                  <p
-                    key={index}
-                    className="mt-4 text-base leading-8 text-neutral-700"
-                  >
+                {section.paragraphs?.map((paragraph, i) => (
+                  <p key={i} className="mt-4 text-base leading-8 text-neutral-700">
                     {paragraph}
                   </p>
                 ))}
 
-                {section.bullets && (
+                {section.bullets && section.bullets.length > 0 && (
                   <ul className="mt-4 list-disc space-y-2 pl-6 text-base leading-8 text-neutral-700">
-                    {section.bullets.map((bullet, index) => (
-                      <li key={index}>{bullet}</li>
+                    {section.bullets.map((bullet, i) => (
+                      <li key={i}>{bullet}</li>
                     ))}
                   </ul>
                 )}
@@ -104,9 +99,7 @@ export default async function BlogPostPage({
 
           {post.cta ? (
             <div className="mt-12 rounded-2xl border border-[#FFAE00]/30 bg-[#FFAE00]/10 p-6">
-              <div className="text-lg font-bold text-neutral-900">
-                {post.cta}
-              </div>
+              <div className="text-lg font-bold text-neutral-900">{post.cta}</div>
             </div>
           ) : null}
         </div>

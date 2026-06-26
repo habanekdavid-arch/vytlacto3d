@@ -177,6 +177,12 @@ export default function AdminOrdersClient({
               {testEmailStatus === "sending" ? "Odosiela..." : testEmailStatus === "ok" ? "Email odoslaný ✓" : testEmailStatus === "error" ? "Chyba ✗" : "Testovací email"}
             </button>
             <a
+              href="/admin/cms"
+              className="rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50"
+            >
+              CMS
+            </a>
+            <a
               href="/"
               className="rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 shadow-sm hover:bg-neutral-50"
             >
