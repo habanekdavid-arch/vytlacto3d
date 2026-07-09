@@ -38,6 +38,13 @@ export async function POST(req: NextRequest) {
     const userId = sessionUser?.id ?? null;
     const sessionEmail = sessionUser?.email ?? null;
 
+    if (!userId) {
+      return NextResponse.json(
+        { error: "Platba prevodom je dostupná len pre prihlásených zákazníkov." },
+        { status: 401 }
+      );
+    }
+
     const dbUser = userId
       ? await prisma.user.findUnique({
           where: { id: userId },

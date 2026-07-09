@@ -15,6 +15,7 @@ import { CartItem, CartItemConfig, CartItemPricing } from "@/lib/types";
 import { formatPriceWithVat, formatEur, addVat } from "@/lib/vat";
 import { SHIPPING_RATES } from "@/lib/shipping";
 import { useCartUi } from "@/lib/cart-ui-context";
+import { CART_STORAGE_KEY } from "@/lib/cart-storage";
 
 type Uploaded = {
   fileKey: string;
@@ -57,6 +58,13 @@ type PacketaPoint = {
   country: string;
 };
 
+type StoredCart = {
+  cartItems: CartItem[];
+  activeItemId: string | null;
+  deliveryMethod: "packeta" | "courier";
+  packetaPoint: PacketaPoint | null;
+};
+
 export default function Home() {
   const { setCartCount, isCartOpen: cartOpen, openCart, closeCart } = useCartUi();
   const uploadBoxRef = useRef<UploadBoxHandle>(null);
@@ -73,6 +81,43 @@ export default function Home() {
   const [contactForm, setContactForm] = useState<ContactForm>(EMPTY_CONTACT);
   const [editingContact, setEditingContact] = useState(false);
   const [profileLoaded, setProfileLoaded] = useState(false);
+  const cartRestored = useRef(false);
+
+  // Restore cart from localStorage on mount so a page refresh doesn't
+  // silently wipe uploaded models mid-checkout.
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(CART_STORAGE_KEY);
+      if (raw) {
+        const stored: StoredCart = JSON.parse(raw);
+        if (Array.isArray(stored.cartItems) && stored.cartItems.length > 0) {
+          setCartItems(stored.cartItems);
+          setActiveItemId(stored.activeItemId ?? stored.cartItems[0].id);
+          if (stored.deliveryMethod) setDeliveryMethod(stored.deliveryMethod);
+          if (stored.packetaPoint) setPacketaPoint(stored.packetaPoint);
+        }
+      }
+    } catch {
+      // ignore corrupt/unavailable localStorage
+    } finally {
+      cartRestored.current = true;
+    }
+  }, []);
+
+  // Persist cart whenever it changes (after the initial restore above).
+  useEffect(() => {
+    if (!cartRestored.current) return;
+    try {
+      if (cartItems.length === 0) {
+        window.localStorage.removeItem(CART_STORAGE_KEY);
+        return;
+      }
+      const toStore: StoredCart = { cartItems, activeItemId, deliveryMethod, packetaPoint };
+      window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(toStore));
+    } catch {
+      // ignore quota/unavailable localStorage
+    }
+  }, [cartItems, activeItemId, deliveryMethod, packetaPoint]);
 
   useEffect(() => {
     if (sessionStatus !== "authenticated") return;
@@ -207,6 +252,7 @@ export default function Home() {
       let data: any = null;
       try { data = await res.json(); } catch { data = { error: "Parse error" }; }
       if (!res.ok) { alert(data.error || "Chyba pri vytváraní objednávky"); return; }
+      try { window.localStorage.removeItem(CART_STORAGE_KEY); } catch {}
       window.location.href = data.redirectUrl;
     } finally {
       setOrderLoading(false);
@@ -238,6 +284,10 @@ export default function Home() {
       let data: any = null;
       try { data = JSON.parse(text); } catch { data = { error: text }; }
       if (!res.ok) { alert(data.error || "Stripe error"); return; }
+      // Cart is intentionally left in localStorage here (not cleared) — if the
+      // customer cancels/backs out of Stripe, they land on /cancel and should
+      // be able to resume with their configured models still in the cart.
+      // It only gets cleared once /success confirms the order was paid.
       if (data.url) { window.location.href = data.url; }
       else { alert("Stripe session bez URL"); }
     } finally {
