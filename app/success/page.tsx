@@ -3,6 +3,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import SuccessAutoRefresh from "@/components/SuccessAutoRefresh";
 import ClearCartStorage from "@/components/ClearCartStorage";
+import GA4PurchaseEvent from "@/components/GA4PurchaseEvent";
 
 export const dynamic = "force-dynamic";
 
@@ -11,7 +12,17 @@ async function getVerifiedOrder(orderId?: string, sessionId?: string) {
 
   const order = await prisma.order.findUnique({
     where: { id: orderId },
-    select: { id: true, status: true, orderNumber: true, stripeSessionId: true },
+    select: {
+      id: true,
+      status: true,
+      orderNumber: true,
+      stripeSessionId: true,
+      paidTotalEur: true,
+      shippingCost: true,
+      orderItems: {
+        select: { fileName: true, config: true, pricing: true },
+      },
+    },
   });
 
   if (!order) return null;
@@ -35,6 +46,14 @@ async function SuccessContent({
   const isPending = order?.status === "PENDING";
   const isCancelled = order?.status === "CANCELLED";
   const isConfirmed = !!order && !isPending && !isCancelled;
+  // GA4 purchase must only fire once money has actually moved — AWAITING_TRANSFER
+  // is "confirmed" for display purposes but isn't a real payment yet.
+  const isPaid = order?.status === "PAID";
+
+  const shippingEur =
+    typeof (order?.shippingCost as any)?.amount === "number"
+      ? (order!.shippingCost as any).amount / 100
+      : null;
 
   return (
     <main className="min-h-screen bg-white px-6 py-16 text-neutral-900">
@@ -42,6 +61,16 @@ async function SuccessContent({
         {isConfirmed && (
           <>
             <ClearCartStorage />
+
+            {isPaid && (
+              <GA4PurchaseEvent
+                orderNumber={order?.orderNumber ?? null}
+                paidTotalEur={order?.paidTotalEur ?? null}
+                shippingEur={shippingEur}
+                items={(order?.orderItems ?? []) as unknown as { fileName: string; config: Record<string, any> | null; pricing: Record<string, any> | null }[]}
+              />
+            )}
+
             <div className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-green-100">
               <svg viewBox="0 0 24 24" fill="none" className="h-7 w-7" xmlns="http://www.w3.org/2000/svg">
                 <path d="M20 6L9 17L4 12" stroke="#16A34A" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
