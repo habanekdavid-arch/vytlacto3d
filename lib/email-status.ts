@@ -109,8 +109,14 @@ export async function sendOrderStatusEmail({
   fileName: string;
   status: string;
 }) {
-  if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) return;
-  if (!to) return;
+  if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
+    console.warn("Missing GMAIL credentials, order status email skipped.");
+    return;
+  }
+  if (!to) {
+    console.warn("Order status email skipped: no recipient address for order", orderId);
+    return;
+  }
 
   const content = getContent(status as OrderStatus, fileName, orderId);
   if (!content) return;

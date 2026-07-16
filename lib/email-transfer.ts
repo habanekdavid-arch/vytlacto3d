@@ -26,8 +26,14 @@ export async function sendTransferPaymentEmail({
   amount: number;
   variableSymbol: string;
 }) {
-  if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) return;
-  if (!to) return;
+  if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
+    console.warn("Missing GMAIL credentials, transfer payment email skipped.");
+    return;
+  }
+  if (!to) {
+    console.warn("Transfer payment email skipped: no recipient address for order", orderId);
+    return;
+  }
 
   const orderLabel = orderNumber ? `#${orderNumber}` : orderId.slice(0, 8);
   const link = `${baseUrl}/ucet/objednavky/${orderId}`;

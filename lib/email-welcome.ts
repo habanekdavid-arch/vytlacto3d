@@ -14,7 +14,10 @@ export async function sendWelcomeEmail({
   accountType?: string | null;
   companyName?: string | null;
 }) {
-  if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) return;
+  if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
+    console.warn("Missing GMAIL credentials, welcome email skipped.");
+    return;
+  }
 
   const isCompany = accountType === "COMPANY";
 

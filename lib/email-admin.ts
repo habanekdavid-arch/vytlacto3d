@@ -67,7 +67,10 @@ export async function sendAdminOrderNotificationEmail({
   pricing?: Record<string, any> | null;
   createdAt?: Date | null;
 }) {
-  if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) return;
+  if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
+    console.warn("Missing GMAIL credentials, admin order notification email skipped.");
+    return;
+  }
 
   const ref = orderNumber ?? orderId;
   const dateStr = createdAt
