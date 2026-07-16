@@ -6,7 +6,10 @@ const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://www.vytlacto3d.sk";
 const CONTACT = `
   <div style="margin-top:32px;border-top:1px solid #eee;padding-top:20px;font-size:13px;color:#777;line-height:1.7;">
     <strong style="color:#111;">VytlacTo3D</strong><br/>
-    Otazky? Napiszte nam: <a href="mailto:info@4frommedia.sk" style="color:#FFAE00;">info@4frommedia.sk</a><br/>
+    Otazky k platbe? ${COMPANY_INFO.contacts.administrativa.name}
+    (${COMPANY_INFO.contacts.administrativa.role}) —
+    <a href="mailto:${COMPANY_INFO.contacts.administrativa.email}" style="color:#FFAE00;">${COMPANY_INFO.contacts.administrativa.email}</a>,
+    ${COMPANY_INFO.contacts.administrativa.phone}<br/>
     <a href="${baseUrl}" style="color:#FFAE00;">www.vytlacto3d.sk</a>
   </div>
 `;
@@ -108,7 +111,8 @@ export async function sendTransferPaymentEmail({
         <p style="font-size:13px;color:#999;line-height:1.6;">
           Fakturacne udaje: ${COMPANY_INFO.name}, ${COMPANY_INFO.street},
           ${COMPANY_INFO.zip} ${COMPANY_INFO.city}<br/>
-          ICO: ${COMPANY_INFO.ico} &bull; DIC: ${COMPANY_INFO.dic} &bull; IC DPH: ${COMPANY_INFO.icDph}
+          ICO: ${COMPANY_INFO.ico} &bull; DIC: ${COMPANY_INFO.dic} &bull; IC DPH: ${COMPANY_INFO.icDph}<br/>
+          ${COMPANY_INFO.commercialRegister}
         </p>
 
         ${CONTACT}
