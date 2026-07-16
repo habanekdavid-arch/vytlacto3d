@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { formatEur, addVat, formatPaidTotal } from "@/lib/vat";
+import { COMPANY_INFO } from "@/lib/company-info";
 import { getSafeServerSession } from "@/lib/session";
 import { formatDateSK } from "@/lib/formatDate";
 import ResumeOrderButton from "@/components/ResumeOrderButton";
@@ -50,6 +51,7 @@ export default async function OrderDetailPage({
       shippingMethod: true,
       stripeSessionId: true,
       orderNumber: true,
+      variableSymbol: true,
       phone: true,
       orderItems: { orderBy: { createdAt: "asc" }, select: { id: true, fileName: true, config: true, pricing: true } },
     },
@@ -147,6 +149,34 @@ export default async function OrderDetailPage({
           />
         </div>
       </section>
+
+      {order.status === "AWAITING_TRANSFER" && (
+        <section className="rounded-3xl border border-[#FFAE00]/40 bg-[#FFF8E7] p-6 shadow-sm">
+          <div className="text-sm font-bold uppercase tracking-wide text-[#7a5800]">
+            Platobné údaje k úhrade prevodom
+          </div>
+          <p className="mt-2 text-sm text-[#7a5800]">
+            Uhraďte prosím sumu nižšie prevodom na náš účet. Výrobu spustíme
+            hneď po prijatí platby.
+          </p>
+          <div className="mt-4 grid gap-4 md:grid-cols-2">
+            <DetailCard label="Príjemca" value={COMPANY_INFO.name} />
+            <DetailCard label="IBAN" value={COMPANY_INFO.iban} />
+            <DetailCard label="SWIFT/BIC" value={COMPANY_INFO.swift} />
+            <DetailCard label="Banka" value={COMPANY_INFO.bankName} />
+            <DetailCard
+              label="Suma na úhradu"
+              value={total !== null ? formatEur(total) : "—"}
+              highlight
+            />
+            <DetailCard
+              label="Variabilný symbol"
+              value={order.variableSymbol ?? "—"}
+              highlight
+            />
+          </div>
+        </section>
+      )}
 
       {/* Multi-model: show individual items */}
       {order.orderItems.length > 1 && (

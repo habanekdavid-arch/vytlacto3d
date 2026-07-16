@@ -222,6 +222,8 @@ export async function POST(req: NextRequest) {
       } catch (err) {
         console.error("Transfer email failed:", err);
       }
+    } else {
+      console.warn("Transfer payment email skipped: no customer email for order", order.id);
     }
 
     const adminDeliveryAddr =

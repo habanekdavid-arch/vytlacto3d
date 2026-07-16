@@ -8,6 +8,11 @@ export const transporter = nodemailer.createTransport({
     user: process.env.GMAIL_USER,
     pass: process.env.GMAIL_APP_PASSWORD,
   },
+  // Fail fast instead of hanging near the serverless function's execution
+  // limit — a silent hang looks identical to "nothing happened" in the logs.
+  connectionTimeout: 10_000,
+  greetingTimeout: 10_000,
+  socketTimeout: 15_000,
 });
 
 export const FROM =

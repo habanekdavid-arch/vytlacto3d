@@ -30,12 +30,13 @@ export async function sendTransferPaymentEmail({
   variableSymbol: string;
 }) {
   if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
-    console.warn("Missing GMAIL credentials, transfer payment email skipped.");
-    return;
+    // Throw (rather than silently no-op) so callers — the checkout flow's
+    // try/catch, and the admin "resend" button — can actually see and log
+    // *why* the payment-details email never went out.
+    throw new Error("Missing GMAIL_USER/GMAIL_APP_PASSWORD — transfer payment email not sent.");
   }
   if (!to) {
-    console.warn("Transfer payment email skipped: no recipient address for order", orderId);
-    return;
+    throw new Error(`Transfer payment email has no recipient address (order ${orderId}).`);
   }
 
   const orderLabel = orderNumber ? `#${orderNumber}` : orderId.slice(0, 8);

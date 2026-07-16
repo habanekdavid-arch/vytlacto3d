@@ -59,7 +59,29 @@ export default function AdminOrdersClient({
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [changingId, setChangingId] = useState<string | null>(null);
   const [testEmailStatus, setTestEmailStatus] = useState<"idle" | "sending" | "ok" | "error">("idle");
+  const [resendingId, setResendingId] = useState<string | null>(null);
   const router = useRouter();
+
+  async function resendTransferEmail(orderId: string) {
+    setResendingId(orderId);
+    try {
+      const res = await fetch("/api/admin/resend-transfer-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId }),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        alert("Mail sa neodoslal: " + (d.error ?? "Neznáma chyba"));
+        return;
+      }
+      alert("Platobné údaje odoslané na " + d.to);
+    } catch {
+      alert("Sieťová chyba pri odosielaní mailu.");
+    } finally {
+      setResendingId(null);
+    }
+  }
 
   async function sendTestEmail() {
     setTestEmailStatus("sending");
@@ -382,13 +404,22 @@ export default function AdminOrdersClient({
                         </button>
                       )}
                       {order.status === "AWAITING_TRANSFER" && (
-                        <button
-                          onClick={() => handleStatusChange(order.id, "PAID")}
-                          disabled={changingId === order.id}
-                          className="w-full rounded-xl bg-green-600 px-3 py-2 text-xs font-bold text-white transition hover:bg-green-700 disabled:opacity-50"
-                        >
-                          {changingId === order.id ? "..." : "✓ Platba prijatá"}
-                        </button>
+                        <>
+                          <button
+                            onClick={() => resendTransferEmail(order.id)}
+                            disabled={resendingId === order.id}
+                            className="w-full rounded-xl border border-orange-300 bg-orange-50 px-3 py-2 text-xs font-bold text-orange-800 transition hover:bg-orange-100 disabled:opacity-50"
+                          >
+                            {resendingId === order.id ? "Odosielam..." : "Poslať znova platobné údaje"}
+                          </button>
+                          <button
+                            onClick={() => handleStatusChange(order.id, "PAID")}
+                            disabled={changingId === order.id}
+                            className="w-full rounded-xl bg-green-600 px-3 py-2 text-xs font-bold text-white transition hover:bg-green-700 disabled:opacity-50"
+                          >
+                            {changingId === order.id ? "..." : "✓ Platba prijatá"}
+                          </button>
+                        </>
                       )}
                       {order.status === "PAID" && (
                         <button
