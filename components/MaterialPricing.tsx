@@ -24,14 +24,6 @@ export default function MaterialPricing() {
       use: "Technické diely, teplotná odolnosť, pevnosť (náročnejšia tlač)",
       dot: "bg-gray-500",
     },
-    {
-      key: "TPU",
-      name: "TPU",
-      eurPerGram: 35 / 1000,
-      density: "1.21 g/cm³",
-      use: "Flexibilné/gumové diely, tlmenie nárazov, ochranné prvky",
-      dot: "bg-purple-500",
-    },
   ];
 
   return (

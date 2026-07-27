@@ -26,7 +26,7 @@ type Quote = {
 };
 
 export type ConfigState = {
-  material: "PLA" | "PETG" | "ABS" | "TPU";
+  material: "PLA" | "PETG" | "ABS";
   quality: "DRAFT" | "STANDARD" | "FINE";
   infillPct: number;
   color: string;
@@ -163,7 +163,6 @@ export default function Configurator({
             <option value="PLA">PLA</option>
             <option value="PETG">PETG</option>
             <option value="ABS">ABS</option>
-            <option value="TPU">TPU</option>
           </select>
         </Field>
 

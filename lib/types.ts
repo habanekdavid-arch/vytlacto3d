@@ -6,7 +6,7 @@ export type CartItemAnalysis = {
 };
 
 export type CartItemConfig = {
-  material: "PLA" | "PETG" | "ABS" | "TPU";
+  material: "PLA" | "PETG" | "ABS";
   quality: "DRAFT" | "STANDARD" | "FINE";
   infillPct: number;
   color: string;
