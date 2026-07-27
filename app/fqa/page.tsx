@@ -1,3 +1,5 @@
+import ContactForm from "@/components/ContactForm";
+
 export default function FaqPage() {
   const items = [
     {
@@ -82,6 +84,8 @@ export default function FaqPage() {
             </article>
           ))}
         </section>
+
+        <ContactForm />
       </div>
     </main>
   );
