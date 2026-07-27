@@ -11,12 +11,12 @@ function escapeHtml(value: string) {
 export async function sendContactFormEmail({
   name,
   email,
-  phone,
+  subject,
   message,
 }: {
   name: string;
   email: string;
-  phone?: string | null;
+  subject: string;
   message: string;
 }) {
   if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
@@ -35,7 +35,7 @@ export async function sendContactFormEmail({
         <table style="border-collapse:collapse;width:100%;margin-bottom:20px;">
           <tr><td style="padding:6px 12px 6px 0;color:#777;font-size:14px;white-space:nowrap;">Meno</td><td style="padding:6px 0;font-size:14px;color:#111;font-weight:600;">${escapeHtml(name)}</td></tr>
           <tr><td style="padding:6px 12px 6px 0;color:#777;font-size:14px;white-space:nowrap;">Email</td><td style="padding:6px 0;font-size:14px;color:#111;font-weight:600;">${escapeHtml(email)}</td></tr>
-          ${phone ? `<tr><td style="padding:6px 12px 6px 0;color:#777;font-size:14px;white-space:nowrap;">Telefón</td><td style="padding:6px 0;font-size:14px;color:#111;font-weight:600;">${escapeHtml(phone)}</td></tr>` : ""}
+          <tr><td style="padding:6px 12px 6px 0;color:#777;font-size:14px;white-space:nowrap;">Predmet</td><td style="padding:6px 0;font-size:14px;color:#111;font-weight:600;">${escapeHtml(subject)}</td></tr>
         </table>
 
         <div style="background:#fafafa;border:1px solid #eee;border-radius:14px;padding:16px 20px;">
@@ -54,7 +54,7 @@ export async function sendContactFormEmail({
     from: FROM,
     to,
     replyTo: email,
-    subject: `Kontaktný formulár: správa od ${name}`,
+    subject: `[Kontaktný formulár] ${subject}`,
     html,
   });
 }

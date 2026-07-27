@@ -123,6 +123,8 @@ export default function FaqPreview() {
           })}
         </div>
 
+        <ContactForm />
+
         <div className="mt-10 flex flex-wrap justify-center gap-3">
           <Link
             href="/blog"
@@ -138,8 +140,6 @@ export default function FaqPreview() {
             Prejsť na kalkulátor
           </Link>
         </div>
-
-        <ContactForm />
       </div>
     </section>
   );
