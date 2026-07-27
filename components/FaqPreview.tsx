@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import ContactForm from "@/components/ContactForm";
 
 const faqs = [
   {
@@ -137,6 +138,8 @@ export default function FaqPreview() {
             Prejsť na kalkulátor
           </Link>
         </div>
+
+        <ContactForm />
       </div>
     </section>
   );
