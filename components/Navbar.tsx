@@ -12,26 +12,24 @@ export default function Navbar() {
     <header className="sticky top-0 z-50 bg-white/90 shadow-[0_8px_30px_rgba(0,0,0,0.04)] backdrop-blur">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
         {/* LEFT */}
-        <Link href="/" className="flex shrink-0 items-center transition-opacity hover:opacity-80">
-          {/* Compact mark on small screens */}
+        <Link href="/" className="flex shrink-0 items-center gap-2.5 transition-opacity hover:opacity-80">
           <Image
             src="/web_icon.svg"
-            alt="VytlačTo3D"
+            alt=""
             width={36}
             height={36}
-            className="h-9 w-9 sm:hidden"
+            className="h-9 w-9"
             priority
           />
 
-          {/* Full wordmark on larger screens */}
-          <Image
-            src="/logo-vytlacto3d.jpg"
-            alt="VytlačTo3D – Online konfigurátor 3D tlače"
-            width={5672}
-            height={949}
-            className="hidden h-9 w-auto sm:block"
-            priority
-          />
+          <div className="leading-tight">
+            <div className="text-sm font-extrabold tracking-tight text-neutral-900">
+              VYTLAČTO<span className="text-[#FFAE00]">3D</span>
+            </div>
+            <div className="text-xs text-neutral-500">
+              Online konfigurátor 3D tlače
+            </div>
+          </div>
         </Link>
 
         {/* CENTER NAVIGATION */}
