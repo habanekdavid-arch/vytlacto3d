@@ -16,14 +16,14 @@ export default function Navbar() {
           <Image
             src="/web_icon.svg"
             alt=""
-            width={36}
-            height={36}
-            className="h-9 w-9"
+            width={48}
+            height={48}
+            className="h-12 w-12"
             priority
           />
 
           <div className="leading-tight">
-            <div className="text-sm font-extrabold tracking-tight text-neutral-900">
+            <div className="text-base font-black tracking-tight text-neutral-900">
               VYTLAČTO<span className="text-[#FFAE00]">3D</span>
             </div>
             <div className="text-xs text-neutral-500">
