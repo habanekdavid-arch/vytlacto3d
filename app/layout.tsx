@@ -60,6 +60,7 @@ export const metadata = {
 
   icons: {
     icon: "/favicon.ico",
+    apple: "/icon-320.png",
   },
 };
 

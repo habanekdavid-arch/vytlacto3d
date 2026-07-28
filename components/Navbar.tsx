@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import AccountButton from "@/components/AccountButton";
 import { useCartUi } from "@/lib/cart-ui-context";
 
@@ -11,20 +12,26 @@ export default function Navbar() {
     <header className="sticky top-0 z-50 bg-white/90 shadow-[0_8px_30px_rgba(0,0,0,0.04)] backdrop-blur">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
         {/* LEFT */}
-        <Link href="/" className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-black text-sm font-bold text-white">
-            3D
-          </div>
+        <Link href="/" className="flex shrink-0 items-center transition-opacity hover:opacity-80">
+          {/* Compact mark on small screens */}
+          <Image
+            src="/web_icon.svg"
+            alt="VytlačTo3D"
+            width={36}
+            height={36}
+            className="h-9 w-9 sm:hidden"
+            priority
+          />
 
-          <div>
-            <div className="text-sm font-bold text-neutral-900">
-              VytlačTo3D
-            </div>
-
-            <div className="text-xs text-neutral-500">
-              Online konfigurátor 3D tlače
-            </div>
-          </div>
+          {/* Full wordmark on larger screens */}
+          <Image
+            src="/logo-vytlacto3d.jpg"
+            alt="VytlačTo3D – Online konfigurátor 3D tlače"
+            width={5672}
+            height={949}
+            className="hidden h-9 w-auto sm:block"
+            priority
+          />
         </Link>
 
         {/* CENTER NAVIGATION */}
