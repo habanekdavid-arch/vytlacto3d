@@ -14,21 +14,18 @@ export default function Navbar() {
         {/* LEFT */}
         <Link href="/" className="flex shrink-0 items-center gap-2.5 transition-opacity hover:opacity-80">
           <Image
-            src="/web_icon_without_backgound.svg"
-            alt=""
-            width={48}
-            height={48}
-            className="h-12 w-12"
+            src="/logo-full.svg"
+            alt="VytlačTo3D"
+            width={6397}
+            height={1530}
+            className="h-9 w-auto"
             priority
           />
 
-          <div className="leading-tight">
-            <div className="text-base font-black tracking-tight text-neutral-900">
-              VYTLAČTO<span className="text-[#FFAE00]">3D</span>
-            </div>
-            <div className="text-xs text-neutral-500">
-              Online konfigurátor 3D tlače
-            </div>
+          <div className="hidden text-xs leading-tight text-neutral-500 sm:block">
+            Online konfigurátor
+            <br />
+            3D tlače
           </div>
         </Link>
 
