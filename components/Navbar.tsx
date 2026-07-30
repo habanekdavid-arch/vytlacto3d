@@ -14,7 +14,7 @@ export default function Navbar() {
         {/* LEFT */}
         <Link href="/" className="flex shrink-0 items-center gap-2.5 transition-opacity hover:opacity-80">
           <Image
-            src="/web_icon.svg"
+            src="/web_icon_without_backgound.svg"
             alt=""
             width={48}
             height={48}
