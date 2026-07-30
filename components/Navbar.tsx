@@ -12,7 +12,7 @@ export default function Navbar() {
     <header className="sticky top-0 z-50 bg-white/90 shadow-[0_8px_30px_rgba(0,0,0,0.04)] backdrop-blur">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
         {/* LEFT */}
-        <Link href="/" className="flex shrink-0 items-center gap-2.5 transition-opacity hover:opacity-80">
+        <Link href="/" className="flex shrink-0 items-center transition-opacity hover:opacity-80">
           <Image
             src="/logo-full.svg"
             alt="VytlačTo3D"
@@ -21,12 +21,6 @@ export default function Navbar() {
             className="h-9 w-auto"
             priority
           />
-
-          <div className="hidden text-xs leading-tight text-neutral-500 sm:block">
-            Online konfigurátor
-            <br />
-            3D tlače
-          </div>
         </Link>
 
         {/* CENTER NAVIGATION */}
