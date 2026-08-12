@@ -391,8 +391,17 @@ export default function AdminOrdersClient({
                         download
                         className="rounded-xl bg-[#FFAE00] px-3 py-2 text-center text-xs font-bold text-black hover:opacity-90"
                       >
-                        Stiahnuť STL
+                        {order.modelCount > 1 ? "Stiahnuť 1. model" : "Stiahnuť STL"}
                       </a>
+
+                      {order.modelCount > 1 && (
+                        <a
+                          href={`/api/admin/orders/${order.id}/download-all`}
+                          className="rounded-xl bg-black px-3 py-2 text-center text-xs font-bold text-white hover:opacity-90"
+                        >
+                          Stiahnuť všetky ({order.modelCount}) — ZIP
+                        </a>
+                      )}
 
                       {order.status === "PENDING" && (
                         <button

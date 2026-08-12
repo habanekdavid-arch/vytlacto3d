@@ -283,8 +283,17 @@ export default async function AdminOrderDetailPage({
               download
               className="rounded-2xl bg-[#FFAE00] px-5 py-3 text-sm font-bold text-black shadow-sm transition hover:opacity-90"
             >
-              Stiahnuť model
+              {order.orderItems.length > 1 ? "Stiahnuť 1. model" : "Stiahnuť model"}
             </a>
+
+            {order.orderItems.length > 1 && (
+              <a
+                href={`/api/admin/orders/${order.id}/download-all`}
+                className="rounded-2xl bg-black px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:opacity-90"
+              >
+                Stiahnuť všetky modely ({order.orderItems.length}) — ZIP
+              </a>
+            )}
 
             <CopyOrderButton text={copyText} />
           </div>
@@ -383,9 +392,26 @@ export default async function AdminOrderDetailPage({
                 const ia = item.analysis as Record<string, any>;
                 return (
                   <div key={item.id} className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
-                    <div className="mb-3 flex items-center gap-2">
+                    <div className="mb-3 flex flex-wrap items-center gap-2">
                       <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[#FFAE00] text-xs font-bold text-black">{idx + 1}</span>
                       <span className="font-semibold text-neutral-900">{item.fileName}</span>
+
+                      <a
+                        href={`/api/file?key=${encodeURIComponent(item.fileKey)}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="rounded-full border border-neutral-200 bg-white px-3 py-1 text-xs font-bold text-neutral-900 shadow-sm transition hover:bg-neutral-50"
+                      >
+                        Otvoriť
+                      </a>
+                      <a
+                        href={`/api/file?key=${encodeURIComponent(item.fileKey)}`}
+                        download
+                        className="rounded-full bg-[#FFAE00] px-3 py-1 text-xs font-bold text-black shadow-sm transition hover:opacity-90"
+                      >
+                        Stiahnuť
+                      </a>
+
                       {typeof ip.total === "number" && (
                         <span className="ml-auto text-sm font-extrabold text-neutral-900">{formatEur(ip.total)} bez DPH → {formatEur(addVat(ip.total))} s DPH</span>
                       )}
