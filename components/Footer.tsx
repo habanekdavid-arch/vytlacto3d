@@ -1,5 +1,7 @@
 "use client";
 
+import Image from "next/image";
+
 const OPEN_EVENT = "vytlacto3d:open-cookie-banner";
 
 export default function Footer() {
@@ -99,6 +101,27 @@ export default function Footer() {
           >
             Nastavenia cookies
           </button>
+        </div>
+      </div>
+
+      <div className="border-t border-neutral-100 bg-neutral-50/60 py-4">
+        <div className="mx-auto flex max-w-6xl justify-center px-6">
+          <a
+            href="https://dnabs.online/"
+            target="_blank"
+            rel="noreferrer"
+            className="flex items-center gap-1.5 text-xs text-neutral-400 transition hover:text-neutral-700"
+          >
+            <span>Created by</span>
+            <Image
+              src="/DNABS - LOGO.svg"
+              alt="DNABS"
+              width={14}
+              height={14}
+              className="h-3.5 w-3.5"
+            />
+            <span className="font-semibold">DNABS</span>
+          </a>
         </div>
       </div>
     </footer>
