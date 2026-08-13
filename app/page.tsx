@@ -16,6 +16,7 @@ import { formatPriceWithVat, formatEur, addVat } from "@/lib/vat";
 import { SHIPPING_RATES } from "@/lib/shipping";
 import { useCartUi } from "@/lib/cart-ui-context";
 import { CART_STORAGE_KEY } from "@/lib/cart-storage";
+import ContactNoticeBanner from "@/components/ContactNoticeBanner";
 
 type Uploaded = {
   fileKey: string;
@@ -649,6 +650,8 @@ export default function Home() {
           </div>
 
           <div className="mt-6 space-y-4">
+            <ContactNoticeBanner />
+
             {/* Model switcher chips — visible when cart has items */}
             {cartItems.length > 0 && (
               <div className="flex gap-2 overflow-x-auto pb-1">
