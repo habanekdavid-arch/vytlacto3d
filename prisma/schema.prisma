@@ -183,6 +183,7 @@ model Realizacia {
   subtitle    String
   description String
   image       String
+  images      String[] @default([])
   category    String
   year        String
   material    String

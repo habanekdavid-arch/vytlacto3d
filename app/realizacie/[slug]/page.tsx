@@ -98,6 +98,31 @@ export default async function RealizationDetailPage({
           </div>
         </section>
 
+        {project.images.length > 0 && (
+          <section className="border-t border-neutral-200 px-6 py-12 md:px-12">
+            <div className="mx-auto max-w-5xl">
+              <h2 className="text-2xl font-extrabold tracking-tight text-neutral-900">
+                Galéria
+              </h2>
+              <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {project.images.map((src, idx) => (
+                  <div
+                    key={idx}
+                    className="relative aspect-square overflow-hidden rounded-2xl border border-neutral-200"
+                  >
+                    <Image
+                      src={src}
+                      alt={`${project.title} – fotka ${idx + 1}`}
+                      fill
+                      className="object-cover transition duration-500 hover:scale-105"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
         <section className="border-t border-neutral-200 px-6 py-12 md:px-12">
           <div className="mx-auto max-w-4xl space-y-12">
             {content.map((section, idx) => (

@@ -10,7 +10,19 @@ export async function POST(request: Request): Promise<NextResponse> {
       request,
       onBeforeGenerateToken: async (pathname) => {
         return {
-          allowedContentTypes: ["model/stl", "application/sla", "application/octet-stream"],
+          // Shared by the customer STL upload flow (UploadBox) and the
+          // admin CMS image uploads (blog/realizácie) — both hit this
+          // one route, so it needs to accept both kinds of files.
+          allowedContentTypes: [
+            "model/stl",
+            "application/sla",
+            "application/octet-stream",
+            "image/jpeg",
+            "image/png",
+            "image/webp",
+            "image/gif",
+            "image/svg+xml",
+          ],
           addRandomSuffix: true,
           tokenPayload: JSON.stringify({
             pathname,

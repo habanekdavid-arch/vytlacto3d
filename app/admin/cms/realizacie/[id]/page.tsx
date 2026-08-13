@@ -14,6 +14,7 @@ type FormState = {
   subtitle: string;
   description: string;
   image: string;
+  images: string[];
   category: string;
   year: string;
   material: string;
@@ -40,6 +41,7 @@ const EMPTY: FormState = {
   subtitle: "",
   description: "",
   image: "",
+  images: [],
   category: CATEGORIES[0],
   year: new Date().getFullYear().toString(),
   material: "PLA",
@@ -84,6 +86,7 @@ export default function RealizacieEditorPage({
             subtitle: data.subtitle ?? "",
             description: data.description ?? "",
             image: data.image ?? "",
+            images: (data.images as string[]) ?? [],
             category: data.category ?? CATEGORIES[0],
             year: data.year ?? "",
             material: data.material ?? "",
@@ -156,6 +159,41 @@ export default function RealizacieEditorPage({
     }
   }
 
+  async function handleGalleryUpload(files: FileList) {
+    setUploading(true);
+    setError("");
+    try {
+      const { upload } = await import("@vercel/blob/client");
+      const uploaded: string[] = [];
+      for (const file of Array.from(files)) {
+        const blob = await upload(file.name, file, {
+          access: "public",
+          handleUploadUrl: "/api/blob/upload",
+        });
+        uploaded.push(blob.url);
+      }
+      setForm((prev) => ({ ...prev, images: [...prev.images, ...uploaded] }));
+    } catch (e: unknown) {
+      setError("Chyba pri nahrávaní: " + (e instanceof Error ? e.message : ""));
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  function removeGalleryImage(index: number) {
+    setForm((prev) => ({ ...prev, images: prev.images.filter((_, i) => i !== index) }));
+  }
+
+  function moveGalleryImage(index: number, dir: -1 | 1) {
+    setForm((prev) => {
+      const images = [...prev.images];
+      const target = index + dir;
+      if (target < 0 || target >= images.length) return prev;
+      [images[index], images[target]] = [images[target], images[index]];
+      return { ...prev, images };
+    });
+  }
+
   async function handleSave() {
     setSaving(true);
     setError("");
@@ -167,6 +205,7 @@ export default function RealizacieEditorPage({
         subtitle: form.subtitle,
         description: form.description,
         image: form.image,
+        images: form.images,
         category: form.category,
         year: form.year,
         material: form.material,
@@ -396,7 +435,7 @@ export default function RealizacieEditorPage({
           </Card>
 
           {/* Image */}
-          <Card title="Obrázok">
+          <Card title="Hlavný obrázok">
             <Field label="URL obrázka">
               <input
                 type="text"
@@ -430,6 +469,74 @@ export default function RealizacieEditorPage({
                 />
               )}
             </div>
+          </Card>
+
+          {/* Gallery */}
+          <Card
+            title={`Galéria (${form.images.length})`}
+            action={
+              <label
+                className={`cursor-pointer rounded-xl bg-neutral-900 px-3 py-1.5 text-xs font-bold text-white hover:bg-neutral-700 ${uploading ? "pointer-events-none opacity-50" : ""}`}
+              >
+                {uploading ? "Nahrávam..." : "+ Pridať obrázky"}
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => {
+                    if (e.target.files && e.target.files.length > 0) {
+                      handleGalleryUpload(e.target.files);
+                    }
+                    e.target.value = "";
+                  }}
+                />
+              </label>
+            }
+          >
+            {form.images.length === 0 ? (
+              <p className="text-sm text-neutral-400">
+                Žiadne ďalšie obrázky. Klikni na „+ Pridať obrázky".
+              </p>
+            ) : (
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                {form.images.map((src, i) => (
+                  <div
+                    key={`${src}-${i}`}
+                    className="group relative overflow-hidden rounded-xl border border-neutral-200"
+                  >
+                    <img src={src} alt="" className="h-28 w-full object-cover" />
+                    <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-1 bg-black/60 px-1.5 py-1">
+                      <div className="flex gap-1">
+                        <button
+                          type="button"
+                          onClick={() => moveGalleryImage(i, -1)}
+                          disabled={i === 0}
+                          className="rounded bg-white/90 px-1.5 py-0.5 text-xs font-bold text-neutral-700 hover:bg-white disabled:opacity-30"
+                        >
+                          ↑
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => moveGalleryImage(i, 1)}
+                          disabled={i === form.images.length - 1}
+                          className="rounded bg-white/90 px-1.5 py-0.5 text-xs font-bold text-neutral-700 hover:bg-white disabled:opacity-30"
+                        >
+                          ↓
+                        </button>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeGalleryImage(i)}
+                        className="rounded bg-red-500 px-1.5 py-0.5 text-xs font-bold text-white hover:bg-red-600"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </Card>
 
           {/* SEO Keywords */}
