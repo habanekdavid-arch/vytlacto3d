@@ -463,7 +463,7 @@ export default function RealizacieEditorPage({
                 <img
                   src={form.image}
                   alt=""
-                  className="h-14 w-24 rounded-xl border border-neutral-200 object-cover"
+                  className="h-20 w-32 rounded-xl border border-neutral-200 bg-neutral-100 object-contain"
                 />
               )}
             </div>
@@ -484,7 +484,7 @@ export default function RealizacieEditorPage({
                       key={i}
                       className="group relative overflow-hidden rounded-xl border border-neutral-200"
                     >
-                      <img src={src} alt="" className="h-28 w-full object-cover" />
+                      <img src={src} alt="" className="h-28 w-full bg-neutral-100 object-contain" />
                       <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-1 bg-black/60 px-1.5 py-1">
                         <div className="flex gap-1">
                           <button

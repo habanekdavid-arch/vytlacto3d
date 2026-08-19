@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import RealizaciaGallery from "@/components/RealizaciaGallery";
 
 export const dynamic = "force-dynamic";
 
@@ -104,20 +105,8 @@ export default async function RealizationDetailPage({
               <h2 className="text-2xl font-extrabold tracking-tight text-neutral-900">
                 Galéria
               </h2>
-              <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {project.images.map((src, idx) => (
-                  <div
-                    key={idx}
-                    className="relative aspect-square overflow-hidden rounded-2xl border border-neutral-200"
-                  >
-                    <Image
-                      src={src}
-                      alt={`${project.title} – fotka ${idx + 1}`}
-                      fill
-                      className="object-cover transition duration-500 hover:scale-105"
-                    />
-                  </div>
-                ))}
+              <div className="mt-6">
+                <RealizaciaGallery images={project.images} title={project.title} />
               </div>
             </div>
           </section>
