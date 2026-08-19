@@ -44,6 +44,20 @@ export default function Footer() {
                 +421 907 907 097
               </a>
             </div>
+
+            <a
+              href="https://www.instagram.com/vytlacto3d/"
+              target="_blank"
+              rel="noreferrer"
+              className="mt-1 inline-flex items-center gap-2 transition hover:text-black hover:underline"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <rect x="2" y="2" width="20" height="20" rx="5" />
+                <circle cx="12" cy="12" r="4.2" />
+                <circle cx="17.3" cy="6.7" r="1.1" fill="currentColor" stroke="none" />
+              </svg>
+              Instagram
+            </a>
           </div>
         </div>
 

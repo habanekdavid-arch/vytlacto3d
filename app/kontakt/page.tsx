@@ -32,6 +32,20 @@ export default function KontaktPage() {
             <div className="pt-3 text-sm text-neutral-600">
               Sídlo: Nezábudková 5, 821 01 Bratislava
             </div>
+
+            <a
+              href="https://www.instagram.com/vytlacto3d/"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-2 pt-1 underline"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <rect x="2" y="2" width="20" height="20" rx="5" />
+                <circle cx="12" cy="12" r="4.2" />
+                <circle cx="17.3" cy="6.7" r="1.1" fill="currentColor" stroke="none" />
+              </svg>
+              Instagram: @vytlacto3d
+            </a>
           </div>
         </div>
       </div>
