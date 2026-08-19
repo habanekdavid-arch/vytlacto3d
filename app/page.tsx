@@ -17,6 +17,7 @@ import { SHIPPING_RATES } from "@/lib/shipping";
 import { useCartUi } from "@/lib/cart-ui-context";
 import { CART_STORAGE_KEY } from "@/lib/cart-storage";
 import ContactNoticeBanner from "@/components/ContactNoticeBanner";
+import FilamentTrail from "@/components/FilamentTrailLoader";
 
 type Uploaded = {
   fileKey: string;
@@ -297,7 +298,11 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-white text-neutral-900">
+    <div
+      className="min-h-screen bg-white text-neutral-900"
+      style={{ position: "relative", overflowX: "clip" }}
+    >
+      <FilamentTrail />
       <FloatingCta />
 
       {/* ─── Cart drawer ─── */}
@@ -620,6 +625,8 @@ export default function Home() {
 
       <main className="mx-auto max-w-6xl px-6 pb-20 pt-10">
         <section className="mb-12 text-center">
+          <span data-filament="0" style={{ display: "inline-block", width: 0, height: 0 }} aria-hidden="true" />
+
           <div className="inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-3 py-1 text-sm text-neutral-700 shadow-sm">
             <span className="inline-block h-2 w-2 rounded-full bg-[#FFAE00]" />
             Online konfigurátor 3D tlače
@@ -637,6 +644,8 @@ export default function Home() {
         </section>
 
         <section id="kalkulator" className="rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm">
+          <span data-filament="1" style={{ display: "inline-block", width: 0, height: 0 }} aria-hidden="true" />
+
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <div className="text-sm font-semibold text-neutral-500">Konfigurátor</div>
@@ -817,8 +826,13 @@ export default function Home() {
           </div>
         </section>
 
+        <span data-filament="2" style={{ display: "inline-block", width: 0, height: 0 }} aria-hidden="true" />
         <HowItWorks />
+
+        <span data-filament="3" style={{ display: "inline-block", width: 0, height: 0 }} aria-hidden="true" />
         <MaterialPricing />
+
+        <span data-filament="4" style={{ display: "inline-block", width: 0, height: 0 }} aria-hidden="true" />
         <FaqPreview />
       </main>
 
