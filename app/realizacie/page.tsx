@@ -48,7 +48,6 @@ export default async function RealizaciePage() {
                 isLarge ? "md:col-span-2 md:row-span-2" : "",
               ].join(" ")}
             >
-              <div className="absolute inset-0 bg-neutral-800" />
               <Image
                 src={project.image}
                 alt={project.title}
@@ -58,7 +57,7 @@ export default async function RealizaciePage() {
                     ? "(max-width: 768px) 100vw, 50vw"
                     : "(max-width: 768px) 100vw, 25vw"
                 }
-                className="object-contain transition duration-700 ease-out group-hover:scale-110"
+                className="object-cover transition duration-700 ease-out group-hover:scale-110"
               />
 
               <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent opacity-80 transition duration-500 group-hover:opacity-95" />
