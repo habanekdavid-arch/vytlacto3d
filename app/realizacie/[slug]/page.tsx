@@ -62,13 +62,13 @@ export default async function RealizationDetailPage({
 
       <article className="overflow-hidden rounded-[36px] border border-neutral-200 bg-white shadow-sm">
         <section className="grid gap-0 lg:grid-cols-[1.2fr_0.8fr]">
-          <div className="relative min-h-[420px] lg:min-h-[620px]">
+          <div className="relative min-h-[420px] bg-neutral-100 lg:min-h-[620px]">
             <Image
               src={project.image}
               alt={project.title}
               fill
               priority
-              className="object-cover"
+              className="object-contain"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent lg:hidden" />
           </div>
@@ -160,12 +160,12 @@ export default async function RealizationDetailPage({
                 href={`/realizacie/${item.slug}`}
                 className="group overflow-hidden rounded-3xl border border-neutral-200 bg-white shadow-sm transition duration-500 hover:-translate-y-2 hover:shadow-xl"
               >
-                <div className="relative h-64">
+                <div className="relative h-64 bg-neutral-100">
                   <Image
                     src={item.image}
                     alt={item.title}
                     fill
-                    className="object-cover transition duration-700 group-hover:scale-110"
+                    className="object-contain transition duration-700 group-hover:scale-110"
                   />
                 </div>
 
