@@ -20,7 +20,11 @@ export type UploadBoxHandle = { triggerOpen: () => void };
 const UploadBox = forwardRef<UploadBoxHandle, {
   onUploaded: (data: Uploaded) => void;
   onUploadingChange?: (value: boolean) => void;
-}>(function UploadBox({ onUploaded, onUploadingChange }, ref) {
+  // Hides just the dropzone (e.g. once a model is already active) while
+  // keeping the SVG thickness/reconvert panel visible and interactive —
+  // this component must stay mounted so that state isn't lost.
+  hideDropzone?: boolean;
+}>(function UploadBox({ onUploaded, onUploadingChange, hideDropzone }, ref) {
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   useImperativeHandle(ref, () => ({
@@ -164,43 +168,45 @@ const UploadBox = forwardRef<UploadBoxHandle, {
 
   return (
     <div>
-      <div
-        onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
-        onDragLeave={() => setDragging(false)}
-        onDrop={onDrop}
-        onClick={() => inputRef.current?.click()}
-        className={[
-          "cursor-pointer rounded-3xl border-2 border-dashed p-8 text-center transition",
-          dragging
-            ? "border-[#FFAE00] bg-[#FFAE00]/10"
-            : "border-neutral-300 bg-white hover:border-[#FFAE00]/60 hover:bg-neutral-50",
-        ].join(" ")}
-      >
-        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#FFAE00] text-white shadow-sm">
-          <svg viewBox="0 0 24 24" fill="none" className="h-7 w-7" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 16V6" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-            <path d="M8 10L12 6L16 10" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-            <path d="M5 18H19" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+      {!hideDropzone && (
+        <div
+          onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+          onDragLeave={() => setDragging(false)}
+          onDrop={onDrop}
+          onClick={() => inputRef.current?.click()}
+          className={[
+            "cursor-pointer rounded-3xl border-2 border-dashed p-8 text-center transition",
+            dragging
+              ? "border-[#FFAE00] bg-[#FFAE00]/10"
+              : "border-neutral-300 bg-white hover:border-[#FFAE00]/60 hover:bg-neutral-50",
+          ].join(" ")}
+        >
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#FFAE00] text-white shadow-sm">
+            <svg viewBox="0 0 24 24" fill="none" className="h-7 w-7" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 16V6" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M8 10L12 6L16 10" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M5 18H19" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </div>
+
+          <h3 className="mt-4 text-xl font-extrabold text-neutral-900">
+            Nahrajte STL, OBJ alebo SVG súbor
+          </h3>
+
+          <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-neutral-600">
+            SVG súbor automaticky prevedieme na 3D model s nastavenou hrúbkou.
+            STL a OBJ súbory sa spracujú priamo.
+          </p>
+
+          <div className="mt-5 inline-flex rounded-2xl bg-[#FFAE00] px-5 py-3 text-sm font-semibold text-black shadow-sm">
+            Vybrať súbor
+          </div>
+
+          <p className="mt-3 text-xs text-neutral-500">
+            Podporované formáty: .STL, .OBJ, .SVG
+          </p>
         </div>
-
-        <h3 className="mt-4 text-xl font-extrabold text-neutral-900">
-          Nahrajte STL, OBJ alebo SVG súbor
-        </h3>
-
-        <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-neutral-600">
-          SVG súbor automaticky prevedieme na 3D model s nastavenou hrúbkou.
-          STL a OBJ súbory sa spracujú priamo.
-        </p>
-
-        <div className="mt-5 inline-flex rounded-2xl bg-[#FFAE00] px-5 py-3 text-sm font-semibold text-black shadow-sm">
-          Vybrať súbor
-        </div>
-
-        <p className="mt-3 text-xs text-neutral-500">
-          Podporované formáty: .STL, .OBJ, .SVG
-        </p>
-      </div>
+      )}
 
       {showThicknessInput && (
         <div className="mt-4 rounded-2xl border border-neutral-200 bg-neutral-50 p-4">

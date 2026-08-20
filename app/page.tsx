@@ -701,9 +701,12 @@ export default function Home() {
               </div>
             )}
 
-            {/* Upload box — always mounted, hidden when active item exists */}
-            <div className={activeItem ? "hidden" : ""}>
-              <div className="rounded-3xl border border-neutral-200 bg-neutral-50 p-5">
+            {/* Upload box — always mounted (so its SVG-thickness state
+                survives), only the dropzone itself hides once an item
+                is active. This lets a customer keep adjusting the
+                height of an SVG-derived model after it's inserted. */}
+            <div className={activeItem ? "" : "rounded-3xl border border-neutral-200 bg-neutral-50 p-5"}>
+              {!activeItem && (
                 <div className="flex items-center gap-3 mb-4">
                   <div className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-black text-sm font-bold text-white">1</div>
                   <div>
@@ -711,23 +714,24 @@ export default function Home() {
                     <div className="text-lg font-extrabold">Nahraj STL</div>
                   </div>
                 </div>
-                <UploadBox
-                  ref={uploadBoxRef}
-                  onUploadingChange={setUploadLoading}
-                  onUploaded={(u) => addToCart(u)}
-                />
-                {uploadLoading && (
-                  <div className="mt-4 rounded-2xl border border-[#FFAE00]/40 bg-[#FFAE00]/10 p-4">
-                    <div className="flex items-center gap-3">
-                      <div className="h-5 w-5 animate-spin rounded-full border-2 border-neutral-300 border-t-[#FFAE00]" />
-                      <div>
-                        <div className="text-sm font-bold text-neutral-900">Nahrávam a analyzujem model</div>
-                        <div className="text-xs text-neutral-600">Počkajte chvíľu, pripravujeme 3D náhľad a výpočet parametrov.</div>
-                      </div>
+              )}
+              <UploadBox
+                ref={uploadBoxRef}
+                onUploadingChange={setUploadLoading}
+                onUploaded={(u) => addToCart(u)}
+                hideDropzone={!!activeItem}
+              />
+              {uploadLoading && !activeItem && (
+                <div className="mt-4 rounded-2xl border border-[#FFAE00]/40 bg-[#FFAE00]/10 p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="h-5 w-5 animate-spin rounded-full border-2 border-neutral-300 border-t-[#FFAE00]" />
+                    <div>
+                      <div className="text-sm font-bold text-neutral-900">Nahrávam a analyzujem model</div>
+                      <div className="text-xs text-neutral-600">Počkajte chvíľu, pripravujeme 3D náhľad a výpočet parametrov.</div>
                     </div>
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
 
             {/* Active item: viewer + configurator */}
