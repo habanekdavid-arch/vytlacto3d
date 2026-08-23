@@ -6,6 +6,7 @@ import CopyOrderButton from "@/components/CopyOrderButton";
 import InvoiceSection from "@/components/InvoiceSection";
 import AdminStatusChanger from "@/components/AdminStatusChanger";
 import EditableField from "@/components/EditableField";
+import ModelPreviewButton from "@/components/ModelPreviewButton";
 import { formatDateSK } from "@/lib/formatDate";
 
 export const dynamic = "force-dynamic";
@@ -269,6 +270,14 @@ export default async function AdminOrderDetailPage({
           )}
 
           <div className="mt-6 flex flex-wrap gap-3">
+            <ModelPreviewButton
+              fileKey={order.fileKey}
+              fileName={order.fileName}
+              scalePct={config.scalePct}
+              colorId={config.color}
+              label={order.orderItems.length > 1 ? "👁 Náhľad 1. modelu" : "👁 3D náhľad"}
+            />
+
             <a
               href={`/api/file?key=${encodeURIComponent(order.fileKey)}`}
               target="_blank"
@@ -396,6 +405,14 @@ export default async function AdminOrderDetailPage({
                       <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[#FFAE00] text-xs font-bold text-black">{idx + 1}</span>
                       <span className="font-semibold text-neutral-900">{item.fileName}</span>
 
+                      <ModelPreviewButton
+                        fileKey={item.fileKey}
+                        fileName={item.fileName}
+                        scalePct={ic.scalePct}
+                        colorId={ic.color}
+                        label="👁 Náhľad"
+                        className="rounded-full border border-neutral-200 bg-white px-3 py-1 text-xs font-bold text-neutral-900 shadow-sm transition hover:bg-neutral-50"
+                      />
                       <a
                         href={`/api/file?key=${encodeURIComponent(item.fileKey)}`}
                         target="_blank"
