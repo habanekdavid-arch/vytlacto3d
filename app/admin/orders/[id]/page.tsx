@@ -7,6 +7,7 @@ import InvoiceSection from "@/components/InvoiceSection";
 import AdminStatusChanger from "@/components/AdminStatusChanger";
 import EditableField from "@/components/EditableField";
 import ModelPreviewButton from "@/components/ModelPreviewButton";
+import ModelPreviewAllButton from "@/components/ModelPreviewAllButton";
 import { formatDateSK } from "@/lib/formatDate";
 
 export const dynamic = "force-dynamic";
@@ -296,12 +297,27 @@ export default async function AdminOrderDetailPage({
             </a>
 
             {order.orderItems.length > 1 && (
-              <a
-                href={`/api/admin/orders/${order.id}/download-all`}
-                className="rounded-2xl bg-black px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:opacity-90"
-              >
-                Stiahnuť všetky modely ({order.orderItems.length}) — ZIP
-              </a>
+              <>
+                <a
+                  href={`/api/admin/orders/${order.id}/download-all`}
+                  className="rounded-2xl bg-black px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:opacity-90"
+                >
+                  Stiahnuť všetky modely ({order.orderItems.length}) — ZIP
+                </a>
+
+                <ModelPreviewAllButton
+                  items={order.orderItems.map((item) => {
+                    const itemConfig = item.config as Record<string, any>;
+                    return {
+                      fileKey: item.fileKey,
+                      fileName: item.fileName,
+                      scalePct: itemConfig?.scalePct,
+                      colorId: itemConfig?.color,
+                    };
+                  })}
+                  className="rounded-2xl border border-neutral-200 bg-white px-5 py-3 text-sm font-bold text-neutral-900 shadow-sm transition hover:bg-neutral-50"
+                />
+              </>
             )}
 
             <CopyOrderButton text={copyText} />
