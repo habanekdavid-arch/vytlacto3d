@@ -434,6 +434,11 @@ export default function RealizacieEditorPage({
 
           {/* Image */}
           <Card title="Hlavný obrázok">
+            <p className="-mt-2 text-sm text-neutral-500">
+              Odporúčaný pomer strán <strong>3:2 alebo 4:3, na šírku</strong>, min.{" "}
+              <strong>1600×1200 px</strong> (ideálne 1920×1440 px a viac). Obrázok sa
+              orezáva na výšku kontajnera, takže hlavný predmet drž v <strong>strede záberu</strong>.
+            </p>
             <Field label="URL obrázka">
               <input
                 type="text"
@@ -473,6 +478,7 @@ export default function RealizacieEditorPage({
           <Card title={`Galéria projektu (${form.images.length} ${form.images.length === 1 ? "fotka" : "fotiek"})`}>
             <p className="-mt-2 text-sm text-neutral-500">
               Doplnkové fotky k tejto realizácii (okrem hlavného obrázka vyššie). Klikni na prázdne miesto a nahraj fotku — miest pribúda automaticky.
+              V náhľade sa orežú na štvorec, po kliknutí sa zobrazia celé bez orezania — min. <strong>1200×1200 px</strong>.
             </p>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
               {Array.from({ length: Math.max(6, form.images.length + 1) }).map((_, i) => {

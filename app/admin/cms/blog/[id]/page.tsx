@@ -333,6 +333,11 @@ export default function BlogEditorPage({
 
           {/* Image */}
           <Card title="Obrázok">
+            <p className="-mt-2 text-sm text-neutral-500">
+              Odporúčaný pomer strán <strong>3:2 alebo 16:9, na šírku</strong>, min.{" "}
+              <strong>1600×900 px</strong> (ideálne 1920×1080 px a viac). Obrázok sa
+              orezáva na výšku kontajnera, takže hlavný predmet drž v <strong>strede záberu</strong>.
+            </p>
             <Field label="URL obrázka">
               <input
                 type="text"
