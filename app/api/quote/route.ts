@@ -10,7 +10,6 @@ export async function POST(req: NextRequest) {
     const quality = body?.quality;
     const infillPct = Number(body?.infillPct);
     const quantity = Number(body?.quantity);
-    const heightMm = Number.isFinite(Number(body?.heightMm)) ? Number(body.heightMm) : undefined;
 
     if (!Number.isFinite(volumeCm3) || volumeCm3 <= 0) {
       return NextResponse.json(
@@ -46,7 +45,6 @@ export async function POST(req: NextRequest) {
       quality,
       infillPct,
       quantity,
-      heightMm,
     });
 
     return NextResponse.json(result);
