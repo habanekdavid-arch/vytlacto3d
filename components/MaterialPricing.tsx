@@ -1,3 +1,5 @@
+import { VAT_MULTIPLIER } from "@/lib/vat";
+
 export default function MaterialPricing() {
   const materials = [
     {
@@ -67,7 +69,7 @@ export default function MaterialPricing() {
                     </td>
 
                     <td className="px-6 py-5 font-semibold text-[#FFAE00]">
-                      {m.eurPerGram.toFixed(3)} €
+                      {(m.eurPerGram * VAT_MULTIPLIER).toFixed(3)} €
                     </td>
 
                     <td className="px-6 py-5 text-neutral-700">
