@@ -78,8 +78,9 @@ export default function Configurator({
       color: config.color,
       quantity: config.quantity,
       scalePct: config.scalePct,
+      heightMm: scaledDims.z,
     }),
-    [scaledVolumeCm3, config]
+    [scaledVolumeCm3, scaledDims.z, config]
   );
 
   useEffect(() => {

@@ -7,6 +7,9 @@ type QuoteInput = {
   quality: Quality;
   infillPct: number;
   quantity: number;
+  // Výška modelu (Z rozmer, po aplikovaní mierky) v mm. Nepovinné — ak
+  // chýba, čas tlače sa počíta len z hmotnosti (staré správanie).
+  heightMm?: number;
 };
 
 type QuoteResult = {
@@ -42,11 +45,27 @@ const MACHINE_RATE_PER_HOUR: Record<Quality, number> = {
   FINE:     4.5,
 };
 
-// Minúty tlače na 1 gram skutočného materiálu
+// Minúty tlače na 1 gram skutočného materiálu (pokrýva čas depozície materiálu)
 const PRINT_MIN_PER_GRAM: Record<Quality, number> = {
   DRAFT:    0.50,
   STANDARD: 0.65,
   FINE:     0.85,
+};
+
+// Typická výška vrstvy podľa kvality (mm) — určuje počet vrství modelu.
+const LAYER_HEIGHT_MM: Record<Quality, number> = {
+  DRAFT:    0.30,
+  STANDARD: 0.20,
+  FINE:     0.12,
+};
+
+// Čas na jednu vrstvu (min) — obvod, presuny hlavy, zmena vrstvy. Nezávisí
+// od hmotnosti, takže vysoké a tenké modely (veľa vrstiev, málo materiálu)
+// dostanú realistickejší (dlhší) odhad času namiesto podhodnotenia.
+const LAYER_TIME_MIN: Record<Quality, number> = {
+  DRAFT:    0.08,
+  STANDARD: 0.12,
+  FINE:     0.18,
 };
 
 // Základný poplatok za objednávku (nastavenie stroja, slicing, kontrola)
@@ -92,8 +111,17 @@ export function quote(input: QuoteInput): QuoteResult {
   // Hmotnosť: objem × hustota × faktor výplne
   const gramsPerPartRaw = volumeCm3 * MATERIAL_DENSITY_G_PER_CM3[material] * usageRatio;
 
-  // Čas tlače: gramy × min/gram, minimálne 5 minút
-  const printTimeMinPerPartRaw = Math.max(5, gramsPerPartRaw * PRINT_MIN_PER_GRAM[quality]);
+  // Čas tlače = čas depozície materiálu (podľa hmotnosti) + čas za vrstvy
+  // (podľa výšky modelu). Samotná hmotnosť čas tlače dobre nevystihuje —
+  // vysoký tenký model má málo materiálu, ale veľa vrstiev, takže sa
+  // v realite tlačí oveľa dlhšie, než by naznačovala jeho hmotnosť.
+  const heightMm = Math.max(0, Number(input.heightMm ?? 0));
+  const layers = heightMm > 0 ? Math.ceil(heightMm / LAYER_HEIGHT_MM[quality]) : 0;
+
+  const depositionTimeMinRaw = gramsPerPartRaw * PRINT_MIN_PER_GRAM[quality];
+  const layerTimeMinRaw = layers * LAYER_TIME_MIN[quality];
+
+  const printTimeMinPerPartRaw = Math.max(5, depositionTimeMinRaw + layerTimeMinRaw);
 
   // Náklady na materiál a stroj
   const materialCostPerPartRaw = gramsPerPartRaw * MATERIAL_PRICE_PER_GRAM[material];

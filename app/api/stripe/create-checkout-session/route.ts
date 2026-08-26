@@ -139,6 +139,7 @@ export async function POST(req: NextRequest) {
 
       const scaleFactor = scale / 100;
       const scaledVol = rawVol * Math.pow(scaleFactor, 3);
+      const scaledHeightMm = Number(item.analysis?.dimsZmm ?? 0) * scaleFactor;
 
       const serverPricing = quote({
         volumeCm3: scaledVol,
@@ -146,6 +147,7 @@ export async function POST(req: NextRequest) {
         quality: item.config.quality as any,
         infillPct: infill,
         quantity: qty,
+        heightMm: scaledHeightMm,
       });
 
       pricedItems.push({ item, serverPricing, scaledVol, infill, scale, rawVol, qty });
