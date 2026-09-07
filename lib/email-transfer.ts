@@ -1,4 +1,4 @@
-import { transporter, FROM } from "@/lib/mailer";
+import { transporter, FROM, hasMailCredentials } from "@/lib/mailer";
 import { COMPANY_INFO } from "@/lib/company-info";
 
 const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://www.vytlacto3d.sk";
@@ -29,11 +29,11 @@ export async function sendTransferPaymentEmail({
   amount: number;
   variableSymbol: string;
 }) {
-  if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
+  if (!hasMailCredentials()) {
     // Throw (rather than silently no-op) so callers — the checkout flow's
     // try/catch, and the admin "resend" button — can actually see and log
     // *why* the payment-details email never went out.
-    throw new Error("Missing GMAIL_USER/GMAIL_APP_PASSWORD — transfer payment email not sent.");
+    throw new Error("Missing SMTP_USER/SMTP_PASSWORD — transfer payment email not sent.");
   }
   if (!to) {
     throw new Error(`Transfer payment email has no recipient address (order ${orderId}).`);

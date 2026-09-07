@@ -1,5 +1,4 @@
-import { transporter, FROM } from "@/lib/mailer";
-import { COMPANY_INFO } from "@/lib/company-info";
+import { transporter, FROM, ADMIN_INBOX, hasMailCredentials } from "@/lib/mailer";
 
 function escapeHtml(value: string) {
   return value
@@ -19,11 +18,11 @@ export async function sendContactFormEmail({
   subject: string;
   message: string;
 }) {
-  if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
-    throw new Error("Missing GMAIL_USER/GMAIL_APP_PASSWORD — contact form email not sent.");
+  if (!hasMailCredentials()) {
+    throw new Error("Missing SMTP_USER/SMTP_PASSWORD — contact form email not sent.");
   }
 
-  const to = COMPANY_INFO.contacts.administrativa.email;
+  const to = ADMIN_INBOX;
 
   const html = `
     <div style="font-family:Arial,sans-serif;background:#f7f7f7;padding:32px;">

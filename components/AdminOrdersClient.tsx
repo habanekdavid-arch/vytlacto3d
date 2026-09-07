@@ -89,7 +89,7 @@ export default function AdminOrdersClient({
       const res = await fetch("/api/admin/test-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ to: "habanekdavid@gmail.com" }),
+        body: JSON.stringify({}),
       });
       setTestEmailStatus(res.ok ? "ok" : "error");
     } catch {

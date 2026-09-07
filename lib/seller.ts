@@ -11,7 +11,7 @@ export function getSellerInfo() {
     iban:    process.env.SELLER_IBAN    ?? "",
     swift:   process.env.SELLER_SWIFT   ?? "",
     bank:    process.env.SELLER_BANK    ?? "",
-    email:   process.env.SELLER_EMAIL   ?? "info@vytlacto3d.sk",
+    email:   process.env.SELLER_EMAIL   ?? "info@4frommedia.sk",
     phone:   process.env.SELLER_PHONE   ?? "",
   };
 }
