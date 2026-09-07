@@ -1,4 +1,4 @@
-import { transporter, FROM, hasMailCredentials } from "@/lib/mailer";
+import { sendMail, FROM, hasMailCredentials } from "@/lib/mailer";
 
 const baseUrl =
   process.env.NEXT_PUBLIC_BASE_URL || "https://www.vytlacto3d.sk";
@@ -148,7 +148,7 @@ export async function sendOrderStatusEmail({
     </div>
   `;
 
-  await transporter.sendMail({
+  await sendMail({
     from: FROM,
     to,
     subject: content.subject,

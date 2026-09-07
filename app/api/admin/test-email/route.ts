@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSafeServerSession } from "@/lib/session";
-import { transporter, FROM, ADMIN_INBOX } from "@/lib/mailer";
+import { sendMail, FROM, ADMIN_INBOX, mailConfigSummary } from "@/lib/mailer";
 
-export async function POST(req: NextRequest) {
+async function requireAdmin() {
   const session = await getSafeServerSession();
   const userEmail = String((session?.user as any)?.email ?? "").toLowerCase();
   const adminEmails = (process.env.ADMIN_EMAILS ?? "")
@@ -10,7 +10,19 @@ export async function POST(req: NextRequest) {
     .map((e) => e.trim().toLowerCase())
     .filter(Boolean);
 
-  if (!userEmail || !adminEmails.includes(userEmail)) {
+  return userEmail && adminEmails.includes(userEmail) ? userEmail : null;
+}
+
+/** Ukáže aktuálnu SMTP konfiguráciu (bez hesla) — na overenie env premenných. */
+export async function GET() {
+  if (!(await requireAdmin())) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  return NextResponse.json(mailConfigSummary());
+}
+
+export async function POST(req: NextRequest) {
+  if (!(await requireAdmin())) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -19,7 +31,7 @@ export async function POST(req: NextRequest) {
   // odosielanie aj doručenie na tú istú adresu.
   const to = String(body?.to ?? "").trim() || ADMIN_INBOX;
 
-  await transporter.sendMail({
+  const info = await sendMail({
     from: FROM,
     to,
     subject: "Test emailu – VytlačTo3D",
@@ -45,5 +57,13 @@ export async function POST(req: NextRequest) {
     `,
   });
 
-  return NextResponse.json({ ok: true, from: FROM, to });
+  // transport === "fallback" znamená, že primárny SMTP zlyhal a mail odišiel
+  // cez záložný Gmail — mail síce prišiel, ale konfigurácia je zle.
+  return NextResponse.json({
+    ok: true,
+    from: info.transport === "fallback" ? info.envelope?.from ?? FROM : FROM,
+    to,
+    transport: info.transport,
+    config: mailConfigSummary(),
+  });
 }

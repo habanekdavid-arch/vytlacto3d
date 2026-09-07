@@ -1,4 +1,4 @@
-import { transporter, FROM, ADMIN_INBOX, hasMailCredentials } from "@/lib/mailer";
+import { sendMail, FROM, ADMIN_INBOX, hasMailCredentials } from "@/lib/mailer";
 
 function escapeHtml(value: string) {
   return value
@@ -49,7 +49,7 @@ export async function sendContactFormEmail({
     </div>
   `;
 
-  await transporter.sendMail({
+  await sendMail({
     from: FROM,
     to,
     replyTo: email,

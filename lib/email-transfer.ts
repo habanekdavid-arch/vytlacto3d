@@ -1,4 +1,4 @@
-import { transporter, FROM, hasMailCredentials } from "@/lib/mailer";
+import { sendMail, FROM, hasMailCredentials } from "@/lib/mailer";
 import { COMPANY_INFO } from "@/lib/company-info";
 
 const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://www.vytlacto3d.sk";
@@ -121,7 +121,7 @@ export async function sendTransferPaymentEmail({
     </div>
   `;
 
-  await transporter.sendMail({
+  await sendMail({
     from: FROM,
     to,
     subject: `Platobne udaje k objednavke ${orderLabel} – VytlacTo3D`,
