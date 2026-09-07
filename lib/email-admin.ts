@@ -1,4 +1,4 @@
-import { transporter, FROM, ADMIN_INBOX, hasMailCredentials } from "@/lib/mailer";
+import { sendMail, FROM, ADMIN_INBOX, hasMailCredentials } from "@/lib/mailer";
 import { formatEur, addVat, vatAmount } from "@/lib/vat";
 
 const baseUrl =
@@ -84,7 +84,7 @@ export async function sendAdminOrderNotificationEmail({
 
   const pricingNet = typeof pricing?.total === "number" ? pricing.total : null;
 
-  await transporter.sendMail({
+  await sendMail({
     from: FROM,
     to: ADMIN_INBOX,
     subject: `🛒 Nová objednávka ${ref} – ${fileName}`,

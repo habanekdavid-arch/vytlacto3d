@@ -1,4 +1,4 @@
-import { transporter, FROM, hasMailCredentials } from "@/lib/mailer";
+import { sendMail, FROM, hasMailCredentials } from "@/lib/mailer";
 import { formatEur, addVat, vatAmount } from "@/lib/vat";
 
 const baseUrl =
@@ -54,7 +54,7 @@ export async function sendOrderPaidEmail({
 
   const pricingNet = typeof pricing?.total === "number" ? pricing.total : null;
 
-  await transporter.sendMail({
+  await sendMail({
     from: FROM,
     to,
     subject: `Ďakujeme za objednávku ${ref} – VytlačTo3D`,
