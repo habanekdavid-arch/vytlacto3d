@@ -1,4 +1,4 @@
-import { transporter, FROM } from "@/lib/mailer";
+import { transporter, FROM, hasMailCredentials } from "@/lib/mailer";
 import { formatEur, addVat, vatAmount } from "@/lib/vat";
 
 const baseUrl =
@@ -40,8 +40,8 @@ export async function sendOrderPaidEmail({
   config?: Record<string, any> | null;
   pricing?: Record<string, any> | null;
 }) {
-  if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
-    console.warn("Missing GMAIL credentials, customer order email skipped.");
+  if (!hasMailCredentials()) {
+    console.warn("Missing SMTP credentials, customer order email skipped.");
     return;
   }
 

@@ -1,4 +1,4 @@
-import { transporter, FROM } from "@/lib/mailer";
+import { transporter, FROM, ADMIN_INBOX, hasMailCredentials } from "@/lib/mailer";
 import { formatEur, addVat, vatAmount } from "@/lib/vat";
 
 const baseUrl =
@@ -67,8 +67,8 @@ export async function sendAdminOrderNotificationEmail({
   pricing?: Record<string, any> | null;
   createdAt?: Date | null;
 }) {
-  if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
-    console.warn("Missing GMAIL credentials, admin order notification email skipped.");
+  if (!hasMailCredentials()) {
+    console.warn("Missing SMTP credentials, admin order notification email skipped.");
     return;
   }
 
@@ -86,7 +86,7 @@ export async function sendAdminOrderNotificationEmail({
 
   await transporter.sendMail({
     from: FROM,
-    to: process.env.ADMIN_ORDER_EMAIL || "info@4frommedia.sk",
+    to: ADMIN_INBOX,
     subject: `🛒 Nová objednávka ${ref} – ${fileName}`,
     html: `
       <div style="font-family:Arial,sans-serif;background:#f7f7f7;padding:32px;">

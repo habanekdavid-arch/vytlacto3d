@@ -1,4 +1,4 @@
-import { transporter, FROM } from "@/lib/mailer";
+import { transporter, FROM, hasMailCredentials } from "@/lib/mailer";
 
 const baseUrl =
   process.env.NEXT_PUBLIC_BASE_URL || "https://www.vytlacto3d.sk";
@@ -109,8 +109,8 @@ export async function sendOrderStatusEmail({
   fileName: string;
   status: string;
 }) {
-  if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
-    console.warn("Missing GMAIL credentials, order status email skipped.");
+  if (!hasMailCredentials()) {
+    console.warn("Missing SMTP credentials, order status email skipped.");
     return;
   }
   if (!to) {

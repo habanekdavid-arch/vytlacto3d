@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSafeServerSession } from "@/lib/session";
-import { transporter, FROM } from "@/lib/mailer";
+import { transporter, FROM, ADMIN_INBOX } from "@/lib/mailer";
 
 export async function POST(req: NextRequest) {
   const session = await getSafeServerSession();
@@ -14,8 +14,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { to } = await req.json();
-  if (!to) return NextResponse.json({ error: "Chýba to adresa." }, { status: 400 });
+  const body = await req.json().catch(() => ({} as { to?: string }));
+  // Bez explicitnej adresy ide test do internej schránky — overí sa tým naraz
+  // odosielanie aj doručenie na tú istú adresu.
+  const to = String(body?.to ?? "").trim() || ADMIN_INBOX;
 
   await transporter.sendMail({
     from: FROM,
