@@ -1,9 +1,9 @@
 import nodemailer, { type SendMailOptions, type SentMessageInfo } from "nodemailer";
 
-// Poštová schránka info@4frommedia.sk je hostovaná u WebSupportu, preto ide
-// odosielanie cez ich SMTP. Všetko je riadené cez env premenné, aby sa dal
-// poskytovateľ vymeniť bez zásahu do kódu.
-const WEBSUPPORT_SMTP_HOST = "smtp.m1.websupport.sk";
+// Pošta domény 4frommedia.sk beží na Microsofte 365, odosiela sa teda cez
+// smtp.office365.com. Všetko je riadené cez env premenné, aby sa dal
+// poskytovateľ vymeniť bez zásahu do kódu — už raz sa menil.
+const DEFAULT_SMTP_HOST = "smtp.office365.com";
 
 /** Adresa, z ktorej web odosiela, ak nie je nastavené nič iné. */
 export const DEFAULT_FROM_EMAIL = "info@4frommedia.sk";
@@ -14,12 +14,12 @@ const gmailPass = process.env.GMAIL_APP_PASSWORD || "";
 const useLegacyGmail = !process.env.SMTP_USER && !!gmailUser;
 
 const host =
-  process.env.SMTP_HOST || (useLegacyGmail ? "smtp.gmail.com" : WEBSUPPORT_SMTP_HOST);
+  process.env.SMTP_HOST || (useLegacyGmail ? "smtp.gmail.com" : DEFAULT_SMTP_HOST);
 const user = process.env.SMTP_USER || gmailUser;
 const pass = process.env.SMTP_PASSWORD || gmailPass;
 
-// 465 = implicitné TLS (WebSupport), 587 = STARTTLS (Gmail aj WebSupport).
-const port = Number(process.env.SMTP_PORT) || (useLegacyGmail ? 587 : 465);
+// 587 = STARTTLS (Microsoft 365 aj Gmail), 465 = implicitné TLS.
+const port = Number(process.env.SMTP_PORT) || 587;
 const secure = process.env.SMTP_SECURE
   ? process.env.SMTP_SECURE === "true"
   : port === 465;
@@ -43,6 +43,9 @@ const transporter = nodemailer.createTransport({
   ...TIMEOUTS,
 });
 
+// Prihlasovacia schránka sa nemusí rovnať odosielacej adrese — na Microsofte
+// 365 sa prihlasujeme jednou a odosielame pod druhou (cez SendAs oprávnenie).
+// Vtedy musí byť EMAIL_FROM nastavené, inak by web odosielal pod loginom.
 export const FROM =
   process.env.EMAIL_FROM || `VytlačTo3D <${user || DEFAULT_FROM_EMAIL}>`;
 
@@ -71,9 +74,18 @@ const fallback =
       }
     : null;
 
-// Chyby spojenia a prihlásenia — teda "tento server nám maily neodošle".
-// Odmietnutého príjemcu ani zle poskladanú správu Gmail nezachráni.
-const FALLBACK_ON = new Set(["EAUTH", "ECONNECTION", "ESOCKET", "ETIMEDOUT", "EDNS"]);
+// Chyby spojenia, prihlásenia a odmietnutej obálky — teda "tento server nám
+// maily neodošle". EENVELOPE je tu kvôli Microsoftu 365: keď schránka nemá
+// SendAs oprávnenie na odosielaciu adresu, odmietne správu až na úrovni
+// obálky (550 5.7.60) a kontaktný formulár by inak zákazníkom vracal 500.
+const FALLBACK_ON = new Set([
+  "EAUTH",
+  "ECONNECTION",
+  "ESOCKET",
+  "ETIMEDOUT",
+  "EDNS",
+  "EENVELOPE",
+]);
 
 /**
  * Odošle mail primárnym SMTP; ak ten neodpovie alebo odmietne prihlásenie,
