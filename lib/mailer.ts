@@ -74,10 +74,13 @@ const fallback =
       }
     : null;
 
-// Chyby spojenia, prihlásenia a odmietnutej obálky — teda "tento server nám
-// maily neodošle". EENVELOPE je tu kvôli Microsoftu 365: keď schránka nemá
-// SendAs oprávnenie na odosielaciu adresu, odmietne správu až na úrovni
-// obálky (550 5.7.60) a kontaktný formulár by inak zákazníkom vracal 500.
+// Chyby, po ktorých je jasné, že tento server správu neodošle nikdy — nemá
+// zmysel ich vracať zákazníkovi ako 500.
+//
+// EENVELOPE a EMESSAGE sú tu kvôli Microsoftu 365: keď schránka nemá SendAs
+// oprávnenie na odosielaciu adresu, odmietne až obálku (550 5.7.60) alebo
+// dokonca celú správu po DATA (554 5.2.252 SendAsDenied). Oboje je permanentné
+// odmietnutie konfigurácie, nie chyba obsahu, a Gmail takú správu pošle.
 const FALLBACK_ON = new Set([
   "EAUTH",
   "ECONNECTION",
@@ -85,6 +88,7 @@ const FALLBACK_ON = new Set([
   "ETIMEDOUT",
   "EDNS",
   "EENVELOPE",
+  "EMESSAGE",
 ]);
 
 /**
