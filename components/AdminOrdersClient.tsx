@@ -59,6 +59,7 @@ export default function AdminOrdersClient({
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [changingId, setChangingId] = useState<string | null>(null);
   const [testEmailStatus, setTestEmailStatus] = useState<"idle" | "sending" | "ok" | "error">("idle");
+  const [allEmailsStatus, setAllEmailsStatus] = useState<"idle" | "sending">("idle");
   const [resendingId, setResendingId] = useState<string | null>(null);
   const router = useRouter();
 
@@ -80,6 +81,40 @@ export default function AdminOrdersClient({
       alert("Sieťová chyba pri odosielaní mailu.");
     } finally {
       setResendingId(null);
+    }
+  }
+
+  // Rozpošle vzorku od každej šablóny na internú schránku. Trvá to desiatky
+  // sekúnd — správy idú cez SMTP po jednej — preto je tlačidlo dovtedy zamknuté.
+  async function sendAllSampleEmails() {
+    if (!confirm("Odoslať vzorku od každého typu mailu na internú schránku? Môže to trvať aj minútu.")) {
+      return;
+    }
+    setAllEmailsStatus("sending");
+    try {
+      const res = await fetch("/api/admin/test-all-emails", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok && !d?.results) {
+        alert("Rozposlanie zlyhalo: " + (d.error ?? res.status));
+        return;
+      }
+      const failed = (d.results ?? []).filter((r: { ok: boolean }) => !r.ok);
+      alert(
+        failed.length === 0
+          ? `Odoslaných ${d.sent} vzoriek na ${d.to}.\nV schránke ich nájdeš podľa predmetu "${d.subjectPrefix}".`
+          : `Odoslaných ${d.sent}, zlyhalo ${failed.length}:\n\n` +
+              failed
+                .map((r: { label: string; error?: string }) => `• ${r.label}: ${r.error ?? "neznáma chyba"}`)
+                .join("\n")
+      );
+    } catch {
+      alert("Sieťová chyba pri rozposielaní vzoriek.");
+    } finally {
+      setAllEmailsStatus("idle");
     }
   }
 
@@ -197,6 +232,13 @@ export default function AdminOrdersClient({
               className="rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50 disabled:opacity-60"
             >
               {testEmailStatus === "sending" ? "Odosiela..." : testEmailStatus === "ok" ? "Email odoslaný ✓" : testEmailStatus === "error" ? "Chyba ✗" : "Testovací email"}
+            </button>
+            <button
+              onClick={sendAllSampleEmails}
+              disabled={allEmailsStatus === "sending"}
+              className="rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50 disabled:opacity-60"
+            >
+              {allEmailsStatus === "sending" ? "Rozposielam..." : "Vzorky všetkých mailov"}
             </button>
             <a
               href="/admin/cms"

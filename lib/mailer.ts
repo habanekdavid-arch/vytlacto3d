@@ -1,3 +1,4 @@
+import { AsyncLocalStorage } from "node:async_hooks";
 import nodemailer, { type SendMailOptions, type SentMessageInfo } from "nodemailer";
 
 // Pošta domény 4frommedia.sk beží na Microsofte 365, odosiela sa teda cez
@@ -91,6 +92,20 @@ const FALLBACK_ON = new Set([
   "EMESSAGE",
 ]);
 
+// Prefix predmetu platný len pre správy odoslané vnútri withSubjectPrefix().
+// AsyncLocalStorage preto, že modulová premenná by v serverless prostredí
+// pretiekla do súbežných požiadaviek iných zákazníkov.
+const subjectPrefixStore = new AsyncLocalStorage<string>();
+
+/**
+ * Spustí `fn` tak, že každej správe odoslanej vnútri pribudne pred predmet
+ * `prefix`. Slúži na hromadné testovacie rozposlanie, nech sa dajú vzorky
+ * v schránke odlíšiť od skutočnej prevádzky.
+ */
+export function withSubjectPrefix<T>(prefix: string, fn: () => Promise<T>): Promise<T> {
+  return subjectPrefixStore.run(prefix, fn);
+}
+
 /**
  * Odošle mail primárnym SMTP; ak ten neodpovie alebo odmietne prihlásenie,
  * skúsi záložný Gmail. Vracia nodemailer info doplnené o použitý transport.
@@ -98,8 +113,14 @@ const FALLBACK_ON = new Set([
 export async function sendMail(
   options: SendMailOptions
 ): Promise<SentMessageInfo & { transport: "primary" | "fallback" }> {
+  const prefix = subjectPrefixStore.getStore();
+  const message: SendMailOptions =
+    prefix && typeof options.subject === "string"
+      ? { ...options, subject: `${prefix}${options.subject}` }
+      : options;
+
   try {
-    const info = await transporter.sendMail(options);
+    const info = await transporter.sendMail(message);
     return Object.assign(info, { transport: "primary" as const });
   } catch (err) {
     const code = String((err as { code?: string })?.code ?? "");
@@ -109,7 +130,7 @@ export async function sendMail(
       `Primary SMTP (${host}:${port}, user ${user}) failed with ${code} — resending via Gmail fallback.`,
       err
     );
-    const info = await fallback.transporter.sendMail({ ...options, from: fallback.from });
+    const info = await fallback.transporter.sendMail({ ...message, from: fallback.from });
     return Object.assign(info, { transport: "fallback" as const });
   }
 }
