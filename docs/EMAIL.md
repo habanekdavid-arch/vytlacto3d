@@ -22,7 +22,8 @@ v `.env.local`), pre Production aj Preview:
 | `SMTP_SECURE`   | *(nenastavovať)*                       | Odvodí sa z portu: 587 → STARTTLS, 465 → implicitné TLS. |
 | `SMTP_USER`     | `office@4frommedia.sk`                 | Prihlasovacia schránka. |
 | `SMTP_PASSWORD` | *(heslo tejto schránky)*               | Nikdy nepatrí do repozitára. |
-| `EMAIL_FROM`    | `VytlačTo3D <info@4frommedia.sk>`      | **Povinné**, keď sa login líši od odosielacej adresy. Bez neho by web odosielal pod `office@`. |
+| `EMAIL_FROM`    | `VytlačTo3D <info@4frommedia.sk>`      | **Povinné**, keď sa login líši od odosielacej adresy. Bez neho by web odosielal pod `office@`. Odosielať sa dá len pod adresou, na ktorú má prihlasovacia schránka právo *Send as* — alias nestačí. |
+| `EMAIL_REPLY_TO`| *(nepovinné)*                          | Kam smerujú odpovede zákazníkov. Bez nej sa použije `ADMIN_INBOX`, teda `info@4frommedia.sk`. |
 
 Súvisiace premenné:
 
@@ -30,6 +31,16 @@ Súvisiace premenné:
   objednávkach a správy z kontaktného formulára (default `info@4frommedia.sk`)
 - `ADMIN_EMAILS` — čiarkou oddelený zoznam adries s prístupom do administrácie
 - `SELLER_EMAIL` — kontaktná adresa na faktúrach (default `info@4frommedia.sk`)
+
+## Reply-To
+
+Web odosiela z prihlasovacej schránky (`office@`), ale na stránkach je všade
+uvedená `info@4frommedia.sk`. Aby zákazník neodpovedal na adresu, ktorú nikde
+nevidel, `sendMail()` každej správe doplní hlavičku `Reply-To` s hodnotou
+`REPLY_TO` (`EMAIL_REPLY_TO`, inak `ADMIN_INBOX`).
+
+Vlastné `Reply-To` v šablóne má prednosť — kontaktný formulár ním smeruje
+odpoveď zákazníkovi a prepísanie by znamenalo odpovedať sám sebe.
 
 ## Odosielateľ aj prijímateľ
 

@@ -56,6 +56,13 @@ export const FROM =
  */
 export const ADMIN_INBOX = process.env.ADMIN_ORDER_EMAIL || DEFAULT_FROM_EMAIL;
 
+/**
+ * Adresa, na ktorú majú smerovať odpovede zákazníkov. Odosiela sa z
+ * prihlasovacej schránky, ale na webe je všade uvedená info@ — bez Reply-To by
+ * zákazník odpovedal na adresu, ktorú nikdy nikde nevidel.
+ */
+export const REPLY_TO = process.env.EMAIL_REPLY_TO || ADMIN_INBOX;
+
 // Záložný Gmail transport. Keď primárny server odmietne prihlásenie alebo je
 // nedostupný, zákazník nesmie dostať 500 na kontaktnom formulári a objednávkové
 // maily nesmú vypadnúť — pošlú sa cez Gmail a chyba sa vypíše do logu.
@@ -114,10 +121,15 @@ export async function sendMail(
   options: SendMailOptions
 ): Promise<SentMessageInfo & { transport: "primary" | "fallback" }> {
   const prefix = subjectPrefixStore.getStore();
-  const message: SendMailOptions =
-    prefix && typeof options.subject === "string"
-      ? { ...options, subject: `${prefix}${options.subject}` }
-      : options;
+  const message: SendMailOptions = {
+    ...options,
+    ...(prefix && typeof options.subject === "string"
+      ? { subject: `${prefix}${options.subject}` }
+      : null),
+    // Vlastné Reply-To má prednosť — kontaktný formulár ním smeruje odpoveď
+    // zákazníkovi a prepísať ho by znamenalo odpovedať sám sebe.
+    ...(options.replyTo ? null : { replyTo: REPLY_TO }),
+  };
 
   try {
     const info = await transporter.sendMail(message);
