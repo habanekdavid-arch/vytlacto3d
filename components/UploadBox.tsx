@@ -17,6 +17,10 @@ type Uploaded = {
 
 export type UploadBoxHandle = { triggerOpen: () => void };
 
+// Zhodné s limitom v /api/analyze. Kontroluje sa aj tu, aby zákazník nečakal
+// na nahranie stomegového súboru, ktorý server aj tak odmietne.
+const MAX_MODEL_MB = 100;
+
 const UploadBox = forwardRef<UploadBoxHandle, {
   onUploaded: (data: Uploaded) => void;
   onUploadingChange?: (value: boolean) => void;
@@ -74,6 +78,13 @@ const UploadBox = forwardRef<UploadBoxHandle, {
   }
 
   async function uploadAndAnalyze(file: File): Promise<void> {
+    if (file.size > MAX_MODEL_MB * 1024 * 1024) {
+      throw new Error(
+        `Súbor má ${(file.size / 1024 / 1024).toFixed(1)} MB, maximum je ${MAX_MODEL_MB} MB. ` +
+          "Skúste znížiť počet trojuholníkov modelu."
+      );
+    }
+
     const safeName = sanitizeFileName(file.name);
 
     const blob = await upload(safeName, file, {

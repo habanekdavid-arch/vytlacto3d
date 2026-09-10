@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { quote } from "@/lib/pricing";
+import { isMaterial, isQuality, quote } from "@/lib/pricing";
 
 export async function POST(req: NextRequest) {
   try {
@@ -23,6 +23,16 @@ export async function POST(req: NextRequest) {
         { error: "Missing material or quality" },
         { status: 400 }
       );
+    }
+
+    // Neznáma hodnota vyzdvihne z cenníka `undefined`, celý výpočet vyjde NaN
+    // a odpoveď by s kódom 200 niesla `total: null`.
+    if (!isMaterial(material)) {
+      return NextResponse.json({ error: "Invalid material" }, { status: 400 });
+    }
+
+    if (!isQuality(quality)) {
+      return NextResponse.json({ error: "Invalid quality" }, { status: 400 });
     }
 
     if (!Number.isFinite(infillPct) || infillPct < 0 || infillPct > 100) {

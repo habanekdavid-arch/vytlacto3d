@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 
 import { prisma } from "@/lib/prisma";
-import { quote } from "@/lib/pricing";
+import { isMaterial, isQuality, quote } from "@/lib/pricing";
+import { createOrderWithNumber } from "@/lib/order-number";
 import { addVat } from "@/lib/vat";
 import { SHIPPING_RATES } from "@/lib/shipping";
 import { getSafeServerSession } from "@/lib/session";
@@ -12,23 +13,6 @@ export const runtime = "nodejs";
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
   apiVersion: "2026-02-25.clover",
 });
-
-async function generateOrderNumber(): Promise<string> {
-  const PREFIX = "VYT3D-";
-  const START = 1432;
-
-  for (let attempt = 0; attempt < 10; attempt++) {
-    const count = await prisma.order.count({
-      where: { orderNumber: { startsWith: PREFIX } },
-    });
-    const seq = START + count;
-    const orderNumber = `${PREFIX}${seq}`;
-    const exists = await prisma.order.findUnique({ where: { orderNumber } });
-    if (!exists) return orderNumber;
-  }
-
-  return `${PREFIX}${Date.now().toString().slice(-6)}`;
-}
 
 function getBaseUrl(req: NextRequest) {
   const origin = req.headers.get("origin");
@@ -51,6 +35,10 @@ type RawItem = {
 };
 
 export async function POST(req: NextRequest) {
+  // Objednávka vzniká v databáze skôr ako platobná session — kým sa k nej
+  // session nepriradí, je to nedokončený riadok, ktorý treba po zlyhaní zmazať.
+  let createdOrderId: string | null = null;
+
   try {
     if (!process.env.STRIPE_SECRET_KEY) {
       return NextResponse.json({ error: "Missing STRIPE_SECRET_KEY" }, { status: 500 });
@@ -136,6 +124,14 @@ export async function POST(req: NextRequest) {
       if (!item.config?.material || !item.config?.quality) {
         return NextResponse.json({ error: `Missing material/quality for ${item.fileName}` }, { status: 400 });
       }
+      // Neznáma hodnota by z cenníka vyzdvihla `undefined`, cena by vyšla NaN
+      // a Stripe by objednávku odmietol až po jej zapísaní do databázy.
+      if (!isMaterial(item.config.material)) {
+        return NextResponse.json({ error: `Neznámy materiál pre ${item.fileName}` }, { status: 400 });
+      }
+      if (!isQuality(item.config.quality)) {
+        return NextResponse.json({ error: `Neznáma kvalita tlače pre ${item.fileName}` }, { status: 400 });
+      }
 
       const scaleFactor = scale / 100;
       const scaledVol = rawVol * Math.pow(scaleFactor, 3);
@@ -159,9 +155,7 @@ export async function POST(req: NextRequest) {
       ? first.serverPricing
       : { ...first.serverPricing, total: totalNet };
 
-    const orderNumber = await generateOrderNumber();
-
-    const order = await prisma.order.create({
+    const order = await createOrderWithNumber((orderNumber) => prisma.order.create({
       data: {
         orderNumber,
         status: "PENDING",
@@ -211,7 +205,9 @@ export async function POST(req: NextRequest) {
               },
       },
       select: { id: true },
-    });
+    }));
+
+    createdOrderId = order.id;
 
     // Create one OrderItem per model
     await prisma.orderItem.createMany({
@@ -375,6 +371,9 @@ export async function POST(req: NextRequest) {
       data: { stripeSessionId: stripeSession.id },
     });
 
+    // Od tejto chvíle sa objednávka dá zaplatiť a cron ju vie dokončiť aj zrušiť.
+    createdOrderId = null;
+
     return NextResponse.json({
       url: stripeSession.url,
       orderId: order.id,
@@ -383,6 +382,18 @@ export async function POST(req: NextRequest) {
     });
   } catch (e: any) {
     console.error("create-checkout-session error:", e);
+
+    // Bez platobnej session zákazník nemá ako zaplatiť a cron taký riadok
+    // nikdy neupomenie ani nezruší (vyžaduje stripeSessionId), takže by
+    // v administrácii zostal navždy visieť ako PENDING.
+    if (createdOrderId) {
+      await prisma.order
+        .delete({ where: { id: createdOrderId } })
+        .catch((cleanupError) => {
+          console.error("Nepodarilo sa odstrániť nedokončenú objednávku:", createdOrderId, cleanupError);
+        });
+    }
+
     return NextResponse.json({ error: e?.message || "Checkout failed" }, { status: 500 });
   }
 }

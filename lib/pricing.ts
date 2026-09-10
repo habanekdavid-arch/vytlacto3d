@@ -1,5 +1,16 @@
-type Material = "PLA" | "PETG" | "ABS";
-type Quality = "DRAFT" | "STANDARD" | "FINE";
+export const MATERIALS = ["PLA", "PETG", "ABS"] as const;
+export const QUALITIES = ["DRAFT", "STANDARD", "FINE"] as const;
+
+export type Material = (typeof MATERIALS)[number];
+export type Quality = (typeof QUALITIES)[number];
+
+export function isMaterial(value: unknown): value is Material {
+  return MATERIALS.includes(value as Material);
+}
+
+export function isQuality(value: unknown): value is Quality {
+  return QUALITIES.includes(value as Quality);
+}
 
 type QuoteInput = {
   volumeCm3: number;
@@ -81,6 +92,17 @@ function materialUsageRatio(infillPct: number): number {
 }
 
 export function quote(input: QuoteInput): QuoteResult {
+  // Neznámy materiál alebo kvalita vyzdvihne z cenníkov `undefined` a celý
+  // výpočet sa zmení na NaN — z toho vznikne cena `null` a Stripe potom
+  // objednávku odmietne. Radšej padnúť tu, kde je príčina zrejmá.
+  if (!isMaterial(input.material)) {
+    throw new Error(`Neznámy materiál: ${String(input.material)}`);
+  }
+
+  if (!isQuality(input.quality)) {
+    throw new Error(`Neznáma kvalita tlače: ${String(input.quality)}`);
+  }
+
   const volumeCm3 = Math.max(0.1, Number(input.volumeCm3));
   const material  = input.material;
   const quality   = input.quality;

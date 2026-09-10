@@ -4,26 +4,83 @@ import path from "path";
 import { getLocalFilePath } from "@/lib/storage";
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
 
-type Vec3 = {
-  x: number;
-  y: number;
-  z: number;
-};
+// Nad týmto sa model odmietne ešte pred stiahnutím. Súradnice sa držia
+// vo Float32Array (4 B na číslo), takže 100 MB STL si vypýta ~72 MB navyše
+// a do funkcie sa zmestí.
+const MAX_MODEL_BYTES = 100 * 1024 * 1024;
 
-function triangleVolume(v1: Vec3, v2: Vec3, v3: Vec3) {
+class ModelTooLargeError extends Error {
+  readonly status = 413;
+
+  constructor(bytes: number) {
+    super(
+      `Model má ${(bytes / 1024 / 1024).toFixed(1)} MB, maximum je ${
+        MAX_MODEL_BYTES / 1024 / 1024
+      } MB. Skúste znížiť počet trojuholníkov modelu.`
+    );
+  }
+}
+
+/**
+ * Objem štvorstena (0, v1, v2, v3) — súradnice sú ploché, indexy ukazujú
+ * na začiatok trojice x/y/z.
+ */
+function triangleVolume(
+  coords: ArrayLike<number>,
+  a: number,
+  b: number,
+  c: number
+) {
+  const x1 = coords[a], y1 = coords[a + 1], z1 = coords[a + 2];
+  const x2 = coords[b], y2 = coords[b + 1], z2 = coords[b + 2];
+  const x3 = coords[c], y3 = coords[c + 1], z3 = coords[c + 2];
+
   return (
-    v1.x * v2.y * v3.z +
-    v2.x * v3.y * v1.z +
-    v3.x * v1.y * v2.z -
-    v1.x * v3.y * v2.z -
-    v2.x * v1.y * v3.z -
-    v3.x * v2.y * v1.z
+    x1 * y2 * z3 +
+    x2 * y3 * z1 +
+    x3 * y1 * z2 -
+    x1 * y3 * z2 -
+    x2 * y1 * z3 -
+    x3 * y2 * z1
   ) / 6;
 }
 
-function buildAnalysis(vertices: Vec3[], faces?: number[][]) {
-  if (vertices.length < 3) {
+/**
+ * Rastúce pole súradníc pre formáty, ktoré počet vrcholov vopred neprezradia.
+ */
+class VertexBuffer {
+  private coords = new Float32Array(3 * 1024);
+  private written = 0;
+
+  push(x: number, y: number, z: number) {
+    if (this.written + 3 > this.coords.length) {
+      const grown = new Float32Array(this.coords.length * 2);
+      grown.set(this.coords);
+      this.coords = grown;
+    }
+
+    this.coords[this.written++] = x;
+    this.coords[this.written++] = y;
+    this.coords[this.written++] = z;
+  }
+
+  get values(): Float32Array {
+    return this.coords;
+  }
+
+  get vertexCount(): number {
+    return this.written / 3;
+  }
+}
+
+function buildAnalysis(
+  coords: ArrayLike<number>,
+  vertexCount: number,
+  faces?: number[][]
+) {
+  if (vertexCount < 3) {
     throw new Error("Model neobsahuje dostatok vrcholov.");
   }
 
@@ -34,14 +91,19 @@ function buildAnalysis(vertices: Vec3[], faces?: number[][]) {
   let maxY = -Infinity;
   let maxZ = -Infinity;
 
-  for (const v of vertices) {
-    minX = Math.min(minX, v.x);
-    minY = Math.min(minY, v.y);
-    minZ = Math.min(minZ, v.z);
+  for (let i = 0; i < vertexCount; i++) {
+    const o = i * 3;
+    const x = coords[o];
+    const y = coords[o + 1];
+    const z = coords[o + 2];
 
-    maxX = Math.max(maxX, v.x);
-    maxY = Math.max(maxY, v.y);
-    maxZ = Math.max(maxZ, v.z);
+    if (x < minX) minX = x;
+    if (y < minY) minY = y;
+    if (z < minZ) minZ = z;
+
+    if (x > maxX) maxX = x;
+    if (y > maxY) maxY = y;
+    if (z > maxZ) maxZ = z;
   }
 
   let signedVolume = 0;
@@ -50,26 +112,22 @@ function buildAnalysis(vertices: Vec3[], faces?: number[][]) {
     for (const face of faces) {
       if (face.length < 3) continue;
 
-      const first = vertices[face[0]];
+      const first = face[0];
+      if (first < 0 || first >= vertexCount) continue;
 
       for (let i = 1; i < face.length - 1; i++) {
-        const v2 = vertices[face[i]];
-        const v3 = vertices[face[i + 1]];
+        const second = face[i];
+        const third = face[i + 1];
 
-        if (first && v2 && v3) {
-          signedVolume += triangleVolume(first, v2, v3);
-        }
+        if (second < 0 || second >= vertexCount) continue;
+        if (third < 0 || third >= vertexCount) continue;
+
+        signedVolume += triangleVolume(coords, first * 3, second * 3, third * 3);
       }
     }
   } else {
-    for (let i = 0; i < vertices.length; i += 3) {
-      const v1 = vertices[i];
-      const v2 = vertices[i + 1];
-      const v3 = vertices[i + 2];
-
-      if (v1 && v2 && v3) {
-        signedVolume += triangleVolume(v1, v2, v3);
-      }
+    for (let i = 0; i + 2 < vertexCount; i += 3) {
+      signedVolume += triangleVolume(coords, i * 3, (i + 1) * 3, (i + 2) * 3);
     }
   }
 
@@ -100,57 +158,43 @@ function parseBinaryStl(buffer: Buffer) {
     throw new Error("Neplatný binárny STL súbor.");
   }
 
-  const vertices: Vec3[] = [];
+  const coords = new Float32Array(triangleCount * 9);
+  let written = 0;
 
   for (let i = 0; i < triangleCount; i++) {
-    const offset = 84 + i * 50;
+    // 12 B normály na začiatku trojuholníka preskakujeme, nasledujú 3 vrcholy.
+    const offset = 84 + i * 50 + 12;
 
-    vertices.push(
-      {
-        x: buffer.readFloatLE(offset + 12),
-        y: buffer.readFloatLE(offset + 16),
-        z: buffer.readFloatLE(offset + 20),
-      },
-      {
-        x: buffer.readFloatLE(offset + 24),
-        y: buffer.readFloatLE(offset + 28),
-        z: buffer.readFloatLE(offset + 32),
-      },
-      {
-        x: buffer.readFloatLE(offset + 36),
-        y: buffer.readFloatLE(offset + 40),
-        z: buffer.readFloatLE(offset + 44),
-      }
-    );
+    for (let value = 0; value < 9; value++) {
+      coords[written++] = buffer.readFloatLE(offset + value * 4);
+    }
   }
 
-  return buildAnalysis(vertices);
+  return buildAnalysis(coords, triangleCount * 3);
 }
 
 function parseAsciiStl(text: string) {
   const vertexRegex =
     /vertex\s+([+-]?\d*\.?\d+(?:e[+-]?\d+)?)\s+([+-]?\d*\.?\d+(?:e[+-]?\d+)?)\s+([+-]?\d*\.?\d+(?:e[+-]?\d+)?)/gi;
 
-  const vertices: Vec3[] = [];
+  const vertices = new VertexBuffer();
   let match: RegExpExecArray | null;
 
   while ((match = vertexRegex.exec(text)) !== null) {
-    vertices.push({
-      x: Number(match[1]),
-      y: Number(match[2]),
-      z: Number(match[3]),
-    });
+    vertices.push(Number(match[1]), Number(match[2]), Number(match[3]));
   }
 
-  if (vertices.length < 3 || vertices.length % 3 !== 0) {
+  const count = vertices.vertexCount;
+
+  if (count < 3 || count % 3 !== 0) {
     throw new Error("Neplatný ASCII STL súbor.");
   }
 
-  return buildAnalysis(vertices);
+  return buildAnalysis(vertices.values, count);
 }
 
 function parseObj(text: string) {
-  const vertices: Vec3[] = [];
+  const vertices = new VertexBuffer();
   const faces: number[][] = [];
 
   const lines = text.split(/\r?\n/);
@@ -168,7 +212,7 @@ function parseObj(text: string) {
       const z = Number(parts[3]);
 
       if (Number.isFinite(x) && Number.isFinite(y) && Number.isFinite(z)) {
-        vertices.push({ x, y, z });
+        vertices.push(x, y, z);
       }
     }
 
@@ -184,7 +228,7 @@ function parseObj(text: string) {
 
           return vertexIndex > 0
             ? vertexIndex - 1
-            : vertices.length + vertexIndex;
+            : vertices.vertexCount + vertexIndex;
         })
         .filter((index): index is number => index !== null);
 
@@ -194,7 +238,7 @@ function parseObj(text: string) {
     }
   }
 
-  if (vertices.length < 3) {
+  if (vertices.vertexCount < 3) {
     throw new Error("OBJ súbor neobsahuje platné vrcholy.");
   }
 
@@ -202,12 +246,55 @@ function parseObj(text: string) {
     throw new Error("OBJ súbor neobsahuje platné plochy.");
   }
 
-  return buildAnalysis(vertices, faces);
+  return buildAnalysis(vertices.values, vertices.vertexCount, faces);
 }
 
-function detectAsciiStl(buffer: Buffer) {
-  const head = buffer.slice(0, Math.min(buffer.length, 512)).toString("utf8");
-  return head.trimStart().startsWith("solid");
+function startsWithSolid(buffer: Buffer) {
+  return buffer
+    .subarray(0, Math.min(buffer.length, 80))
+    .toString("latin1")
+    .trimStart()
+    .startsWith("solid");
+}
+
+/**
+ * Binárne STL nesie počet trojuholníkov v hlavičke, takže sa dá overiť dĺžkou
+ * súboru. Na úvodné slovo sa spoliehať nedá: viacero CAD exportérov zapisuje
+ * do 80-bajtovej hlavičky binárneho súboru text začínajúci slovom "solid"
+ * a takýto model potom skončil v ASCII vetve, kde nemal jediný vrchol.
+ */
+function isBinaryStl(buffer: Buffer) {
+  if (buffer.length < 84) return false;
+
+  const triangleCount = buffer.readUInt32LE(80);
+
+  if (buffer.length === 84 + triangleCount * 50) return true;
+
+  // Dĺžka nesedí (napr. prílepok na konci súboru) — rozhodne až úvodné slovo.
+  return !startsWithSolid(buffer);
+}
+
+function parseStl(buffer: Buffer) {
+  if (isBinaryStl(buffer)) {
+    return parseBinaryStl(buffer);
+  }
+
+  try {
+    return parseAsciiStl(buffer.toString("utf8"));
+  } catch (asciiError) {
+    // Poistka pre súbory, ktoré vyzerajú ako ASCII, ale ním nie sú. Keď ani
+    // binárne čítanie nevyjde, zákazníkovi hlásime pôvodnú chybu — tá lepšie
+    // popisuje súbor, ktorý naozaj poslal.
+    if (buffer.length >= 84) {
+      try {
+        return parseBinaryStl(buffer);
+      } catch {
+        throw asciiError;
+      }
+    }
+
+    throw asciiError;
+  }
 }
 
 async function loadModelBuffer(fileKey: string) {
@@ -218,7 +305,18 @@ async function loadModelBuffer(fileKey: string) {
       throw new Error(`Nepodarilo sa načítať vzdialený súbor (${res.status}).`);
     }
 
+    const declaredLength = Number(res.headers.get("content-length"));
+
+    if (Number.isFinite(declaredLength) && declaredLength > MAX_MODEL_BYTES) {
+      throw new ModelTooLargeError(declaredLength);
+    }
+
     const arr = await res.arrayBuffer();
+
+    if (arr.byteLength > MAX_MODEL_BYTES) {
+      throw new ModelTooLargeError(arr.byteLength);
+    }
+
     return Buffer.from(arr);
   }
 
@@ -232,6 +330,10 @@ async function loadModelBuffer(fileKey: string) {
 
   if (!stat.isFile()) {
     throw new Error("Invalid file path");
+  }
+
+  if (stat.size > MAX_MODEL_BYTES) {
+    throw new ModelTooLargeError(stat.size);
   }
 
   return fs.readFileSync(filePath);
@@ -262,20 +364,8 @@ export async function POST(req: NextRequest) {
 
     const buffer = await loadModelBuffer(body.fileKey);
 
-    let analysis: {
-      dimsXmm: number;
-      dimsYmm: number;
-      dimsZmm: number;
-      volumeCm3: number;
-    };
-
-    if (ext === ".obj") {
-      analysis = parseObj(buffer.toString("utf8"));
-    } else if (detectAsciiStl(buffer)) {
-      analysis = parseAsciiStl(buffer.toString("utf8"));
-    } else {
-      analysis = parseBinaryStl(buffer);
-    }
+    const analysis =
+      ext === ".obj" ? parseObj(buffer.toString("utf8")) : parseStl(buffer);
 
     return NextResponse.json({
       ok: true,
@@ -291,9 +381,11 @@ export async function POST(req: NextRequest) {
   } catch (e: any) {
     console.error("Analyze API error:", e);
 
+    const status = typeof e?.status === "number" ? e.status : 500;
+
     return NextResponse.json(
       { error: e?.message || "Analyze failed" },
-      { status: 500 }
+      { status }
     );
   }
 }

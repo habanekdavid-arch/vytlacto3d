@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { quote } from "@/lib/pricing";
+import { isMaterial, isQuality, quote } from "@/lib/pricing";
+import { createOrderWithNumber } from "@/lib/order-number";
 import { addVat } from "@/lib/vat";
 import { getSafeServerSession } from "@/lib/session";
 import { generateVariableSymbol, COMPANY_INFO } from "@/lib/company-info";
@@ -9,19 +10,6 @@ import { sendTransferPaymentEmail } from "@/lib/email-transfer";
 import { sendAdminOrderNotificationEmail } from "@/lib/email-admin";
 
 export const runtime = "nodejs";
-
-async function generateOrderNumber(): Promise<string> {
-  const PREFIX = "VYT3D-";
-  const START = 1432;
-  for (let attempt = 0; attempt < 10; attempt++) {
-    const count = await prisma.order.count({ where: { orderNumber: { startsWith: PREFIX } } });
-    const seq = START + count;
-    const orderNumber = `${PREFIX}${seq}`;
-    const exists = await prisma.order.findUnique({ where: { orderNumber } });
-    if (!exists) return orderNumber;
-  }
-  return `${PREFIX}${Date.now().toString().slice(-6)}`;
-}
 
 type RawItem = {
   fileKey: string;
@@ -103,6 +91,13 @@ export async function POST(req: NextRequest) {
       if (!item.config?.material || !item.config?.quality) {
         return NextResponse.json({ error: `Missing material/quality for ${item.fileName}` }, { status: 400 });
       }
+      // Neznáma hodnota by z cenníka vyzdvihla `undefined` a cena by vyšla NaN.
+      if (!isMaterial(item.config.material)) {
+        return NextResponse.json({ error: `Neznámy materiál pre ${item.fileName}` }, { status: 400 });
+      }
+      if (!isQuality(item.config.quality)) {
+        return NextResponse.json({ error: `Neznáma kvalita tlače pre ${item.fileName}` }, { status: 400 });
+      }
 
       const scaleFactor = scale / 100;
       const scaledVol = rawVol * Math.pow(scaleFactor, 3);
@@ -130,7 +125,6 @@ export async function POST(req: NextRequest) {
 
     const shippingMethod = deliveryMethod === "courier" ? "Kurier" : "Packeta vyzdvihna / Z-Box";
     const customerEmail = sessionEmail ?? dbUser?.email ?? null;
-    const orderNumber = await generateOrderNumber();
 
     const deliveryAddr =
       deliveryMethod === "packeta" && packetaPoint
@@ -152,7 +146,7 @@ export async function POST(req: NextRequest) {
             country: co?.shippingCountry || dbUser?.shippingCountry || null,
           };
 
-    const order = await prisma.order.create({
+    const order = await createOrderWithNumber((orderNumber) => prisma.order.create({
       data: {
         orderNumber,
         status: "AWAITING_TRANSFER",
@@ -188,7 +182,7 @@ export async function POST(req: NextRequest) {
         deliveryAddress: deliveryAddr,
       },
       select: { id: true, orderNumber: true, fileName: true, customerEmail: true },
-    });
+    }));
 
     // Create one OrderItem per model
     await prisma.orderItem.createMany({
