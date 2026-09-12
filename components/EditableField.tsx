@@ -2,6 +2,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
+type Option = { value: string; label: string };
+
 type Props = {
   orderId: string;
   label: string;
@@ -10,16 +12,24 @@ type Props = {
   jsonField?: string;
   jsonKey?: string;
   mono?: boolean;
+  // Pole s pevnou ponukou (materiál, kvalita, farba): ukladá sa kód, zobrazuje
+  // sa popisok, ktorý videl zákazník. Voľným textom by sa sem dala uložiť
+  // hodnota, akú cenník nepozná, a cena by potom vyšla NaN.
+  options?: Option[];
 };
 
 export default function EditableField({
-  orderId, label, value, field, jsonField, jsonKey, mono = false,
+  orderId, label, value, field, jsonField, jsonKey, mono = false, options,
 }: Props) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
+
+  const displayValue = options
+    ? options.find((option) => option.value === value)?.label ?? value
+    : value;
 
   async function handleSave() {
     setSaving(true);
@@ -76,18 +86,41 @@ export default function EditableField({
 
       {editing ? (
         <div className="mt-2">
-          <input
-            type="text"
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter") handleSave(); if (e.key === "Escape") { setEditing(false); setError(""); } }}
-            autoFocus
-            disabled={saving}
-            className={[
-              "w-full rounded-xl border border-[#FFAE00] bg-white px-3 py-1.5 text-sm font-semibold text-neutral-900 focus:outline-none focus:ring-1 focus:ring-[#FFAE00]",
-              mono ? "font-mono text-xs" : "",
-            ].join(" ")}
-          />
+          {options ? (
+            <select
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Escape") { setEditing(false); setError(""); } }}
+              autoFocus
+              disabled={saving}
+              className="w-full rounded-xl border border-[#FFAE00] bg-white px-3 py-1.5 text-sm font-semibold text-neutral-900 focus:outline-none focus:ring-1 focus:ring-[#FFAE00]"
+            >
+              {/* Hodnota mimo ponuky (nevyplnená alebo zo staršej objednávky)
+                  musí zostať viditeľná, inak by prehliadač ukázal prvú položku,
+                  hoci uložiť by sa mala pôvodná hodnota. */}
+              {!options.some((option) => option.value === value) && (
+                <option value={value}>{value === "" ? "—" : value}</option>
+              )}
+              {options.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <input
+              type="text"
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") handleSave(); if (e.key === "Escape") { setEditing(false); setError(""); } }}
+              autoFocus
+              disabled={saving}
+              className={[
+                "w-full rounded-xl border border-[#FFAE00] bg-white px-3 py-1.5 text-sm font-semibold text-neutral-900 focus:outline-none focus:ring-1 focus:ring-[#FFAE00]",
+                mono ? "font-mono text-xs" : "",
+              ].join(" ")}
+            />
+          )}
           <div className="mt-2 flex gap-2">
             <button
               onClick={handleSave}
@@ -120,7 +153,7 @@ export default function EditableField({
             mono ? "font-mono text-xs" : "",
           ].join(" ")}
         >
-          {value || "—"}
+          {displayValue || "—"}
         </div>
       )}
     </div>

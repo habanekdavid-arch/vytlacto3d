@@ -52,13 +52,6 @@ export default function ColorPalette({
   );
 }
 
-export const COLOR_LABELS: Record<string, string> = {
-  black: "Čierna",
-  white: "Biela",
-  gray: "Sivá",
-  red: "Červená",
-  blue: "Modrá",
-  green: "Zelená",
-  purple: "Fialová",
-  orange: "Oranžová",
-};
+// Popisky žijú v lib/print-options.ts spolu s materiálmi a kvalitami, aby
+// administrácia aj e-maily hovorili o farbe rovnako ako konfigurátor.
+export { COLOR_LABELS } from "@/lib/print-options";

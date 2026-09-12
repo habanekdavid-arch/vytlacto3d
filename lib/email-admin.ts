@@ -1,5 +1,6 @@
 import { sendMail, FROM, ADMIN_INBOX, hasMailCredentials } from "@/lib/mailer";
 import { formatEur, addVat, vatAmount } from "@/lib/vat";
+import { colorLabel, materialLabel, qualityLabel } from "@/lib/print-options";
 
 const baseUrl =
   process.env.NEXT_PUBLIC_BASE_URL || "https://www.vytlacto3d.sk";
@@ -80,8 +81,6 @@ export async function sendAdminOrderNotificationEmail({
       }).format(createdAt)
     : null;
 
-  const qualityLabel = config?.quality === "DRAFT" ? "Rýchla (draft)" : config?.quality === "FINE" ? "Jemná (fine)" : config?.quality === "STANDARD" ? "Štandardná" : config?.quality ?? null;
-
   const pricingNet = typeof pricing?.total === "number" ? pricing.total : null;
 
   await sendMail({
@@ -126,9 +125,9 @@ export async function sendAdminOrderNotificationEmail({
 
           ${section("Objednávka", [
             row("Súbor", fileName),
-            row("Materiál", config?.material),
-            row("Farba", config?.color),
-            row("Kvalita", qualityLabel),
+            row("Materiál", materialLabel(config?.material, "")),
+            row("Farba", colorLabel(config?.color, "")),
+            row("Kvalita", qualityLabel(config?.quality, "")),
             row("Množstvo", config?.quantity != null ? `${config.quantity} ks` : null),
             row("Infill", config?.infillPct != null ? `${config.infillPct}%` : null),
             row("Mierka", config?.scalePct != null ? `${config.scalePct}%` : null),

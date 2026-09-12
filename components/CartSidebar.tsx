@@ -2,6 +2,7 @@
 
 import { CartItem } from "@/lib/types";
 import { addVat, formatEur } from "@/lib/vat";
+import { materialLabel, qualityLabel } from "@/lib/print-options";
 
 type Props = {
   items: CartItem[];
@@ -68,7 +69,7 @@ export default function CartSidebar({ items, activeItemId, onSelect, onRemove, o
                 <div className="flex-1 min-w-0">
                   <div className="truncate text-xs font-semibold text-neutral-900">{item.fileName}</div>
                   <div className="text-[11px] text-neutral-500">
-                    {item.config.material} · {item.config.quality} · {item.config.quantity}ks
+                    {materialLabel(item.config.material)} · {qualityLabel(item.config.quality)} · {item.config.quantity}ks
                   </div>
                 </div>
                 <div className="shrink-0 text-right">

@@ -3,20 +3,27 @@ import { prisma } from "@/lib/prisma";
 import { getSafeServerSession } from "@/lib/session";
 import { formatDateSK } from "@/lib/formatDate";
 import AdminOrdersClient from "@/components/AdminOrdersClient";
+import { colorLabel, materialLabel, qualityLabel } from "@/lib/print-options";
 
 export const dynamic = "force-dynamic";
 
-function getConfigLabel(config: any) {
+function getConfigLabel(config: any, modelCount: number) {
   if (!config || typeof config !== "object") return "—";
-  const material = config.material ?? "—";
-  const quality =
-    config.quality === "DRAFT" ? "Rýchla" :
-    config.quality === "STANDARD" ? "Štandard" :
-    config.quality === "FINE" ? "Detailná" : "—";
+
   const infill = typeof config.infillPct === "number" ? `${config.infillPct}% infill` : "—";
   const quantity = typeof config.quantity === "number" ? `${config.quantity} ks` : "—";
-  const color = config.color ?? "—";
-  return `${material} • ${quality} • ${infill} • ${color} • ${quantity}`;
+
+  const summary = [
+    materialLabel(config.material),
+    qualityLabel(config.quality),
+    infill,
+    colorLabel(config.color),
+    quantity,
+  ].join(" • ");
+
+  // Objednávka nesie nastavenia len prvého modelu. Pri viacerých by to bez
+  // označenia vyzeralo ako nastavenie celej objednávky.
+  return modelCount > 1 ? `1. model: ${summary}` : summary;
 }
 
 export default async function AdminOrdersPage() {
@@ -50,7 +57,7 @@ export default async function AdminOrdersPage() {
     stripeSessionId: order.stripeSessionId ?? null,
     paidTotalEur: order.paidTotalEur ?? null,
     createdAtText: formatDateSK(order.createdAt),
-    configLabel: getConfigLabel(order.config),
+    configLabel: getConfigLabel(order.config, order._count.orderItems),
     modelCount: order._count.orderItems,
   }));
 

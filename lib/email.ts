@@ -1,5 +1,6 @@
 import { sendMail, FROM, hasMailCredentials } from "@/lib/mailer";
 import { formatEur, addVat, vatAmount } from "@/lib/vat";
+import { colorLabel, materialLabel, qualityLabel } from "@/lib/print-options";
 
 const baseUrl =
   process.env.NEXT_PUBLIC_BASE_URL || "https://www.vytlacto3d.sk";
@@ -46,11 +47,6 @@ export async function sendOrderPaidEmail({
   }
 
   const ref = orderNumber ?? orderId;
-  const qualityLabel =
-    config?.quality === "DRAFT" ? "Rýchla (draft)" :
-    config?.quality === "FINE" ? "Jemná (fine)" :
-    config?.quality === "STANDARD" ? "Štandardná" :
-    config?.quality ?? null;
 
   const pricingNet = typeof pricing?.total === "number" ? pricing.total : null;
 
@@ -72,9 +68,9 @@ export async function sendOrderPaidEmail({
             <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#999;margin-bottom:10px;">Detaily objednávky</div>
             <table style="border-collapse:collapse;width:100%;">
               ${row("Súbor", fileName)}
-              ${row("Materiál", config?.material)}
-              ${row("Farba", config?.color)}
-              ${row("Kvalita", qualityLabel)}
+              ${row("Materiál", materialLabel(config?.material, ""))}
+              ${row("Farba", colorLabel(config?.color, ""))}
+              ${row("Kvalita", qualityLabel(config?.quality, ""))}
               ${config?.quantity != null ? row("Množstvo", `${config.quantity} ks`) : ""}
               ${config?.infillPct != null ? row("Infill", `${config.infillPct}%`) : ""}
             </table>

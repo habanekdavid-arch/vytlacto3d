@@ -9,6 +9,14 @@ import EditableField from "@/components/EditableField";
 import ModelPreviewButton from "@/components/ModelPreviewButton";
 import ModelPreviewAllButton from "@/components/ModelPreviewAllButton";
 import { formatDateSK } from "@/lib/formatDate";
+import {
+  COLOR_OPTIONS,
+  MATERIAL_OPTIONS,
+  QUALITY_OPTIONS,
+  colorLabel,
+  materialLabel,
+  qualityLabel,
+} from "@/lib/print-options";
 
 export const dynamic = "force-dynamic";
 
@@ -151,7 +159,7 @@ export default async function AdminOrderDetailPage({
             const ia = oi.analysis as Record<string, any>;
             return [
               `  [${idx + 1}] ${oi.fileName}`,
-              `      Materiál : ${v(ic.material)}  Kvalita: ${v(ic.quality)}  Farba: ${v(ic.color)}`,
+              `      Materiál : ${materialLabel(ic.material)}  Kvalita: ${qualityLabel(ic.quality)}  Farba: ${colorLabel(ic.color)}`,
               `      Množstvo : ${v(ic.quantity)} ks  Infill: ${ic.infillPct ?? "—"}%  Mierka: ${ic.scalePct ?? 100}%`,
               `      Rozmery  : ${ia?.dimsXmm !== undefined ? `${Number(ia.dimsXmm).toFixed(0)}×${Number(ia.dimsYmm).toFixed(0)}×${Number(ia.dimsZmm).toFixed(0)} mm` : "—"}  Objem: ${ia?.volumeCm3 !== undefined ? `${Number(ia.volumeCm3).toFixed(2)} cm³` : "—"}`,
               ...(typeof ip.gramsPerPart === "number" ? [`      Materiál : ${ip.gramsPerPart.toFixed(1)} g/ks  Čas: ${Math.round(ip.printTimeMinPerPart ?? 0)} min/ks`] : []),
@@ -163,9 +171,9 @@ export default async function AdminOrderDetailPage({
       : [
           "KONFIGURÁCIA TLAČE",
           sep,
-          `  Materiál    : ${v(config.material)}`,
-          `  Kvalita     : ${v(config.quality)}`,
-          `  Farba       : ${v(config.color)}`,
+          `  Materiál    : ${materialLabel(config.material)}`,
+          `  Kvalita     : ${qualityLabel(config.quality)}`,
+          `  Farba       : ${colorLabel(config.color)}`,
           `  Počet kusov : ${v(config.quantity)}`,
           `  Infill      : ${config.infillPct !== undefined ? `${config.infillPct}%` : "—"}`,
           `  Mierka      : ${config.scalePct !== undefined ? `${config.scalePct}%` : "—"}`,
@@ -450,9 +458,9 @@ export default async function AdminOrderDetailPage({
                       )}
                     </div>
                     <div className="grid gap-2 text-xs sm:grid-cols-4">
-                      <InfoCard label="Materiál" value={String(ic.material ?? "—")} />
-                      <InfoCard label="Kvalita" value={String(ic.quality ?? "—")} />
-                      <InfoCard label="Farba" value={String(ic.color ?? "—")} />
+                      <InfoCard label="Materiál" value={materialLabel(ic.material)} />
+                      <InfoCard label="Kvalita" value={qualityLabel(ic.quality)} />
+                      <InfoCard label="Farba" value={colorLabel(ic.color)} />
                       <InfoCard label="Počet ks" value={String(ic.quantity ?? "—")} />
                       <InfoCard label="Infill" value={ic.infillPct !== undefined ? `${ic.infillPct}%` : "—"} />
                       <InfoCard label="Mierka" value={ic.scalePct !== undefined ? `${ic.scalePct}%` : "—"} />
@@ -480,10 +488,19 @@ export default async function AdminOrderDetailPage({
         )}
 
         <section className="mt-6 grid gap-6 lg:grid-cols-2">
-          <Panel title="Konfigurácia tlače">
-            <EditableField orderId={order.id} label="Materiál" value={getValue(config.material)} jsonField="config" jsonKey="material" />
-            <EditableField orderId={order.id} label="Kvalita" value={getValue(config.quality)} jsonField="config" jsonKey="quality" />
-            <EditableField orderId={order.id} label="Farba" value={getValue(config.color)} jsonField="config" jsonKey="color" />
+          {/* Objednávka nesie nastavenia prvého modelu. Pri viacerých modeloch to
+              treba pomenovať, inak to vyzerá ako nastavenie celej objednávky —
+              záväzné sú karty jednotlivých modelov vyššie. */}
+          <Panel
+            title={
+              order.orderItems.length > 1
+                ? `Konfigurácia tlače — 1. model (${order.orderItems[0].fileName})`
+                : "Konfigurácia tlače"
+            }
+          >
+            <EditableField orderId={order.id} label="Materiál" value={getValue(config.material)} jsonField="config" jsonKey="material" options={MATERIAL_OPTIONS} />
+            <EditableField orderId={order.id} label="Kvalita" value={getValue(config.quality)} jsonField="config" jsonKey="quality" options={QUALITY_OPTIONS} />
+            <EditableField orderId={order.id} label="Farba" value={getValue(config.color)} jsonField="config" jsonKey="color" options={COLOR_OPTIONS} />
             <EditableField orderId={order.id} label="Počet kusov" value={getValue(config.quantity)} jsonField="config" jsonKey="quantity" />
             <EditableField orderId={order.id} label="Infill" value={config.infillPct !== undefined ? String(config.infillPct) : ""} jsonField="config" jsonKey="infillPct" />
             <EditableField orderId={order.id} label="Mierka" value={config.scalePct !== undefined ? String(config.scalePct) : ""} jsonField="config" jsonKey="scalePct" />

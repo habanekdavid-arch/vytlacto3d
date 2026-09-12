@@ -6,6 +6,7 @@ import { getSafeServerSession } from "@/lib/session";
 import { formatDateSK } from "@/lib/formatDate";
 import ResumeOrderButton from "@/components/ResumeOrderButton";
 
+import { colorLabel, materialLabel, qualityLabel } from "@/lib/print-options";
 export const dynamic = "force-dynamic";
 
 export default async function OrderDetailPage({
@@ -196,9 +197,9 @@ export default async function OrderDetailPage({
                     )}
                   </div>
                   <div className="flex flex-wrap gap-2 text-xs text-neutral-600">
-                    {ic.material && <span className="rounded-full bg-neutral-200 px-2 py-0.5 font-semibold">{ic.material}</span>}
-                    {ic.quality && <span className="rounded-full bg-neutral-200 px-2 py-0.5 font-semibold">{ic.quality}</span>}
-                    {ic.color && <span className="rounded-full bg-neutral-200 px-2 py-0.5 font-semibold">{ic.color}</span>}
+                    {ic.material && <span className="rounded-full bg-neutral-200 px-2 py-0.5 font-semibold">{materialLabel(ic.material)}</span>}
+                    {ic.quality && <span className="rounded-full bg-neutral-200 px-2 py-0.5 font-semibold">{qualityLabel(ic.quality)}</span>}
+                    {ic.color && <span className="rounded-full bg-neutral-200 px-2 py-0.5 font-semibold">{colorLabel(ic.color)}</span>}
                     {ic.quantity && <span className="rounded-full bg-neutral-200 px-2 py-0.5 font-semibold">{ic.quantity} ks</span>}
                     {ic.scalePct && <span className="rounded-full bg-neutral-200 px-2 py-0.5 font-semibold">{ic.scalePct}%</span>}
                   </div>
@@ -212,9 +213,9 @@ export default async function OrderDetailPage({
       <section className="rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm">
         <div className="text-sm font-semibold text-neutral-500">Konfigurácia</div>
         <div className="mt-4 grid gap-4 md:grid-cols-2">
-          <DetailCard label="Materiál" value={String(config.material ?? "—")} />
-          <DetailCard label="Kvalita" value={String(config.quality ?? "—")} />
-          <DetailCard label="Farba" value={String(config.color ?? "—")} />
+          <DetailCard label="Materiál" value={materialLabel(config.material)} />
+          <DetailCard label="Kvalita" value={qualityLabel(config.quality)} />
+          <DetailCard label="Farba" value={colorLabel(config.color)} />
           <DetailCard label="Počet kusov" value={String(config.quantity ?? "—")} />
           <DetailCard label="Infill" value={`${String(config.infillPct ?? "—")}%`} />
           <DetailCard label="Mierka" value={`${String(config.scalePct ?? "100")}%`} />

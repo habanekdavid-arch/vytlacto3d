@@ -4,6 +4,7 @@ import Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
 import { isMaterial, isQuality, quote } from "@/lib/pricing";
 import { createOrderWithNumber } from "@/lib/order-number";
+import { materialLabel, qualityLabel } from "@/lib/print-options";
 import { addVat } from "@/lib/vat";
 import { SHIPPING_RATES } from "@/lib/shipping";
 import { getSafeServerSession } from "@/lib/session";
@@ -335,7 +336,7 @@ export async function POST(req: NextRequest) {
           unit_amount: Math.round(addVat(pi.serverPricing.total) * 100),
           product_data: {
             name: `3D tlac: ${pi.item.fileName}`,
-            description: `${pi.item.config.material}, ${pi.item.config.quality}, ${pi.qty}ks | mierka ${pi.scale}%`,
+            description: `${materialLabel(pi.item.config.material)}, ${qualityLabel(pi.item.config.quality)}, ${pi.qty}ks | mierka ${pi.scale}%`,
           },
         },
       })),

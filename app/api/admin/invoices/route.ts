@@ -3,8 +3,24 @@ import { prisma } from "@/lib/prisma";
 import { getSafeServerSession } from "@/lib/session";
 import { addVat, vatAmount } from "@/lib/vat";
 import { getSellerInfo } from "@/lib/seller";
+import { colorLabel, materialLabel, qualityLabel } from "@/lib/print-options";
 
 export const runtime = "nodejs";
+
+/**
+ * Popis fakturačnej položky. Nastavenia píšeme v tom istom znení, aké má
+ * zákazník v konfigurátore aj v potvrdzovacom e-maile — na faktúre stálo
+ * napríklad "FINE, black" namiesto "Detailná, Čierna".
+ */
+function describeItem(fileName: string, config: Record<string, unknown> | null | undefined) {
+  const specs = [
+    materialLabel(config?.material, ""),
+    qualityLabel(config?.quality, ""),
+    colorLabel(config?.color, ""),
+  ].filter(Boolean);
+
+  return `3D tlač: ${fileName}${specs.length > 0 ? ` (${specs.join(", ")})` : ""}`;
+}
 
 function isAdmin(email: string | null | undefined) {
   const admins = (process.env.ADMIN_EMAILS ?? "")
@@ -79,7 +95,7 @@ export async function POST(req: NextRequest) {
           const itemNet = typeof ip.total === "number" ? ip.total : 0;
           const qty = Number(ic.quantity ?? 1);
           return {
-            description: `3D tlač: ${oi.fileName}${ic.material ? ` (${ic.material}` : ""}${ic.quality ? `, ${ic.quality}` : ""}${ic.color ? `, ${ic.color}` : ""}${ic.material || ic.quality || ic.color ? ")" : ""}`,
+            description: describeItem(oi.fileName, ic),
             quantity: qty,
             unitNet: Math.round((itemNet / qty) * 100) / 100,
             vatRate: 23,
@@ -89,7 +105,7 @@ export async function POST(req: NextRequest) {
         })
       : [
           {
-            description: `3D tlač: ${order.fileName}${config.material ? ` (${config.material}` : ""}${config.quality ? `, ${config.quality}` : ""}${config.color ? `, ${config.color}` : ""}${config.material || config.quality || config.color ? ")" : ""}`,
+            description: describeItem(order.fileName, config),
             quantity: config.quantity ?? 1,
             unitNet: Math.round((productionNet / (config.quantity ?? 1)) * 100) / 100,
             vatRate: 23,
