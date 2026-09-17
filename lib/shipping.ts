@@ -1,6 +1,6 @@
 // Finálne ceny dopravy ktoré zákazník platí — DPH je zahrnuté v cene
-// (základ: 3,99/1,23 ≈ 3,24 €; 5,99/1,23 ≈ 4,87 €)
+// (základ: 4,92/1,23 = 4,00 €; 6,15/1,23 = 5,00 €)
 export const SHIPPING_RATES = {
-  PACKETA: 3.99,
-  COURIER: 5.99,
+  PACKETA: 4.92,
+  COURIER: 6.15,
 } as const;
