@@ -8,7 +8,6 @@ import AdminStatusChanger from "@/components/AdminStatusChanger";
 import EditableField from "@/components/EditableField";
 import ModelPreviewButton from "@/components/ModelPreviewButton";
 import ModelPreviewAllButton from "@/components/ModelPreviewAllButton";
-import CopyValueButton from "@/components/CopyValueButton";
 import { formatDateSK } from "@/lib/formatDate";
 import {
   COLOR_OPTIONS,
@@ -603,11 +602,8 @@ function InfoCard({
 }) {
   return (
     <div className="rounded-2xl bg-neutral-50 p-4">
-      <div className="flex items-start justify-between gap-2">
-        <div className="text-xs font-bold uppercase tracking-wide text-neutral-500">
-          {label}
-        </div>
-        <CopyValueButton value={value} label={label} />
+      <div className="text-xs font-bold uppercase tracking-wide text-neutral-500">
+        {label}
       </div>
       <div
         className={[
@@ -624,11 +620,8 @@ function InfoCard({
 function JsonBox({ title, value }: { title: string; value: string }) {
   return (
     <div className="rounded-2xl bg-neutral-950 p-4">
-      <div className="mb-3 flex items-center justify-between gap-2">
-        <div className="text-xs font-bold uppercase tracking-wide text-neutral-400">
-          {title}
-        </div>
-        <CopyValueButton value={value} label={title} tone="dark" />
+      <div className="mb-3 text-xs font-bold uppercase tracking-wide text-neutral-400">
+        {title}
       </div>
       <pre className="max-h-80 overflow-auto whitespace-pre-wrap break-words text-xs leading-6 text-neutral-100">
         {value}
