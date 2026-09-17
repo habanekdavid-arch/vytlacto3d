@@ -26,6 +26,37 @@ function getConfigLabel(config: any, modelCount: number) {
   return modelCount > 1 ? `1. model: ${summary}` : summary;
 }
 
+/**
+ * Modely pre náhľad priamo v prehľade objednávok.
+ *
+ * Staršie objednávky nemajú položky v `orderItems` — vtedy je jediný model
+ * zapísaný priamo na objednávke.
+ */
+function getModels(order: {
+  fileKey: string;
+  fileName: string;
+  config: unknown;
+  orderItems: { fileKey: string; fileName: string; config: unknown }[];
+}) {
+  const source =
+    order.orderItems.length > 0
+      ? order.orderItems
+      : [{ fileKey: order.fileKey, fileName: order.fileName, config: order.config }];
+
+  return source
+    .filter((item) => Boolean(item.fileKey))
+    .map((item) => {
+      const config = (item.config ?? {}) as Record<string, unknown>;
+
+      return {
+        fileKey: item.fileKey,
+        fileName: item.fileName,
+        scalePct: typeof config.scalePct === "number" ? config.scalePct : 100,
+        colorId: typeof config.color === "string" ? config.color : "black",
+      };
+    });
+}
+
 export default async function AdminOrdersPage() {
   const session = await getSafeServerSession();
   const sessionUser = session?.user as { email?: string | null } | undefined;
@@ -43,7 +74,14 @@ export default async function AdminOrdersPage() {
 
   const ordersRaw = await prisma.order.findMany({
     orderBy: { createdAt: "desc" },
-    include: { _count: { select: { orderItems: true } } },
+    include: {
+      _count: { select: { orderItems: true } },
+      // Len toľko, koľko potrebuje náhľad modelu priamo v prehľade.
+      orderItems: {
+        orderBy: { createdAt: "asc" },
+        select: { fileKey: true, fileName: true, config: true },
+      },
+    },
   });
 
   const orders = ordersRaw.map((order) => ({
@@ -59,6 +97,7 @@ export default async function AdminOrdersPage() {
     createdAtText: formatDateSK(order.createdAt),
     configLabel: getConfigLabel(order.config, order._count.orderItems),
     modelCount: order._count.orderItems,
+    models: getModels(order),
   }));
 
   // paidTotalEur je zo Stripe — už obsahuje DPH, sčítame priamo

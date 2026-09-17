@@ -13,9 +13,13 @@ type ModelItem = {
 export default function ModelPreviewAllButton({
   items,
   className,
+  label,
 }: {
   items: ModelItem[];
   className?: string;
+  // Prehľad objednávok potrebuje kratší nápis, ktorý sa zmestí medzi ostatné
+  // tlačidlá v riadku — inak je to ten istý prehliadač modelov.
+  label?: React.ReactNode;
 }) {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
@@ -46,7 +50,7 @@ export default function ModelPreviewAllButton({
           "rounded-2xl border border-neutral-200 bg-white px-5 py-3 text-sm font-bold text-neutral-900 shadow-sm transition hover:bg-neutral-50"
         }
       >
-        👁 Náhľad všetkých modelov ({items.length})
+        {label ?? `👁 Náhľad všetkých modelov (${items.length})`}
       </button>
 
       {current && openIndex !== null && (

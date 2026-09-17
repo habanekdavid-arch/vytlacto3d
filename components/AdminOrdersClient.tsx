@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import ModelPreviewAllButton from "@/components/ModelPreviewAllButton";
 
 type Order = {
   id: string;
@@ -17,6 +18,7 @@ type Order = {
   createdAtText: string;
   configLabel: string;
   modelCount: number;
+  models: { fileKey: string; fileName: string; scalePct?: number; colorId?: string }[];
 };
 
 type Stats = {
@@ -420,6 +422,21 @@ export default function AdminOrdersClient({
 
                     {/* Stĺpec 4: Akcie */}
                     <div className="flex flex-col gap-2 xl:min-w-[160px]">
+                      {/* Nakukne do modelu bez otvárania objednávky. Pri viacerých
+                          modeloch sa medzi nimi preklikáva šípkami v prehliadači. */}
+                      <ModelPreviewAllButton
+                        items={order.models}
+                        className="flex items-center justify-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-3 py-2 text-xs font-bold text-neutral-900 transition hover:bg-neutral-50"
+                        label={
+                          <>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                              <circle cx="12" cy="12" r="3" />
+                            </svg>
+                            {order.models.length > 1 ? `Náhľad (${order.models.length})` : "Náhľad modelu"}
+                          </>
+                        }
+                      />
                       <a
                         href={`/api/file?key=${encodeURIComponent(order.fileKey)}`}
                         target="_blank"
