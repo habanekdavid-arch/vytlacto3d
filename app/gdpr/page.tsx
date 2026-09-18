@@ -68,6 +68,11 @@ export default function GDPRPage() {
               IČO: 35834498, spoločnosť zapísaná v OR Mestského súdu Bratislava I,
               Oddiel Sro, vložka č. 26367/B
             </li>
+            <li>
+              Packeta Slovakia s. r. o., so sídlom: Vajnorská 100/B, 831 04 Bratislava –
+              mestská časť Nové Mesto, IČO: 48136999, spoločnosť zapísaná v OR Okresného súdu
+              Bratislava III, Oddiel Sro, vložka č. 105158/B.
+            </li>
           </ul>
         </Section>
 

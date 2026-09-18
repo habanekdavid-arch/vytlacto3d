@@ -40,7 +40,7 @@ export default function TermsPage() {
             <li>
               Prevádzkovateľom tohto obchodu ako aj zhotoviteľom je obchodná spoločnosť{" "}
               <b>4from media, s.r.o.</b>, so sídlom Nezábudková 5, 821 01 Bratislava, zapísaná
-              v Obchodnom registri Mestského súdu Bratislava III, vložka číslo: 39182/B,
+              v Obchodnom registri Mestského súdu Bratislava I, vložka číslo: 39182/B,
               oddiel: Sro, IČO: 35 976 063, IČ DPH: SK2022117966, DIČ: 2022117966.
               <br />
               Značka/web: <b>VytlačTo3D</b> (projekt spoločnosti 4from media, s.r.o.).
