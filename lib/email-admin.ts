@@ -13,20 +13,50 @@ const CONTACT = `
   </div>
 `;
 
-function row(label: string, value: string | null | undefined) {
-  if (!value) return "";
-  return `<tr><td style="padding:5px 12px 5px 0;color:#666;font-size:14px;white-space:nowrap;">${label}</td><td style="padding:5px 0;font-size:14px;color:#111;font-weight:600;">${value}</td></tr>`;
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
 }
 
-function section(title: string, content: string) {
-  return `
-    <div style="margin-top:20px;">
-      <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#999;margin-bottom:8px;">${title}</div>
-      <div style="background:#fafafa;border:1px solid #eee;border-radius:14px;padding:16px 20px;">
-        <table style="border-collapse:collapse;width:100%;">${content}</table>
-      </div>
-    </div>
-  `;
+/** "—" pre prázdnu hodnotu, inak HTML-escapovaný text. */
+function esc(value: unknown): string {
+  if (value === null || value === undefined || value === "") return "—";
+  return escapeHtml(String(value));
+}
+
+/**
+ * Jeden riadok bloku "Label : hodnota". Vynechá sa úplne, keď je hodnota
+ * prázdna — nechceme v ľahko kopírovateľnom bloku desiatky riadkov s "—".
+ */
+function line(label: string, value: unknown): string | null {
+  if (value === null || value === undefined || value === "") return null;
+  return `  ${label} : ${escapeHtml(String(value))}`;
+}
+
+type Address = Record<string, any> | null | undefined;
+
+/** Riadky adresy — doručovacej aj fakturačnej, vrátane výdajného miesta Packeta. */
+function addressLines(addr: Address, withName = true): string[] {
+  if (!addr) return [];
+
+  const lines: (string | null)[] = [];
+
+  if (addr.type === "packeta") {
+    lines.push(line("Výdajné miesto", addr.packetaPointName));
+  } else if (withName) {
+    lines.push(line("Meno    ", addr.name || addr.contact));
+  }
+
+  // Zarovnané na rovnakú šírku ako v ostatných sekciách bloku.
+  const street = addr.street ?? addr.line1 ?? addr.address;
+  lines.push(line("Ulica   ", addr.line2 ? `${street ?? ""}, ${addr.line2}` : street));
+  lines.push(line("Mesto   ", addr.city));
+  lines.push(line("PSČ     ", addr.zip ?? addr.postal_code));
+  lines.push(line("Krajina ", addr.country));
+
+  return lines.filter((l): l is string => l !== null);
 }
 
 export async function sendAdminOrderNotificationEmail({
@@ -44,9 +74,14 @@ export async function sendAdminOrderNotificationEmail({
   dic,
   icDph,
   contactPerson,
+  accountName,
+  billingAddress,
   deliveryAddress,
   config,
   pricing,
+  paymentMethod = "CARD",
+  variableSymbol,
+  status,
   createdAt,
 }: {
   orderId: string;
@@ -63,9 +98,18 @@ export async function sendAdminOrderNotificationEmail({
   dic?: string | null;
   icDph?: string | null;
   contactPerson?: string | null;
+  // Meno z účtu zákazníka (User.name) — najspoľahlivejší zdroj mena
+  // pre prihláseného zákazníka, keď ho neposkytol Stripe ani doručovacia adresa.
+  accountName?: string | null;
+  billingAddress?: Record<string, any> | null;
   deliveryAddress?: Record<string, any> | null;
   config?: Record<string, any> | null;
   pricing?: Record<string, any> | null;
+  paymentMethod?: "CARD" | "TRANSFER";
+  variableSymbol?: string | null;
+  // Stav objednávky v momente odoslania — TRANSFER objednávka v tomto bode
+  // ešte nie je zaplatená, e-mail to musí povedať jasne.
+  status?: string | null;
   createdAt?: Date | null;
 }) {
   if (!hasMailCredentials()) {
@@ -83,10 +127,92 @@ export async function sendAdminOrderNotificationEmail({
 
   const pricingNet = typeof pricing?.total === "number" ? pricing.total : null;
 
+  const isAwaitingTransfer = status === "AWAITING_TRANSFER" || paymentMethod === "TRANSFER";
+  const badgeText = isAwaitingTransfer
+    ? "Nová objednávka — čaká sa platba prevodom"
+    : "Nová zaplatená objednávka";
+  const subject = isAwaitingTransfer
+    ? `🕓 Nová objednávka ${ref} – čaká platba prevodom – ${fileName}`
+    : `🛒 Nová zaplatená objednávka ${ref} – ${fileName}`;
+
+  // Meno zákazníka nie je na objednávke jedno pole — poskladá sa z toho, čo
+  // sa podarilo zachytiť: meno zadané pri platbe kartou, meno pri doručení,
+  // kontaktná osoba (pri firme aj pri platbe prevodom) a napokon meno z účtu.
+  const customerName =
+    billingAddress?.name ||
+    deliveryAddress?.name ||
+    deliveryAddress?.contact ||
+    contactPerson ||
+    accountName ||
+    null;
+
+  const isCompany = accountType === "COMPANY";
+
+  const copyLines: (string | null)[] = [
+    "═".repeat(46),
+    `  OBJEDNÁVKA ${escapeHtml(ref)}`,
+    `  Stav: ${isAwaitingTransfer ? "Čaká sa platba prevodom" : "Zaplatené"}`,
+    "═".repeat(46),
+    "",
+    "ZÁKAZNÍK",
+    "─".repeat(46),
+    line("Meno    ", customerName),
+    line("Email   ", customerEmail),
+    line("Telefón ", phone),
+    line("Typ účtu", isCompany ? "Firma" : accountType === "PERSON" ? "Súkromná osoba" : null),
+
+    ...(isCompany
+      ? [
+          "",
+          "FIREMNÉ ÚDAJE",
+          "─".repeat(46),
+          line("Spoločnosť   ", companyName),
+          line("Kontaktná os.", contactPerson),
+          line("IČO          ", ico),
+          line("DIČ          ", dic),
+          line("IČ DPH       ", icDph),
+        ]
+      : []),
+
+    ...(billingAddress
+      ? ["", "FAKTURAČNÁ ADRESA", "─".repeat(46), ...addressLines(billingAddress, false)]
+      : []),
+
+    ...(deliveryAddress
+      ? ["", "ADRESA DORUČENIA", "─".repeat(46), ...addressLines(deliveryAddress)]
+      : []),
+
+    "",
+    "OBJEDNÁVKA",
+    "─".repeat(46),
+    line("Súbor   ", fileName),
+    line("Materiál", materialLabel(config?.material, "")),
+    line("Kvalita ", qualityLabel(config?.quality, "")),
+    line("Farba   ", colorLabel(config?.color, "")),
+    line("Množstvo", config?.quantity != null ? `${config.quantity} ks` : null),
+    line("Infill  ", config?.infillPct != null ? `${config.infillPct}%` : null),
+    line("Mierka  ", config?.scalePct != null ? `${config.scalePct}%` : null),
+
+    "",
+    "PLATBA",
+    "─".repeat(46),
+    line("Spôsob           ", isAwaitingTransfer ? "Prevodom na účet" : "Kartou (Stripe)"),
+    ...(isAwaitingTransfer ? [line("Variabilný symbol", variableSymbol)] : []),
+    pricingNet != null ? line("Základ bez DPH   ", formatEur(pricingNet)) : null,
+    pricingNet != null ? line("DPH 23 %         ", formatEur(vatAmount(pricingNet))) : null,
+    pricingNet != null ? line("Výroba s DPH     ", formatEur(addVat(pricingNet))) : null,
+    line("Doprava          ", shippingMethod),
+    shippingCostEur != null ? line("Cena dopravy     ", formatEur(shippingCostEur)) : null,
+    totalEur != null ? line("CELKOM           ", formatEur(totalEur)) : null,
+    "═".repeat(46),
+  ];
+
+  const copyBlock = copyLines.filter((l): l is string => l !== null).join("\n");
+
   await sendMail({
     from: FROM,
     to: ADMIN_INBOX,
-    subject: `🛒 Nová objednávka ${ref} – ${fileName}`,
+    subject,
     html: `
       <div style="font-family:Arial,sans-serif;background:#f7f7f7;padding:32px;">
         <div style="max-width:680px;margin:0 auto;background:white;border-radius:22px;padding:32px;border:1px solid #e5e5e5;">
@@ -95,52 +221,20 @@ export async function sendAdminOrderNotificationEmail({
             <div style="background:#FFAE00;border-radius:12px;padding:10px 18px;font-weight:800;font-size:22px;color:#000;">
               VytlačTo3D
             </div>
-            <div style="font-size:13px;color:#888;">Nová zaplatená objednávka</div>
+            <div style="font-size:13px;color:#888;">${badgeText}</div>
           </div>
 
-          <h1 style="margin:0 0 4px;font-size:26px;color:#111;">${ref}</h1>
-          ${dateStr ? `<div style="font-size:13px;color:#999;margin-bottom:16px;">${dateStr}</div>` : ""}
+          <h1 style="margin:0 0 4px;font-size:26px;color:#111;">${esc(ref)}</h1>
+          ${dateStr ? `<div style="font-size:13px;color:#999;margin-bottom:16px;">${esc(dateStr)}</div>` : ""}
 
-          ${section("Zákazník", [
-            row("Meno", deliveryAddress?.name ?? contactPerson),
-            row("Email", customerEmail),
-            row("Telefón", phone),
-            row("Typ účtu", accountType === "COMPANY" ? "Firma" : accountType === "PERSON" ? "Súkromná osoba" : null),
-          ].join(""))}
-
-          ${accountType === "COMPANY" ? section("Firemné údaje", [
-            row("Firma", companyName),
-            row("IČO", ico),
-            row("DIČ", dic),
-            row("IČ DPH", icDph),
-            row("Kontaktná osoba", contactPerson),
-          ].join("")) : ""}
-
-          ${section("Adresa doručenia", [
-            row("Ulica", deliveryAddress?.street ?? deliveryAddress?.line1 ?? deliveryAddress?.address),
-            row("Mesto", deliveryAddress?.city),
-            row("PSČ", deliveryAddress?.zip ?? deliveryAddress?.postal_code),
-            row("Krajina", deliveryAddress?.country),
-          ].join("") || `<tr><td style="color:#999;font-size:14px;">—</td></tr>`)}
-
-          ${section("Objednávka", [
-            row("Súbor", fileName),
-            row("Materiál", materialLabel(config?.material, "")),
-            row("Farba", colorLabel(config?.color, "")),
-            row("Kvalita", qualityLabel(config?.quality, "")),
-            row("Množstvo", config?.quantity != null ? `${config.quantity} ks` : null),
-            row("Infill", config?.infillPct != null ? `${config.infillPct}%` : null),
-            row("Mierka", config?.scalePct != null ? `${config.scalePct}%` : null),
-          ].join(""))}
-
-          ${section("Cena", [
-            pricingNet != null ? row("Základ bez DPH", formatEur(pricingNet)) : "",
-            pricingNet != null ? row("DPH 23 %", formatEur(vatAmount(pricingNet))) : "",
-            pricingNet != null ? row("Výroba s DPH", formatEur(addVat(pricingNet))) : "",
-            shippingCostEur != null ? row("Doprava", formatEur(shippingCostEur)) : "",
-            row("Doprava (metóda)", shippingMethod),
-            totalEur != null ? row("Celkom zaplatené", formatEur(totalEur)) : "",
-          ].join(""))}
+          <div style="margin-top:12px;">
+            <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#999;margin-bottom:8px;">
+              Všetky údaje — na jedno kliknutie skopírovateľné
+            </div>
+            <div style="background:#fafafa;border:1px solid #eee;border-radius:14px;padding:16px 20px;overflow-x:auto;">
+              <pre style="margin:0;font-family:'SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace;font-size:13px;line-height:1.7;color:#111;white-space:pre;">${copyBlock}</pre>
+            </div>
+          </div>
 
           <div style="margin-top:24px;">
             <a href="${baseUrl}/admin/orders/${orderId}" style="display:inline-block;background:#FFAE00;color:#000;text-decoration:none;font-weight:800;padding:14px 22px;border-radius:14px;">

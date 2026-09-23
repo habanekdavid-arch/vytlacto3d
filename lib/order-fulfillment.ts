@@ -115,6 +115,7 @@ export async function markOrderPaidFromCheckoutSession(
         where: { email: customerEmail },
         select: {
           id: true,
+          name: true,
           accountType: true,
           phone: true,
           companyName: true,
@@ -200,12 +201,14 @@ export async function markOrderPaidFromCheckoutSession(
       dic: true,
       icDph: true,
       contactPerson: true,
+      billingAddress: true,
       deliveryAddress: true,
       config: true,
       pricing: true,
       shippingCost: true,
       createdAt: true,
       userId: true,
+      status: true,
     },
   });
 
@@ -249,9 +252,13 @@ export async function markOrderPaidFromCheckoutSession(
       dic: updatedOrder.dic,
       icDph: updatedOrder.icDph,
       contactPerson: updatedOrder.contactPerson,
+      accountName: matchedUser?.name,
+      billingAddress: updatedOrder.billingAddress as any,
       deliveryAddress: updatedOrder.deliveryAddress as any,
       config: updatedOrder.config as any,
       pricing: updatedOrder.pricing as any,
+      paymentMethod: "CARD",
+      status: updatedOrder.status,
       createdAt: updatedOrder.createdAt,
     });
   } catch (adminEmailError) {

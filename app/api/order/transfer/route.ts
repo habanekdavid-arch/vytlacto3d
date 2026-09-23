@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
       ? await prisma.user.findUnique({
           where: { id: userId },
           select: {
-            id: true, email: true, phone: true, accountType: true,
+            id: true, name: true, email: true, phone: true, accountType: true,
             companyName: true, ico: true, dic: true, icDph: true, contactPerson: true,
             billingStreet: true, billingCity: true, billingZip: true, billingCountry: true,
             shippingName: true, shippingContact: true, shippingStreet: true,
@@ -174,6 +174,7 @@ export async function POST(req: NextRequest) {
         icDph: dbUser?.icDph ?? null,
         contactPerson: co?.name || dbUser?.contactPerson || null,
         billingAddress: {
+          name: co?.name || dbUser?.contactPerson || dbUser?.name || null,
           street: co?.billingStreet || dbUser?.billingStreet || null,
           city: co?.billingCity || dbUser?.billingCity || null,
           zip: co?.billingZip || dbUser?.billingZip || null,
@@ -181,7 +182,7 @@ export async function POST(req: NextRequest) {
         },
         deliveryAddress: deliveryAddr,
       },
-      select: { id: true, orderNumber: true, fileName: true, customerEmail: true },
+      select: { id: true, orderNumber: true, fileName: true, customerEmail: true, billingAddress: true, status: true },
     }));
 
     // Create one OrderItem per model
@@ -232,6 +233,7 @@ export async function POST(req: NextRequest) {
           }
         : {
             name: co?.shippingName || dbUser?.shippingName || null,
+            contact: co?.name || dbUser?.shippingContact || null,
             street: co?.shippingStreet || dbUser?.shippingStreet || null,
             city: co?.shippingCity || dbUser?.shippingCity || null,
             zip: co?.shippingZip || dbUser?.shippingZip || null,
@@ -254,9 +256,14 @@ export async function POST(req: NextRequest) {
         dic: dbUser?.dic ?? null,
         icDph: dbUser?.icDph ?? null,
         contactPerson: co?.name || dbUser?.contactPerson || null,
+        accountName: dbUser?.name,
+        billingAddress: order.billingAddress as any,
         deliveryAddress: adminDeliveryAddr,
         config: { ...first.item.config, infillPct: first.infill, scalePct: first.scale },
         pricing: combinedPricing as any,
+        paymentMethod: "TRANSFER",
+        variableSymbol,
+        status: order.status,
         createdAt: new Date(),
       });
     } catch (err) {

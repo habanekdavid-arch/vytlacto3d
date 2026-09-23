@@ -10,7 +10,7 @@ import { sendAdminOrderNotificationEmail } from "@/lib/email-admin";
 import { sendContactFormEmail } from "@/lib/email-contact";
 
 export const runtime = "nodejs";
-// Štrnásť správ po jednej cez SMTP sa do predvoleného limitu nezmestí.
+// Pätnásť správ po jednej cez SMTP sa do predvoleného limitu nezmestí.
 export const maxDuration = 300;
 
 /** Prefix predmetu, aby sa vzorky dali v schránke vyfiltrovať. */
@@ -35,6 +35,14 @@ const DELIVERY_ADDRESS = {
   street: "Ukážková 1",
   city: "Bratislava",
   zip: "811 01",
+  country: "Slovensko",
+};
+
+const BILLING_ADDRESS = {
+  name: "Testovací Zákazník",
+  street: "Fakturačná 22",
+  city: "Bratislava",
+  zip: "811 02",
   country: "Slovensko",
 };
 
@@ -129,7 +137,7 @@ export async function POST(req: NextRequest) {
       send: () => sendOrderStatusEmail({ to, orderId: ORDER_ID, fileName: FILE_NAME, status }),
     })),
     {
-      label: "Notifikácia o novej objednávke (interná)",
+      label: "Notifikácia o novej objednávke (interná, karta)",
       send: () =>
         sendAdminOrderNotificationEmail({
           orderId: ORDER_ID,
@@ -141,9 +149,40 @@ export async function POST(req: NextRequest) {
           shippingCostEur: 4.9,
           phone: "+421 900 000 000",
           accountType: "PERSON",
+          billingAddress: BILLING_ADDRESS,
           deliveryAddress: DELIVERY_ADDRESS,
           config: CONFIG,
           pricing: PRICING,
+          paymentMethod: "CARD",
+          status: "PAID",
+          createdAt: new Date(),
+        }),
+    },
+    {
+      label: "Notifikácia o novej objednávke (interná, prevod, firma)",
+      send: () =>
+        sendAdminOrderNotificationEmail({
+          orderId: ORDER_ID,
+          orderNumber: ORDER_NUMBER,
+          fileName: FILE_NAME,
+          customerEmail: "zakaznik@example.com",
+          totalEur: 34.9,
+          shippingMethod: "Packeta výdajňa / Z-Box",
+          shippingCostEur: 4.92,
+          phone: "+421 900 000 000",
+          accountType: "COMPANY",
+          companyName: "Ukážková firma s.r.o.",
+          ico: "12345678",
+          dic: "2023456789",
+          icDph: "SK2023456789",
+          contactPerson: "Testovací Zákazník",
+          billingAddress: { ...BILLING_ADDRESS, name: "Testovací Zákazník" },
+          deliveryAddress: { type: "packeta", packetaPointName: "Packeta Z-BOX, Ukážková 5, Bratislava" },
+          config: CONFIG,
+          pricing: PRICING,
+          paymentMethod: "TRANSFER",
+          variableSymbol: "00000001",
+          status: "AWAITING_TRANSFER",
           createdAt: new Date(),
         }),
     },
