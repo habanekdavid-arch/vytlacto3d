@@ -12,6 +12,9 @@ export type CartItemConfig = {
   color: string;
   quantity: number;
   scalePct: number;
+  // Zákazníkovi nezáleží na presnom materiáli/farbe — za každú voľbu zľava.
+  materialFlexible?: boolean;
+  colorFlexible?: boolean;
 };
 
 export type CartItemPricing = {
@@ -24,6 +27,7 @@ export type CartItemPricing = {
   productionSubtotal: number;
   quantityDiscountPct: number;
   quantityDiscountAmount: number;
+  flexibleDiscountEur: number;
   total: number;
 };
 

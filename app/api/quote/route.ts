@@ -10,6 +10,8 @@ export async function POST(req: NextRequest) {
     const quality = body?.quality;
     const infillPct = Number(body?.infillPct);
     const quantity = Number(body?.quantity);
+    const materialFlexible = Boolean(body?.materialFlexible);
+    const colorFlexible = Boolean(body?.colorFlexible);
 
     if (!Number.isFinite(volumeCm3) || volumeCm3 <= 0) {
       return NextResponse.json(
@@ -55,6 +57,8 @@ export async function POST(req: NextRequest) {
       quality,
       infillPct,
       quantity,
+      materialFlexible,
+      colorFlexible,
     });
 
     return NextResponse.json(result);

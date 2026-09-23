@@ -124,6 +124,7 @@ export default async function AdminOrderDetailPage({
     `  Celkom zaplatené : ${paidTotal !== null ? formatEur(paidTotal) : "—"}`,
     `  Doprava          : ${v(order.shippingMethod)}`,
     `  Cena dopravy     : ${shippingCostEur !== null ? formatEur(shippingCostEur) : "—"}`,
+    ...(config.allowModelAdjustments ? [`  Úprava modelu    : Zákazník súhlasí s miernou úpravou pre lepšiu kvalitu tlače`] : []),
     "",
     "ZÁKAZNÍK",
     sep,
@@ -162,6 +163,8 @@ export default async function AdminOrderDetailPage({
               `      Materiál : ${materialLabel(ic.material)}  Kvalita: ${qualityLabel(ic.quality)}  Farba: ${colorLabel(ic.color)}`,
               `      Množstvo : ${v(ic.quantity)} ks  Infill: ${ic.infillPct ?? "—"}%  Mierka: ${ic.scalePct ?? 100}%`,
               `      Rozmery  : ${ia?.dimsXmm !== undefined ? `${Number(ia.dimsXmm).toFixed(0)}×${Number(ia.dimsYmm).toFixed(0)}×${Number(ia.dimsZmm).toFixed(0)} mm` : "—"}  Objem: ${ia?.volumeCm3 !== undefined ? `${Number(ia.volumeCm3).toFixed(2)} cm³` : "—"}`,
+              ...(ic.materialFlexible ? ["      Materiál : zákazníkovi nezáleží (−1 €)"] : []),
+              ...(ic.colorFlexible ? ["      Farba    : zákazníkovi nezáleží (−1 €)"] : []),
               ...(typeof ip.gramsPerPart === "number" ? [`      Materiál : ${ip.gramsPerPart.toFixed(1)} g/ks  Čas: ${Math.round(ip.printTimeMinPerPart ?? 0)} min/ks`] : []),
               ...(typeof ip.total === "number" ? [`      Cena     : ${formatEur(ip.total)} bez DPH  |  ${formatEur(addVat(ip.total))} s DPH`] : []),
               "",
@@ -177,6 +180,8 @@ export default async function AdminOrderDetailPage({
           `  Počet kusov : ${v(config.quantity)}`,
           `  Infill      : ${config.infillPct !== undefined ? `${config.infillPct}%` : "—"}`,
           `  Mierka      : ${config.scalePct !== undefined ? `${config.scalePct}%` : "—"}`,
+          ...(config.materialFlexible ? ["  Materiál    : zákazníkovi nezáleží (−1 €)"] : []),
+          ...(config.colorFlexible ? ["  Farba       : zákazníkovi nezáleží (−1 €)"] : []),
           "",
           "ANALÝZA MODELU",
           sep,
@@ -241,6 +246,17 @@ export default async function AdminOrderDetailPage({
               </div>
             </div>
           </div>
+
+          {config.allowModelAdjustments && (
+            <div className="mt-6 rounded-2xl border border-amber-300 bg-amber-50 px-5 py-4">
+              <div className="text-sm font-extrabold text-amber-900">
+                ⚠ Zákazník súhlasí s miernou úpravou modelu
+              </div>
+              <div className="mt-1 text-sm text-amber-800">
+                Model môžeme mierne upraviť, ak to zlepší kvalitu tlače — zákazník to pri objednávke dobrovoľne odsúhlasil.
+              </div>
+            </div>
+          )}
 
           <div className="mt-8 grid gap-4 md:grid-cols-4">
             <InfoCard label="Vytvorené" value={formatDateSK(order.createdAt)} />
@@ -458,9 +474,9 @@ export default async function AdminOrderDetailPage({
                       )}
                     </div>
                     <div className="grid gap-2 text-xs sm:grid-cols-4">
-                      <InfoCard label="Materiál" value={materialLabel(ic.material)} />
+                      <InfoCard label="Materiál" value={ic.materialFlexible ? `${materialLabel(ic.material)} · nezáleží` : materialLabel(ic.material)} />
                       <InfoCard label="Kvalita" value={qualityLabel(ic.quality)} />
-                      <InfoCard label="Farba" value={colorLabel(ic.color)} />
+                      <InfoCard label="Farba" value={ic.colorFlexible ? `${colorLabel(ic.color)} · nezáleží` : colorLabel(ic.color)} />
                       <InfoCard label="Počet ks" value={String(ic.quantity ?? "—")} />
                       <InfoCard label="Infill" value={ic.infillPct !== undefined ? `${ic.infillPct}%` : "—"} />
                       <InfoCard label="Mierka" value={ic.scalePct !== undefined ? `${ic.scalePct}%` : "—"} />
@@ -504,6 +520,8 @@ export default async function AdminOrderDetailPage({
             <EditableField orderId={order.id} label="Počet kusov" value={getValue(config.quantity)} jsonField="config" jsonKey="quantity" />
             <EditableField orderId={order.id} label="Infill" value={config.infillPct !== undefined ? String(config.infillPct) : ""} jsonField="config" jsonKey="infillPct" />
             <EditableField orderId={order.id} label="Mierka" value={config.scalePct !== undefined ? String(config.scalePct) : ""} jsonField="config" jsonKey="scalePct" />
+            {config.materialFlexible && <InfoCard label="Materiál — flexibilita" value="Zákazníkovi nezáleží na materiáli" />}
+            {config.colorFlexible && <InfoCard label="Farba — flexibilita" value="Zákazníkovi nezáleží na farbe" />}
           </Panel>
 
           <Panel title="Analýza modelu">

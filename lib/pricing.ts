@@ -18,6 +18,10 @@ type QuoteInput = {
   quality: Quality;
   infillPct: number;
   quantity: number;
+  // Zákazníkovi nezáleží na presnom materiáli/farbe — dovoľuje nám doplniť,
+  // čím máme práve poruke. Každá z nich je vlastná zľava.
+  materialFlexible?: boolean;
+  colorFlexible?: boolean;
 };
 
 type QuoteResult = {
@@ -30,6 +34,7 @@ type QuoteResult = {
   productionSubtotal: number;
   quantityDiscountPct: number;
   quantityDiscountAmount: number;
+  flexibleDiscountEur: number;
   total: number;
 };
 
@@ -62,6 +67,9 @@ const PRINT_MIN_PER_GRAM: Record<Quality, number> = {
 
 // Základný poplatok za objednávku (nastavenie stroja, slicing, kontrola)
 const SETUP_FEE = 10;
+
+// Zľava za každú "nezáleží mi" voľbu (materiál / farba) — € na model, bez DPH.
+const FLEXIBLE_DISCOUNT_EUR = 1;
 
 // Maximálny povolený infill
 const MAX_INFILL_PCT = 50;
@@ -127,10 +135,22 @@ export function quote(input: QuoteInput): QuoteResult {
   const quantityDiscountAmountRaw = productionSubtotalRaw * (quantityDiscountPct / 100);
 
   // Minimálna celková cena objednávky = SETUP_FEE (10 €)
-  const totalRaw = Math.max(
+  const totalBeforeFlexibleDiscountRaw = Math.max(
     SETUP_FEE,
     SETUP_FEE + productionSubtotalRaw - quantityDiscountAmountRaw
   );
+
+  const flexibleDiscountRequestedRaw =
+    (input.materialFlexible ? FLEXIBLE_DISCOUNT_EUR : 0) +
+    (input.colorFlexible ? FLEXIBLE_DISCOUNT_EUR : 0);
+
+  // Zľava nikdy nezje základný poplatok za spracovanie objednávky.
+  const flexibleDiscountRaw = Math.min(
+    flexibleDiscountRequestedRaw,
+    Math.max(0, totalBeforeFlexibleDiscountRaw - SETUP_FEE)
+  );
+
+  const totalRaw = totalBeforeFlexibleDiscountRaw - flexibleDiscountRaw;
 
   return {
     gramsPerPart:           round2(gramsPerPartRaw),
@@ -142,6 +162,7 @@ export function quote(input: QuoteInput): QuoteResult {
     productionSubtotal:     round2(productionSubtotalRaw),
     quantityDiscountPct,
     quantityDiscountAmount: round2(quantityDiscountAmountRaw),
+    flexibleDiscountEur:    round2(flexibleDiscountRaw),
     total:                  round2(totalRaw),
   };
 }

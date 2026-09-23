@@ -22,6 +22,7 @@ type Quote = {
   productionSubtotal: number;
   quantityDiscountPct: number;
   quantityDiscountAmount: number;
+  flexibleDiscountEur: number;
   total: number;
 };
 
@@ -32,6 +33,8 @@ export type ConfigState = {
   color: string;
   quantity: number;
   scalePct: number;
+  materialFlexible?: boolean;
+  colorFlexible?: boolean;
 };
 
 export default function Configurator({
@@ -51,6 +54,8 @@ export default function Configurator({
       color: "black",
       quantity: 1,
       scalePct: 100,
+      materialFlexible: false,
+      colorFlexible: false,
     }
   );
 
@@ -78,6 +83,8 @@ export default function Configurator({
       color: config.color,
       quantity: config.quantity,
       scalePct: config.scalePct,
+      materialFlexible: config.materialFlexible,
+      colorFlexible: config.colorFlexible,
     }),
     [scaledVolumeCm3, config]
   );
@@ -164,6 +171,14 @@ export default function Configurator({
             <option value="PETG">PETG</option>
             <option value="ABS">ABS</option>
           </select>
+
+          <FlexibleCheckbox
+            label="Nezáleží mi na materiáli"
+            checked={!!config.materialFlexible}
+            onChange={(checked) =>
+              setConfig((c) => ({ ...c, materialFlexible: checked }))
+            }
+          />
         </Field>
 
         <Field label="Kvalita tlače" hint="Vyššia kvalita = krajší povrch.">
@@ -247,6 +262,14 @@ export default function Configurator({
               {COLOR_LABELS[config.color] ?? config.color}
             </span>
           </div>
+
+          <FlexibleCheckbox
+            label="Nezáleží mi na farbe"
+            checked={!!config.colorFlexible}
+            onChange={(checked) =>
+              setConfig((c) => ({ ...c, colorFlexible: checked }))
+            }
+          />
         </Field>
       </div>
 
@@ -277,6 +300,12 @@ export default function Configurator({
                 Rozpis DPH
               </div>
               <div className="space-y-2">
+                {quote.flexibleDiscountEur > 0 && (
+                  <PriceLine
+                    label="Zľava za flexibilitu materiálu/farby"
+                    value={`−${formatEur(quote.flexibleDiscountEur)}`}
+                  />
+                )}
                 <PriceLine label="Základ bez DPH" value={formatEur(quote.total)} />
                 <PriceLine label="DPH 23 %" value={formatEur(vatAmount(quote.total))} />
                 <div className="my-1 border-t border-neutral-200" />
@@ -325,6 +354,50 @@ export default function Configurator({
         )}
       </div>
     </div>
+  );
+}
+
+function FlexibleCheckbox({
+  label,
+  checked,
+  onChange,
+}: {
+  label: string;
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+}) {
+  return (
+    <label
+      className={[
+        "mt-3 flex cursor-pointer items-center gap-2 rounded-2xl border px-3 py-2.5 text-xs font-semibold transition",
+        checked
+          ? "border-[#FFAE00] bg-[#FFAE00]/10 text-neutral-900"
+          : "border-neutral-200 bg-white text-neutral-600 hover:border-neutral-300",
+      ].join(" ")}
+    >
+      <div
+        className={[
+          "flex h-4 w-4 shrink-0 items-center justify-center rounded border-2 transition-colors",
+          checked ? "border-[#FFAE00] bg-[#FFAE00]" : "border-neutral-300 bg-white",
+        ].join(" ")}
+      >
+        {checked && (
+          <svg width="8" height="8" viewBox="0 0 12 12" fill="none">
+            <path d="M2 6l3 3 5-5" stroke="black" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        )}
+      </div>
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        className="sr-only"
+      />
+      <span>{label}</span>
+      <span className="ml-auto rounded-full bg-black/5 px-2 py-0.5 text-[10px] font-bold text-neutral-700">
+        −1&nbsp;€
+      </span>
+    </label>
   );
 }
 

@@ -192,6 +192,18 @@ export async function sendAdminOrderNotificationEmail({
     line("Množstvo", config?.quantity != null ? `${config.quantity} ks` : null),
     line("Infill  ", config?.infillPct != null ? `${config.infillPct}%` : null),
     line("Mierka  ", config?.scalePct != null ? `${config.scalePct}%` : null),
+    config?.materialFlexible ? line("Materiál", "Zákazníkovi nezáleží na materiáli (−1 €)") : null,
+    config?.colorFlexible ? line("Farba   ", "Zákazníkovi nezáleží na farbe (−1 €)") : null,
+
+    ...(config?.allowModelAdjustments
+      ? [
+          "",
+          "⚠ SÚHLAS S ÚPRAVOU MODELU",
+          "─".repeat(46),
+          "  Zákazník súhlasí s miernou úpravou modelu,",
+          "  ak to zlepší kvalitu tlače.",
+        ]
+      : []),
 
     "",
     "PLATBA",

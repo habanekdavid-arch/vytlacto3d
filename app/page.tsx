@@ -76,6 +76,7 @@ export default function Home() {
   const [deliveryMethod, setDeliveryMethod] = useState<"packeta" | "courier">("packeta");
   const [packetaPoint, setPacketaPoint] = useState<PacketaPoint | null>(null);
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const [allowModelAdjustments, setAllowModelAdjustments] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<"CARD" | "TRANSFER">("CARD");
   const [showTransferModal, setShowTransferModal] = useState(false);
   const { status: sessionStatus } = useSession();
@@ -194,7 +195,16 @@ export default function Home() {
       fileName: uploaded.fileName,
       fileSize: uploaded.fileSize,
       analysis: uploaded.analysis,
-      config: { material: "PLA", quality: "STANDARD", infillPct: 20, color: "black", quantity: 1, scalePct: 100 },
+      config: {
+        material: "PLA",
+        quality: "STANDARD",
+        infillPct: 20,
+        color: "black",
+        quantity: 1,
+        scalePct: 100,
+        materialFlexible: false,
+        colorFlexible: false,
+      },
       pricing: null,
     };
     setCartItems((prev) => [...prev, newItem]);
@@ -226,6 +236,8 @@ export default function Home() {
 
   const allItemsPriced = cartItems.length > 0 && cartItems.every((i) => i.pricing !== null);
   const cartTotalNet = cartItems.reduce((s, i) => s + (i.pricing?.total ?? 0), 0);
+  // Len na zobrazenie — už je zarátaná v `cartTotalNet`, nič sa neodčítava druhýkrát.
+  const cartFlexibleDiscountEur = cartItems.reduce((s, i) => s + (i.pricing?.flexibleDiscountEur ?? 0), 0);
   const shippingCostWithVat = deliveryMethod === "courier" ? SHIPPING_RATES.COURIER : SHIPPING_RATES.PACKETA;
   const grandTotal = addVat(cartTotalNet) + shippingCostWithVat;
 
@@ -248,6 +260,7 @@ export default function Home() {
           deliveryMethod,
           packetaPoint: deliveryMethod === "packeta" ? packetaPoint : null,
           contactOverride: profileLoaded ? contactForm : null,
+          allowModelAdjustments,
         }),
       });
       let data: any = null;
@@ -279,6 +292,7 @@ export default function Home() {
           deliveryMethod,
           packetaPoint: deliveryMethod === "packeta" ? packetaPoint : null,
           contactOverride: profileLoaded ? contactForm : null,
+          allowModelAdjustments,
         }),
       });
       const text = await res.text();
@@ -554,6 +568,12 @@ export default function Home() {
                         <span>Výroba ({cartItems.length} {cartItems.length === 1 ? "model" : "modely/modelov"})</span>
                         <span className="font-semibold">{formatEur(addVat(cartTotalNet))}</span>
                       </div>
+                      {cartFlexibleDiscountEur > 0 && (
+                        <div className="flex justify-between text-[#b07a00]">
+                          <span>Zľava za flexibilitu materiálu/farby</span>
+                          <span className="font-semibold">−{formatEur(cartFlexibleDiscountEur)}</span>
+                        </div>
+                      )}
                       <div className="flex justify-between text-neutral-600">
                         <span>Doprava</span>
                         <span className="font-semibold">{formatEur(shippingCostWithVat)}</span>
@@ -584,6 +604,33 @@ export default function Home() {
                         <span className="text-xs leading-5 text-neutral-700">
                           Súhlasím so{" "}
                           <a href="/podmienky" target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="font-semibold text-neutral-900 underline hover:text-[#b07a00]">VOP</a>
+                        </span>
+                      </label>
+
+                      {/* Dobrovoľné — nepatrí do disabled podmienky tlačidla nižšie. */}
+                      <label className={[
+                        "flex cursor-pointer items-start gap-3 rounded-2xl border-2 p-3 transition-colors",
+                        allowModelAdjustments ? "border-[#FFAE00] bg-[#FFAE00]/5" : "border-neutral-200 bg-white hover:border-neutral-300",
+                      ].join(" ")}>
+                        <div className={[
+                          "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border-2 transition-colors",
+                          allowModelAdjustments ? "border-[#FFAE00] bg-[#FFAE00]" : "border-neutral-300 bg-white",
+                        ].join(" ")}>
+                          {allowModelAdjustments && (
+                            <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
+                              <path d="M2 6l3 3 5-5" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                          )}
+                        </div>
+                        <input
+                          type="checkbox"
+                          checked={allowModelAdjustments}
+                          onChange={(e) => setAllowModelAdjustments(e.target.checked)}
+                          className="sr-only"
+                        />
+                        <span className="text-xs leading-5 text-neutral-700">
+                          <span className="font-semibold text-neutral-900">Nepovinné:</span>{" "}
+                          Model môžete mierne upraviť, ak to zlepší kvalitu tlače.
                         </span>
                       </label>
 

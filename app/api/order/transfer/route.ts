@@ -16,7 +16,7 @@ type RawItem = {
   fileName: string;
   fileSize?: number;
   analysis: { volumeCm3: number; dimsXmm?: number; dimsYmm?: number; dimsZmm?: number };
-  config: { material: string; quality: string; infillPct?: number; quantity?: number; scalePct?: number; color?: string };
+  config: { material: string; quality: string; infillPct?: number; quantity?: number; scalePct?: number; color?: string; materialFlexible?: boolean; colorFlexible?: boolean };
 };
 
 export async function POST(req: NextRequest) {
@@ -52,6 +52,9 @@ export async function POST(req: NextRequest) {
       body?.deliveryMethod === "courier" ? "courier" : "packeta";
     const packetaPoint = deliveryMethod === "packeta" ? (body?.packetaPoint ?? null) : null;
     const co = body?.contactOverride ?? null;
+    // Dobrovoľný súhlas z posledného kroku checkoutu — nemá vplyv na cenu,
+    // len na to, čo uvidí výroba.
+    const allowModelAdjustments = Boolean(body?.allowModelAdjustments);
 
     // Normalise to items array — supports both new {items:[]} and legacy {uploaded,config}
     let rawItems: RawItem[];
@@ -101,6 +104,8 @@ export async function POST(req: NextRequest) {
 
       const scaleFactor = scale / 100;
       const scaledVol = rawVol * Math.pow(scaleFactor, 3);
+      const materialFlexible = Boolean(item.config.materialFlexible);
+      const colorFlexible = Boolean(item.config.colorFlexible);
 
       const serverPricing = quote({
         volumeCm3: scaledVol,
@@ -108,9 +113,11 @@ export async function POST(req: NextRequest) {
         quality: item.config.quality as any,
         infillPct: infill,
         quantity: qty,
+        materialFlexible,
+        colorFlexible,
       });
 
-      pricedItems.push({ item, serverPricing, scaledVol, infill, scale, rawVol });
+      pricedItems.push({ item, serverPricing, scaledVol, infill, scale, rawVol, materialFlexible, colorFlexible });
     }
 
     const totalNet = pricedItems.reduce((s, pi) => s + pi.serverPricing.total, 0);
@@ -159,7 +166,14 @@ export async function POST(req: NextRequest) {
           scaledVolumeCm3: first.scaledVol,
           scalePct: first.scale,
         },
-        config: { ...first.item.config, infillPct: first.infill, scalePct: first.scale },
+        config: {
+          ...first.item.config,
+          infillPct: first.infill,
+          scalePct: first.scale,
+          materialFlexible: first.materialFlexible,
+          colorFlexible: first.colorFlexible,
+          allowModelAdjustments,
+        },
         pricing: combinedPricing as any,
         paidTotalEur: totalWithVat,
         shippingMethod,
@@ -192,7 +206,14 @@ export async function POST(req: NextRequest) {
         fileKey: pi.item.fileKey,
         fileName: pi.item.fileName,
         analysis: pi.item.analysis as any,
-        config: { ...pi.item.config, infillPct: pi.infill, scalePct: pi.scale } as any,
+        config: {
+          ...pi.item.config,
+          infillPct: pi.infill,
+          scalePct: pi.scale,
+          materialFlexible: pi.materialFlexible,
+          colorFlexible: pi.colorFlexible,
+          allowModelAdjustments,
+        } as any,
         pricing: pi.serverPricing as any,
       })),
     });
@@ -259,7 +280,14 @@ export async function POST(req: NextRequest) {
         accountName: dbUser?.name,
         billingAddress: order.billingAddress as any,
         deliveryAddress: adminDeliveryAddr,
-        config: { ...first.item.config, infillPct: first.infill, scalePct: first.scale },
+        config: {
+          ...first.item.config,
+          infillPct: first.infill,
+          scalePct: first.scale,
+          materialFlexible: first.materialFlexible,
+          colorFlexible: first.colorFlexible,
+          allowModelAdjustments,
+        },
         pricing: combinedPricing as any,
         paymentMethod: "TRANSFER",
         variableSymbol,

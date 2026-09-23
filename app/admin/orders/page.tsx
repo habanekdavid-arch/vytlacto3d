@@ -21,9 +21,15 @@ function getConfigLabel(config: any, modelCount: number) {
     quantity,
   ].join(" • ");
 
+  const flags = [
+    config.materialFlexible || config.colorFlexible ? "flexibilita −1€" : null,
+    config.allowModelAdjustments ? "súhlas s úpravou" : null,
+  ].filter(Boolean);
+  const summaryWithFlags = flags.length > 0 ? `${summary} ⚠ ${flags.join(", ")}` : summary;
+
   // Objednávka nesie nastavenia len prvého modelu. Pri viacerých by to bez
   // označenia vyzeralo ako nastavenie celej objednávky.
-  return modelCount > 1 ? `1. model: ${summary}` : summary;
+  return modelCount > 1 ? `1. model: ${summaryWithFlags}` : summaryWithFlags;
 }
 
 /**
