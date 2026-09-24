@@ -672,7 +672,7 @@ export default function Home() {
             Online konfigurátor 3D tlače
           </div>
 
-          <h1 className="mx-auto mt-5 max-w-5xl text-4xl font-extrabold tracking-tight md:text-6xl">
+          <h1 data-fx="hero" className="mx-auto mt-5 max-w-5xl text-4xl font-extrabold tracking-tight md:text-6xl">
             Nahrajte váš model, vyberte si parametre a my váš model dostaneme až k vám
           </h1>
 

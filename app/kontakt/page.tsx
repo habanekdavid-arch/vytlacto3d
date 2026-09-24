@@ -3,7 +3,7 @@ export default function KontaktPage() {
     <main className="bg-white px-6 py-16">
       <div className="mx-auto max-w-3xl">
         <div className="text-sm font-semibold text-brand">Kontakt</div>
-        <h1 className="mt-2 text-4xl font-bold tracking-tight text-neutral-900">
+        <h1 data-fx className="mt-2 text-4xl font-bold tracking-tight text-neutral-900">
           Kontaktujte nás
         </h1>
 

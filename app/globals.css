@@ -100,3 +100,20 @@ body {
   color: #18181b;
   font-weight: 700;
 }
+/* ── Glitch pri hoveri ([data-glitch]) — vypína ho ten istý prepínač ako tvary (lib/fx.ts) ── */
+@keyframes fxGlitch {
+  0%   { text-shadow: none; translate: 0 0; }
+  10%  { text-shadow: -2px 0 #FF5A1F, 2px 0 #2F6BFF; translate: -1px 0; }
+  22%  { text-shadow: 2px 0 #6637ED, -2px 0 #FF5A1F; translate: 1px 0; }
+  34%  { text-shadow: -1px 1px #2F6BFF, 1px -1px #FF5A1F; translate: 0 1px; }
+  48%  { text-shadow: 1.5px 0 #6637ED, -1.5px 0 #2F6BFF; translate: 1px -1px; }
+  62%  { text-shadow: -1px 0 #FF5A1F, 1px 0 #6637ED; translate: -1px 0; }
+  78%  { text-shadow: 0.5px 0 #2F6BFF, -0.5px 0 #FF5A1F; translate: 0 0; }
+  100% { text-shadow: none; translate: 0 0; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html[data-hover-fx="on"] [data-glitch]:hover {
+    animation: fxGlitch 0.42s steps(1, end) 1;
+  }
+}

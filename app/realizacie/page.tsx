@@ -24,7 +24,7 @@ export default async function RealizaciePage() {
           Realizácie
         </div>
 
-        <h1 className="mx-auto mt-5 max-w-4xl text-4xl font-extrabold tracking-tight text-neutral-900 md:text-6xl">
+        <h1 data-fx className="mx-auto mt-5 max-w-4xl text-4xl font-extrabold tracking-tight text-neutral-900 md:text-6xl">
           Ukážky 3D tlače a zákazkovej výroby
         </h1>
 
@@ -43,6 +43,7 @@ export default async function RealizaciePage() {
             <Link
               key={project.slug}
               href={`/realizacie/${project.slug}`}
+              data-glitch
               className={[
                 "group relative overflow-hidden rounded-[32px] border border-neutral-200 bg-white shadow-sm transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl hover:shadow-[#FFAE00]/10",
                 isLarge ? "md:col-span-2 md:row-span-2" : "",

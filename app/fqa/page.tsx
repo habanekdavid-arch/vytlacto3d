@@ -52,7 +52,7 @@ export default function FaqPage() {
           FAQ
         </div>
 
-        <h1 className="mt-4 text-4xl font-extrabold tracking-tight sm:text-5xl">
+        <h1 data-fx className="mt-4 text-4xl font-extrabold tracking-tight sm:text-5xl">
           Často kladené otázky
         </h1>
 

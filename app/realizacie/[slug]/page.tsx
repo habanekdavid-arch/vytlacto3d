@@ -158,6 +158,7 @@ export default async function RealizationDetailPage({
               <Link
                 key={item.slug}
                 href={`/realizacie/${item.slug}`}
+                data-glitch
                 className="group overflow-hidden rounded-3xl border border-neutral-200 bg-white shadow-sm transition duration-500 hover:-translate-y-2 hover:shadow-xl"
               >
                 <div className="relative h-64">
