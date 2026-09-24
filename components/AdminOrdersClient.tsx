@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import ModelPreviewAllButton from "@/components/ModelPreviewAllButton";
+import FlowiiCheckButton from "@/components/FlowiiCheckButton";
 
 type Order = {
   id: string;
@@ -243,6 +244,10 @@ export default function AdminOrdersClient({
             >
               {allEmailsStatus === "sending" ? "Rozposielam..." : "Vzorky všetkých mailov"}
             </button>
+            <FlowiiCheckButton
+              label="Test FLOWii"
+              className="rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50 disabled:opacity-60"
+            />
             <a
               href="/admin/cms"
               className="rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50"
