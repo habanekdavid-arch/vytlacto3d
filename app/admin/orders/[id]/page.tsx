@@ -9,6 +9,8 @@ import EditableField from "@/components/EditableField";
 import ModelPreviewButton from "@/components/ModelPreviewButton";
 import ModelPreviewAllButton from "@/components/ModelPreviewAllButton";
 import { formatDateSK } from "@/lib/formatDate";
+import { buildOrderCopyText } from "@/lib/order-copy-text";
+import { buildFlowiiZakazka, type FlowiiZakazkaDraft } from "@/lib/flowii/zakazka";
 import {
   COLOR_OPTIONS,
   MATERIAL_OPTIONS,
@@ -53,7 +55,10 @@ export default async function AdminOrderDetailPage({
 
   const order = await prisma.order.findUnique({
     where: { id },
-    include: { orderItems: { orderBy: { createdAt: "asc" } } },
+    include: {
+      orderItems: { orderBy: { createdAt: "asc" } },
+      user: { select: { name: true } },
+    },
   });
 
   if (!order) {
@@ -68,16 +73,6 @@ export default async function AdminOrderDetailPage({
   const rawDelivery = (order.deliveryAddress ?? {}) as Record<string, any>;
   const rawShipping = (order.shippingAddress ?? {}) as Record<string, any>;
   const billingAddress = (order.billingAddress ?? {}) as Record<string, any>;
-  // Zlúčená adresa: delivery → shipping → billing
-  const deliveryAddress = {
-    name: rawDelivery.name ?? rawShipping.name ?? billingAddress.name ?? null,
-    phone: rawDelivery.phone ?? rawShipping.phone ?? billingAddress.phone ?? order.phone ?? null,
-    street: rawDelivery.street ?? rawShipping.street ?? billingAddress.street ?? billingAddress.line1 ?? null,
-    line2: rawDelivery.line2 ?? rawShipping.line2 ?? billingAddress.line2 ?? null,
-    city: rawDelivery.city ?? rawShipping.city ?? billingAddress.city ?? null,
-    zip: rawDelivery.zip ?? rawShipping.zip ?? billingAddress.zip ?? billingAddress.postal_code ?? null,
-    country: rawDelivery.country ?? rawShipping.country ?? billingAddress.country ?? null,
-  };
 
   const total =
     typeof order.paidTotalEur === "number"
@@ -95,115 +90,8 @@ export default async function AdminOrderDetailPage({
     orderBy: { createdAt: "asc" },
   });
 
-  const paidTotal =
-    typeof order.paidTotalEur === "number" ? order.paidTotalEur : null;
-  const productionGross =
-    paidTotal !== null
-      ? paidTotal - (shippingCostEur ?? 0)
-      : typeof pricing.total === "number"
-      ? addVat(pricing.total)
-      : null;
-
-  function v(val: any) {
-    return val === null || val === undefined || val === "" ? "—" : String(val);
-  }
-
-  const sep = "─────────────────────────────────────────";
-  const copyText = [
-    "═".repeat(45),
-    `  OBJEDNÁVKA: ${v(order.orderNumber ?? order.id)}`,
-    `  Stav: ${v(order.status)}`,
-    "═".repeat(45),
-    "",
-    "ZÁKLADNÉ INFORMÁCIE",
-    sep,
-    `  Číslo objednávky : ${v(order.orderNumber)}`,
-    `  ID               : ${v(order.id)}`,
-    `  Dátum            : ${formatDateSK(order.createdAt)}`,
-    `  Súbor            : ${v(order.fileName)}`,
-    `  Celkom zaplatené : ${paidTotal !== null ? formatEur(paidTotal) : "—"}`,
-    `  Doprava          : ${v(order.shippingMethod)}`,
-    `  Cena dopravy     : ${shippingCostEur !== null ? formatEur(shippingCostEur) : "—"}`,
-    ...(config.allowModelAdjustments ? [`  Úprava modelu    : Zákazník súhlasí s miernou úpravou pre lepšiu kvalitu tlače`] : []),
-    "",
-    "ZÁKAZNÍK",
-    sep,
-    `  Email      : ${v(order.customerEmail)}`,
-    `  Telefón    : ${v(deliveryAddress.phone ?? order.phone)}`,
-    `  Typ účtu   : ${order.accountType === "COMPANY" ? "Firma" : order.accountType === "PERSON" ? "Súkromná osoba" : "—"}`,
-    ...(order.accountType === "COMPANY" ? [
-      "",
-      "FIREMNÉ ÚDAJE",
-      sep,
-      `  Spoločnosť     : ${v(order.companyName)}`,
-      `  Kontaktná os.  : ${v(order.contactPerson)}`,
-      `  IČO            : ${v(order.ico)}`,
-      `  DIČ            : ${v(order.dic)}`,
-      `  IČ DPH         : ${v(order.icDph)}`,
-    ] : []),
-    "",
-    "ADRESA DORUČENIA",
-    sep,
-    `  Meno    : ${v(deliveryAddress.name)}`,
-    `  Ulica   : ${v(deliveryAddress.street)}${deliveryAddress.line2 ? `, ${deliveryAddress.line2}` : ""}`,
-    `  Mesto   : ${v(deliveryAddress.city)}`,
-    `  PSČ     : ${v(deliveryAddress.zip)}`,
-    `  Krajina : ${v(deliveryAddress.country)}`,
-    "",
-    ...(order.orderItems.length > 0
-      ? [
-          `MODELY V OBJEDNÁVKE (${order.orderItems.length})`,
-          sep,
-          ...order.orderItems.flatMap((oi, idx) => {
-            const ic = oi.config as Record<string, any>;
-            const ip = oi.pricing as Record<string, any>;
-            const ia = oi.analysis as Record<string, any>;
-            return [
-              `  [${idx + 1}] ${oi.fileName}`,
-              `      Materiál : ${materialLabel(ic.material)}  Kvalita: ${qualityLabel(ic.quality)}  Farba: ${colorLabel(ic.color)}`,
-              `      Množstvo : ${v(ic.quantity)} ks  Infill: ${ic.infillPct ?? "—"}%  Mierka: ${ic.scalePct ?? 100}%`,
-              `      Rozmery  : ${ia?.dimsXmm !== undefined ? `${Number(ia.dimsXmm).toFixed(0)}×${Number(ia.dimsYmm).toFixed(0)}×${Number(ia.dimsZmm).toFixed(0)} mm` : "—"}  Objem: ${ia?.volumeCm3 !== undefined ? `${Number(ia.volumeCm3).toFixed(2)} cm³` : "—"}`,
-              ...(ic.materialFlexible ? ["      Materiál : zákazníkovi nezáleží (−1 €)"] : []),
-              ...(ic.colorFlexible ? ["      Farba    : zákazníkovi nezáleží (−1 €)"] : []),
-              ...(typeof ip.gramsPerPart === "number" ? [`      Materiál : ${ip.gramsPerPart.toFixed(1)} g/ks  Čas: ${Math.round(ip.printTimeMinPerPart ?? 0)} min/ks`] : []),
-              ...(typeof ip.total === "number" ? [`      Cena     : ${formatEur(ip.total)} bez DPH  |  ${formatEur(addVat(ip.total))} s DPH`] : []),
-              "",
-            ];
-          }),
-        ]
-      : [
-          "KONFIGURÁCIA TLAČE",
-          sep,
-          `  Materiál    : ${materialLabel(config.material)}`,
-          `  Kvalita     : ${qualityLabel(config.quality)}`,
-          `  Farba       : ${colorLabel(config.color)}`,
-          `  Počet kusov : ${v(config.quantity)}`,
-          `  Infill      : ${config.infillPct !== undefined ? `${config.infillPct}%` : "—"}`,
-          `  Mierka      : ${config.scalePct !== undefined ? `${config.scalePct}%` : "—"}`,
-          ...(config.materialFlexible ? ["  Materiál    : zákazníkovi nezáleží (−1 €)"] : []),
-          ...(config.colorFlexible ? ["  Farba       : zákazníkovi nezáleží (−1 €)"] : []),
-          "",
-          "ANALÝZA MODELU",
-          sep,
-          `  Rozmer X : ${analysis.dimsXmm !== undefined ? `${analysis.dimsXmm} mm` : "—"}`,
-          `  Rozmer Y : ${analysis.dimsYmm !== undefined ? `${analysis.dimsYmm} mm` : "—"}`,
-          `  Rozmer Z : ${analysis.dimsZmm !== undefined ? `${analysis.dimsZmm} mm` : "—"}`,
-          `  Objem    : ${analysis.volumeCm3 !== undefined ? `${analysis.volumeCm3} cm³` : "—"}`,
-          "",
-        ]
-    ),
-    "CENOVÝ ROZPIS",
-    sep,
-    ...(productionGross !== null ? [
-      `  Základ bez DPH : ${formatEur(productionGross / 1.23)}`,
-      `  DPH 23 %       : ${formatEur(productionGross - productionGross / 1.23)}`,
-      `  Výroba s DPH   : ${formatEur(productionGross)}`,
-    ] : []),
-    `  Doprava        : ${shippingCostEur !== null ? formatEur(shippingCostEur) : "—"}`,
-    `  CELKOM         : ${paidTotal !== null ? formatEur(paidTotal) : "—"}`,
-    "",
-    "═".repeat(45),
-  ].join("\n");
+  const copyText = buildOrderCopyText(order);
+  const flowiiDraft = buildFlowiiZakazka(order, { accountName: order.user?.name });
 
   return (
     <main className="min-h-screen bg-white px-6 py-10 text-neutral-900">
@@ -554,6 +442,8 @@ export default async function AdminOrderDetailPage({
           </Panel>
         </section>
 
+        <FlowiiPreview draft={flowiiDraft} />
+
         <section className="mt-6 rounded-3xl bg-white p-6 shadow-[0_12px_40px_rgba(0,0,0,0.06)]">
           <div className="text-lg font-extrabold text-neutral-900">
             Technické dáta objednávky
@@ -645,5 +535,97 @@ function JsonBox({ title, value }: { title: string; value: string }) {
         {value}
       </pre>
     </div>
+  );
+}
+function formatIsoDateSK(iso: string) {
+  const [y, m, d] = iso.split("-");
+  return `${Number(d)}.${Number(m)}.${y}`;
+}
+
+function FlowiiPreview({ draft }: { draft: FlowiiZakazkaDraft }) {
+  const p = draft.partner;
+  const addr = p.billingAddress;
+  return (
+    <section className="mt-6 rounded-3xl border border-dashed border-neutral-300 bg-white p-6 shadow-[0_12px_40px_rgba(0,0,0,0.06)]">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="text-lg font-extrabold text-neutral-900">FLOWii — náhľad zákazky</h2>
+          <p className="mt-1 text-sm text-neutral-500">
+            Takto sa zákazka vytvorí po zaplatení objednávky. Iba náhľad — do FLOWii sa zatiaľ nič neodosiela.
+          </p>
+        </div>
+        <span className="rounded-full border border-neutral-200 bg-neutral-50 px-3 py-1 text-xs font-bold text-neutral-500">
+          Napojenie neaktívne
+        </span>
+      </div>
+
+      {draft.warnings.length > 0 && (
+        <div className="mt-4 rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          {draft.warnings.map((w) => (
+            <div key={w}>⚠ {w}</div>
+          ))}
+        </div>
+      )}
+
+      <div className="mt-5 grid gap-6 lg:grid-cols-2">
+        <div>
+          <div className="text-xs font-bold uppercase tracking-wide text-neutral-500">Zákazka</div>
+          <div className="mt-3 grid gap-3 md:grid-cols-2">
+            <InfoCard label="Názov" value={draft.name} />
+            <InfoCard label="Firma" value={draft.companyName} />
+            <InfoCard label="Partner" value={p.name ?? ([p.firstName, p.lastName].filter(Boolean).join(" ") || "—")} />
+            <InfoCard label="Typ zákazky" value={draft.contractTypeName} />
+            <InfoCard label="Zodpovední" value={draft.responsibleNames.join(", ")} />
+            <InfoCard label="Stav zákazky" value={draft.stateName} />
+            <InfoCard label="Prijatá" value={formatIsoDateSK(draft.receivedDate)} />
+            <InfoCard label="Termín dokončenia" value={formatIsoDateSK(draft.deadlineDate)} />
+            <InfoCard label="Mena" value={draft.currency} />
+            <InfoCard label="Číslo" value="pridelí FLOWii" />
+          </div>
+        </div>
+
+        <div>
+          <div className="text-xs font-bold uppercase tracking-wide text-neutral-500">
+            Partner {p.kind === "COMPANY" ? "(Firma)" : "(Osoba)"} — vytvorí sa len ak ešte neexistuje
+          </div>
+          <div className="mt-3 grid gap-3 md:grid-cols-2">
+            {p.kind === "COMPANY" && <InfoCard label="Názov" value={p.name ?? "—"} />}
+            <InfoCard label={p.kind === "COMPANY" ? "Hlavný kontakt" : "Meno"} value={[p.firstName, p.lastName].filter(Boolean).join(" ") || "—"} />
+            <InfoCard label="E-mail" value={p.email ?? "—"} />
+            <InfoCard label="Telefón" value={p.phone ?? "—"} />
+            <InfoCard
+              label="Fakturačná adresa"
+              value={[addr.street, [addr.zip, addr.city].filter(Boolean).join(" "), addr.countryName].filter(Boolean).join(", ") || "—"}
+            />
+            <InfoCard label="Poznámka" value={p.note ?? "—"} />
+            <InfoCard label="Zodpovedný" value={p.responsibleName} />
+            {p.kind === "COMPANY" && (
+              <InfoCard label="IČO / DIČ / IČ DPH" value={[p.ico, p.dic, p.icDph].map((x) => x ?? "—").join(" / ")} />
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-6">
+        <div className="text-xs font-bold uppercase tracking-wide text-neutral-500">Úloha k zákazke</div>
+        <div className="mt-3 grid gap-3 md:grid-cols-3">
+          <InfoCard label="Názov úlohy" value={draft.task.title} />
+          <InfoCard label="Riešitelia" value={draft.task.assigneeNames.join(", ")} />
+          <InfoCard label="Termín" value={formatIsoDateSK(draft.task.dueDate)} />
+        </div>
+        <pre className="mt-3 whitespace-pre-wrap break-words rounded-2xl bg-neutral-50 p-4 text-xs leading-6 text-neutral-700">
+          {draft.task.description}
+        </pre>
+      </div>
+
+      <details className="mt-6">
+        <summary className="cursor-pointer text-sm font-bold text-neutral-700">
+          Popis a požiadavky (vloží sa do zákazky)
+        </summary>
+        <pre className="mt-3 max-h-96 overflow-auto whitespace-pre rounded-2xl bg-neutral-50 p-4 font-mono text-xs leading-6 text-neutral-700">
+          {draft.description}
+        </pre>
+      </details>
+    </section>
   );
 }
