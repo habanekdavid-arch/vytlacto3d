@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import AmbientBlobs from "@/components/AmbientBlobs";
 
 const inputClasses =
   "mt-2 w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-900 shadow-sm transition-all duration-200 hover:border-neutral-300 focus:border-[#FFAE00] focus:outline-none focus:ring-4 focus:ring-[#FFAE00]/15";
@@ -64,7 +65,8 @@ export default function ContactForm() {
   }
 
   return (
-    <div className="group/card relative mt-12 overflow-hidden rounded-3xl border border-neutral-200 bg-white p-8 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-[#FFAE00]/30 hover:shadow-xl hover:shadow-[#FFAE00]/10 sm:p-10">
+    <div className="group/card relative isolate mt-12 overflow-hidden rounded-3xl border border-neutral-200 bg-white p-8 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-[#FFAE00]/30 hover:shadow-xl hover:shadow-[#FFAE00]/10 sm:p-10">
+      <AmbientBlobs variant="contact" />
       <div className="pointer-events-none absolute inset-0 -z-10">
         <div className="absolute right-0 top-0 h-64 w-64 -translate-y-1/3 translate-x-1/3 rounded-full bg-[#FFAE00]/10 blur-3xl transition-opacity duration-300 group-hover/card:opacity-70" />
       </div>
