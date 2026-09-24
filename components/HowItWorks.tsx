@@ -142,7 +142,7 @@ export default function HowItWorks() {
   return (
     <section id="how" className="bg-white px-6 py-20">
       <div className="mx-auto max-w-7xl">
-        <h2 data-fx className="text-center text-4xl font-extrabold tracking-tight sm:text-5xl">
+        <h2 className="text-center text-4xl font-extrabold tracking-tight sm:text-5xl">
           Ako to funguje
         </h2>
 
@@ -150,7 +150,6 @@ export default function HowItWorks() {
           {steps.map((step) => (
             <article
               key={step.number}
-              data-glitch
               className="group text-center transition-transform duration-500 ease-out hover:-translate-y-1"
             >
               <div className="mx-auto flex w-fit items-center justify-center">

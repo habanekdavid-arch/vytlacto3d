@@ -31,7 +31,7 @@ export default function MaterialPricing() {
   return (
     <section id="cennik" className="bg-white px-6 py-20">
       <div className="mx-auto max-w-6xl">
-        <h2 data-fx className="text-center text-4xl font-extrabold tracking-tight sm:text-5xl">
+        <h2 className="text-center text-4xl font-extrabold tracking-tight sm:text-5xl">
           Cenník materiálov
         </h2>
 

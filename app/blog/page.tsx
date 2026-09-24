@@ -31,7 +31,7 @@ export default async function BlogPage() {
     <main className="mx-auto max-w-6xl px-6 py-12">
       <section className="mb-14 animate-fade-up">
         <div className="mb-3 text-sm font-semibold text-neutral-500">Blog</div>
-        <h1 data-fx className="text-4xl font-extrabold tracking-tight text-neutral-900 md:text-5xl">
+        <h1 className="text-4xl font-extrabold tracking-tight text-neutral-900 md:text-5xl">
           Blog o 3D tlači
         </h1>
         <p className="mt-4 max-w-3xl text-base leading-relaxed text-neutral-600">
@@ -43,7 +43,6 @@ export default async function BlogPage() {
       <section className="mb-16">
         <Link
           href={`/blog/${featuredPost.slug}`}
-          data-glitch
           className="group grid overflow-hidden rounded-3xl border border-neutral-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-neutral-300 hover:shadow-xl md:grid-cols-2 animate-fade-up"
           style={{ animationDelay: "80ms" }}
         >
@@ -96,7 +95,6 @@ export default async function BlogPage() {
               <Link
                 key={post.slug}
                 href={`/blog/${post.slug}`}
-                data-glitch
                 className="group overflow-hidden rounded-3xl border border-neutral-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-neutral-300 hover:shadow-xl animate-fade-up"
                 style={{ animationDelay: `${220 + index * 80}ms` }}
               >

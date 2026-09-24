@@ -48,7 +48,7 @@ export default function FaqPreview() {
             FAQ a užitočné informácie
           </div>
 
-          <h2 data-fx className="mt-6 text-4xl font-extrabold tracking-tight text-neutral-900 sm:text-5xl">
+          <h2 className="mt-6 text-4xl font-extrabold tracking-tight text-neutral-900 sm:text-5xl">
             Často kladené otázky
           </h2>
 
@@ -65,7 +65,6 @@ export default function FaqPreview() {
             return (
               <div
                 key={item.question}
-                data-glitch
                 className={[
                   "group rounded-3xl border bg-white shadow-sm transition-all duration-300",
                   isOpen
@@ -129,7 +128,6 @@ export default function FaqPreview() {
         <div className="mt-10 flex flex-wrap justify-center gap-3">
           <Link
             href="/blog"
-            data-glitch
             className="rounded-2xl bg-[#FFAE00] px-5 py-3 text-sm font-bold text-black shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
           >
             Prejsť na blog
@@ -137,7 +135,6 @@ export default function FaqPreview() {
 
           <Link
             href="/#kalkulator"
-            data-glitch
             className="rounded-2xl border border-neutral-200 bg-white px-5 py-3 text-sm font-bold text-neutral-900 shadow-sm transition hover:-translate-y-0.5 hover:bg-neutral-50 hover:shadow-md"
           >
             Prejsť na kalkulátor

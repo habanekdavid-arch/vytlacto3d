@@ -7,8 +7,6 @@ import Providers from "@/components/Providers";
 import FourFromFloatingButton from "@/components/FourFromFloatingButton";
 import PromoTipPopup from "@/components/PromoTipPopup";
 import RegisterNudgePopup from "@/components/RegisterNudgePopup";
-import HoverFx from "@/components/HoverFx";
-import { HOVER_FX_ENABLED } from "@/lib/fx";
 
 const baseUrl =
   process.env.NEXT_PUBLIC_BASE_URL || "https://www.vytlacto3d.sk";
@@ -72,7 +70,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="sk" data-hover-fx={HOVER_FX_ENABLED ? "on" : "off"}>
+    <html lang="sk">
       <body className="min-h-screen flex flex-col bg-white text-neutral-900 antialiased">
         {/* Google Tag Manager (noscript) */}
         <noscript>
@@ -116,7 +114,6 @@ export default function RootLayout({
           <FourFromFloatingButton />
           <PromoTipPopup />
           <RegisterNudgePopup />
-          <HoverFx />
         </Providers>
       </body>
     </html>
