@@ -11,6 +11,8 @@ import ModelPreviewAllButton from "@/components/ModelPreviewAllButton";
 import { formatDateSK } from "@/lib/formatDate";
 import { buildOrderCopyText } from "@/lib/order-copy-text";
 import { buildFlowiiZakazka, type FlowiiZakazkaDraft } from "@/lib/flowii/zakazka";
+import { getFlowiiSyncStatus, isFlowiiAutoEnabled, isFlowiiConfigured, type FlowiiSyncRow } from "@/lib/flowii/sync";
+import FlowiiActions from "@/components/FlowiiActions";
 import {
   COLOR_OPTIONS,
   MATERIAL_OPTIONS,
@@ -91,7 +93,11 @@ export default async function AdminOrderDetailPage({
   });
 
   const copyText = buildOrderCopyText(order);
-  const flowiiDraft = buildFlowiiZakazka(order, { accountName: order.user?.name });
+  const flowiiSync = await getFlowiiSyncStatus(order.id);
+  const flowiiDraft = buildFlowiiZakazka(order, {
+    accountName: order.user?.name,
+    now: flowiiSync?.createdAt,
+  });
 
   return (
     <main className="min-h-screen bg-white px-6 py-10 text-neutral-900">
@@ -442,7 +448,13 @@ export default async function AdminOrderDetailPage({
           </Panel>
         </section>
 
-        <FlowiiPreview draft={flowiiDraft} />
+        <FlowiiPreview
+          draft={flowiiDraft}
+          sync={flowiiSync}
+          configured={isFlowiiConfigured()}
+          autoEnabled={isFlowiiAutoEnabled()}
+          canCreate={["PAID", "IN_PRODUCTION", "SHIPPED", "DELIVERED"].includes(order.status)}
+        />
 
         <section className="mt-6 rounded-3xl bg-white p-6 shadow-[0_12px_40px_rgba(0,0,0,0.06)]">
           <div className="text-lg font-extrabold text-neutral-900">
@@ -542,22 +554,71 @@ function formatIsoDateSK(iso: string) {
   return `${Number(d)}.${Number(m)}.${y}`;
 }
 
-function FlowiiPreview({ draft }: { draft: FlowiiZakazkaDraft }) {
+function FlowiiPreview({
+  draft,
+  sync,
+  configured,
+  autoEnabled,
+  canCreate,
+}: {
+  draft: FlowiiZakazkaDraft;
+  sync: FlowiiSyncRow | null;
+  configured: boolean;
+  autoEnabled: boolean;
+  canCreate: boolean;
+}) {
   const p = draft.partner;
   const addr = p.billingAddress;
   return (
     <section className="mt-6 rounded-3xl border border-dashed border-neutral-300 bg-white p-6 shadow-[0_12px_40px_rgba(0,0,0,0.06)]">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-lg font-extrabold text-neutral-900">FLOWii — náhľad zákazky</h2>
+          <h2 className="text-lg font-extrabold text-neutral-900">FLOWii — zákazka</h2>
           <p className="mt-1 text-sm text-neutral-500">
-            Takto sa zákazka vytvorí po zaplatení objednávky. Iba náhľad — do FLOWii sa zatiaľ nič neodosiela.
+            {autoEnabled
+              ? "Zákazka a úloha sa vo FLOWii vytvoria automaticky po zaplatení objednávky."
+              : configured
+              ? "FLOWii je pripojené, automatika je vypnutá — zákazku vytvoríte tlačidlom nižšie."
+              : "Náhľad — do FLOWii sa zatiaľ nič neodosiela."}
           </p>
         </div>
-        <span className="rounded-full border border-neutral-200 bg-neutral-50 px-3 py-1 text-xs font-bold text-neutral-500">
-          Napojenie neaktívne
+        <span
+          className={`rounded-full border px-3 py-1 text-xs font-bold ${
+            autoEnabled
+              ? "border-green-300 bg-green-50 text-green-800"
+              : "border-neutral-200 bg-neutral-50 text-neutral-500"
+          }`}
+        >
+          {autoEnabled ? "Automatika zapnutá" : configured ? "Len ručne" : "Napojenie neaktívne"}
         </span>
       </div>
+
+      {sync && (
+        <div
+          className={`mt-4 rounded-2xl border px-4 py-3 text-sm ${
+            sync.status === "DONE"
+              ? "border-green-200 bg-green-50 text-green-900"
+              : sync.status === "FAILED"
+              ? "border-red-200 bg-red-50 text-red-900"
+              : "border-neutral-200 bg-neutral-50 text-neutral-700"
+          }`}
+        >
+          <div className="font-bold">
+            {sync.status === "DONE"
+              ? "✓ Vytvorené vo FLOWii"
+              : sync.status === "FAILED"
+              ? "✗ Prenos zlyhal"
+              : "Prenos prebieha…"}
+            <span className="ml-2 font-normal text-xs opacity-70">pokusov: {sync.attempts}</span>
+          </div>
+          <div className="mt-1 text-xs">
+            Partner ID {sync.flowiiPartnerId ?? "—"} · Zákazka ID {sync.flowiiOrderId ?? "—"} · Úloha ID {sync.flowiiTaskId ?? "—"}
+          </div>
+          {sync.lastError && <div className="mt-2 break-words text-xs">{sync.lastError}</div>}
+        </div>
+      )}
+
+      <FlowiiActions orderId={draft.orderId} configured={configured} canCreate={canCreate} syncStatus={sync?.status ?? null} />
 
       {draft.warnings.length > 0 && (
         <div className="mt-4 rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
@@ -572,14 +633,13 @@ function FlowiiPreview({ draft }: { draft: FlowiiZakazkaDraft }) {
           <div className="text-xs font-bold uppercase tracking-wide text-neutral-500">Zákazka</div>
           <div className="mt-3 grid gap-3 md:grid-cols-2">
             <InfoCard label="Názov" value={draft.name} />
-            <InfoCard label="Firma" value={draft.companyName} />
+            <InfoCard label="Firma (nastaví FLOWii)" value={draft.companyName} />
             <InfoCard label="Partner" value={p.name ?? ([p.firstName, p.lastName].filter(Boolean).join(" ") || "—")} />
             <InfoCard label="Typ zákazky" value={draft.contractTypeName} />
             <InfoCard label="Zodpovední" value={draft.responsibleNames.join(", ")} />
             <InfoCard label="Stav zákazky" value={draft.stateName} />
             <InfoCard label="Prijatá" value={formatIsoDateSK(draft.receivedDate)} />
             <InfoCard label="Termín dokončenia" value={formatIsoDateSK(draft.deadlineDate)} />
-            <InfoCard label="Mena" value={draft.currency} />
             <InfoCard label="Číslo" value="pridelí FLOWii" />
           </div>
         </div>

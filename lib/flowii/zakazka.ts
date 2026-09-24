@@ -8,9 +8,12 @@ import { colorLabel, materialLabel, qualityLabel } from "@/lib/print-options";
  *
  * Po zákazke sa k nej vytvorí aj úloha pre výrobu (Dávid Habánek, Adam Bunzel).
  *
- * Číselníky (firma, typ, stav, zodpovedný, riešitelia úlohy) sú zadané názvom, tak ako ich
- * vidno vo FLOWii. Pri napojení na API sa k nim ID dohľadajú len čítaním —
- * ak sa niektorý názov nenájde, zákazka sa nevytvorí.
+ * Číselníky (typ, stav, zodpovedný, riešitelia úlohy, typ činnosti) sú zadané
+ * názvom, tak ako ich vidno vo FLOWii. ID sa k nim dohľadajú len čítaním — ak
+ * sa niektorý názov nenájde jednoznačne, zákazka sa nevytvorí.
+ *
+ * Firmu (fakturačné údaje) ani menu API pri zákazke zadať neumožňuje — tie
+ * nastaví FLOWii samo; companyName slúži len na kontrolu v náhľade.
  */
 
 export type FlowiiSettings = {
@@ -20,6 +23,8 @@ export type FlowiiSettings = {
   responsibleName: string;
   deadlineDays: number;
   taskAssigneeNames: string[];
+  // Typ činnosti pre riešiteľov úlohy. Prázdne = použije sa jediný existujúci typ.
+  activityTypeName: string | null;
 };
 
 export function getFlowiiSettings(): FlowiiSettings {
@@ -34,6 +39,7 @@ export function getFlowiiSettings(): FlowiiSettings {
       .split(",")
       .map((n) => n.trim())
       .filter(Boolean),
+    activityTypeName: process.env.FLOWII_ACTIVITY_TYPE?.trim() || null,
   };
 }
 
@@ -81,7 +87,6 @@ export type FlowiiZakazkaDraft = {
   responsibleNames: string[];
   receivedDate: string; // YYYY-MM-DD, Europe/Bratislava
   deadlineDate: string; // YYYY-MM-DD, Europe/Bratislava
-  currency: "EUR";
   stateName: string;
   task: FlowiiTaskDraft;
   // Čo treba skontrolovať ručne — prázdne pole = všetko potrebné je vyplnené.
@@ -103,6 +108,12 @@ function clean(value: unknown): string | null {
   if (value === null || value === undefined) return null;
   const s = String(value).trim();
   return s === "" ? null : s;
+}
+
+// IČO/DIČ/IČ DPH bez medzier — inak by "12 345 678" a "12345678" boli dvaja partneri.
+function compact(value: unknown): string | null {
+  const s = clean(value);
+  return s ? s.replace(/\s+/g, "") : null;
 }
 
 function country(value: unknown): { countryCode: string | null; countryName: string | null } {
@@ -222,9 +233,9 @@ export function buildFlowiiZakazka(
     phone,
     billingAddress,
     note: deliveryNote(order),
-    ico: isCompany ? clean(order.ico) : null,
-    dic: isCompany ? clean(order.dic) : null,
-    icDph: isCompany ? clean(order.icDph) : null,
+    ico: isCompany ? compact(order.ico) : null,
+    dic: isCompany ? compact(order.dic) : null,
+    icDph: isCompany ? compact(order.icDph)?.toUpperCase() ?? null : null,
     responsibleName: settings.responsibleName,
   };
 
@@ -277,7 +288,6 @@ export function buildFlowiiZakazka(
     responsibleNames: [settings.responsibleName],
     receivedDate,
     deadlineDate,
-    currency: "EUR",
     stateName: settings.contractStateName,
     task,
     warnings,

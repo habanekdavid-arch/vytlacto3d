@@ -193,3 +193,17 @@ model Realizacia {
   featured    Boolean  @default(false)
   content     Json
 }
+// Stav prenosu objednávky do FLOWii. Samostatná tabuľka bez väzby na Order,
+// aby jej prípadná neprítomnosť v DB nerozbila žiadny existujúci dotaz.
+// orderId ako primárny kľúč = jedna objednávka môže vytvoriť zákazku len raz.
+model FlowiiSync {
+  orderId         String   @id
+  status          String
+  attempts        Int      @default(0)
+  flowiiPartnerId String?
+  flowiiOrderId   String?
+  flowiiTaskId    String?
+  lastError       String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}

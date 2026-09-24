@@ -3,6 +3,7 @@ import { getSafeServerSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { sendOrderStatusEmail } from "@/lib/email-status";
 import { sendOrderPaidEmail } from "@/lib/email";
+import { scheduleFlowiiSync } from "@/lib/flowii/sync";
 
 const VALID_STATUSES = [
   "PENDING",
@@ -46,6 +47,13 @@ export async function POST(req: NextRequest) {
   // transfer) — send the same detailed "order paid" email card customers
   // get via the Stripe webhook, not just the generic status-change email.
   const justGotPaid = status === "PAID" && previousOrder?.status !== "PAID";
+
+  // Zákazka vo FLOWii vzniká pri prvom prechode do zaplateného stavu — aj keď
+  // administrátor preskočí PAID a dá objednávku rovno do výroby.
+  const PAID_STATES = ["PAID", "IN_PRODUCTION", "SHIPPED", "DELIVERED"];
+  if (PAID_STATES.includes(status) && !PAID_STATES.includes(previousOrder?.status ?? "")) {
+    scheduleFlowiiSync(order.id);
+  }
 
   if (order.customerEmail) {
     try {

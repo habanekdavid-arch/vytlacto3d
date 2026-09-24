@@ -3,6 +3,7 @@ import Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
 import { sendOrderPaidEmail } from "@/lib/email";
 import { sendAdminOrderNotificationEmail } from "@/lib/email-admin";
+import { scheduleFlowiiSync } from "@/lib/flowii/sync";
 
 function getShippingMethod(session: Stripe.Checkout.Session) {
   const shippingRate = session.shipping_cost?.shipping_rate as any;
@@ -272,6 +273,8 @@ export async function markOrderPaidFromCheckoutSession(
       data: { stripeCustomerId: sessionStripeCustomerId },
     });
   }
+
+  scheduleFlowiiSync(updatedOrder.id);
 
   console.log("Order marked as PAID:", {
     orderId,
