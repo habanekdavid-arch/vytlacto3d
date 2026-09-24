@@ -9,8 +9,6 @@ import CartSidebar from "@/components/CartSidebar";
 import MaterialPricing from "@/components/MaterialPricing";
 import HowItWorks from "@/components/HowItWorks";
 import FaqPreview from "@/components/FaqPreview";
-import AmbientBlobs from "@/components/AmbientBlobs";
-import GrainOverlay from "@/components/GrainOverlay";
 import FloatingCta from "@/components/FloatingCta";
 import ModelSummaryBar from "@/components/ModelSummaryBar";
 import { CartItem, CartItemConfig, CartItemPricing } from "@/lib/types";
@@ -313,10 +311,7 @@ export default function Home() {
   }
 
   return (
-    <div className="ambient-page-bg relative min-h-screen text-neutral-900">
-      {/* Škvrny sú prvé v strome a obsah (main) je relative → maľuje sa nad nimi bez z-indexu. */}
-      <AmbientBlobs variant="hero" />
-      <GrainOverlay />
+    <div className="min-h-screen bg-white text-neutral-900">
       <FloatingCta />
 
       {/* ─── Cart drawer ─── */}
@@ -670,7 +665,7 @@ export default function Home() {
         </>
       )}
 
-      <main className="relative mx-auto max-w-6xl px-6 pb-20 pt-10">
+      <main className="mx-auto max-w-6xl px-6 pb-20 pt-10">
         <section className="mb-12 text-center">
           <div className="inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-3 py-1 text-sm text-neutral-700 shadow-sm">
             <span className="inline-block h-2 w-2 rounded-full bg-[#FFAE00]" />
