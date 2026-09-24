@@ -418,7 +418,7 @@ export default function RealizacieEditorPage({
                   onChange={(e) => setField("featured", e.target.checked)}
                   className="h-4 w-4 accent-[#FFAE00]"
                 />
-                Hlavná realizácia (featured)
+                Veľká dlaždica v prehľade (featured)
               </label>
               <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-neutral-700">
                 <input

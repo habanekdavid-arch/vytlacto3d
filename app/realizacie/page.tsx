@@ -36,8 +36,8 @@ export default async function RealizaciePage() {
       </section>
 
       <section className="grid auto-rows-[320px] gap-6 md:grid-cols-2 lg:grid-cols-4">
-        {realizacie.map((project, index) => {
-          const isLarge = index === 0 || index === 3;
+        {realizacie.map((project) => {
+          const isLarge = project.featured;
 
           return (
             <Link
