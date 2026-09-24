@@ -21,11 +21,10 @@ function getConfigLabel(config: any, modelCount: number) {
     quantity,
   ].join(" • ");
 
-  const flags = [
-    config.materialFlexible || config.colorFlexible ? "flexibilita −1€" : null,
-    config.allowModelAdjustments ? "súhlas s úpravou" : null,
-  ].filter(Boolean);
-  const summaryWithFlags = flags.length > 0 ? `${summary} ⚠ ${flags.join(", ")}` : summary;
+  const summaryWithFlags =
+    config.materialFlexible || config.colorFlexible
+      ? `${summary} ⚠ flexibilita −1€`
+      : summary;
 
   // Objednávka nesie nastavenia len prvého modelu. Pri viacerých by to bez
   // označenia vyzeralo ako nastavenie celej objednávky.
@@ -102,6 +101,7 @@ export default async function AdminOrdersPage() {
     paidTotalEur: order.paidTotalEur ?? null,
     createdAtText: formatDateSK(order.createdAt),
     configLabel: getConfigLabel(order.config, order._count.orderItems),
+    allowModelAdjustments: Boolean((order.config as Record<string, unknown> | null)?.allowModelAdjustments),
     modelCount: order._count.orderItems,
     models: getModels(order),
   }));

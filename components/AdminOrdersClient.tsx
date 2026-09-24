@@ -17,6 +17,7 @@ type Order = {
   paidTotalEur: number | null;
   createdAtText: string;
   configLabel: string;
+  allowModelAdjustments: boolean;
   modelCount: number;
   models: { fileKey: string; fileName: string; scalePct?: number; colorId?: string }[];
 };
@@ -353,6 +354,17 @@ export default function AdminOrdersClient({
                       </div>
                       <div className="mt-1 text-sm font-semibold text-neutral-700">
                         {order.fileName}
+                      </div>
+                      <div className="mt-2">
+                        {order.allowModelAdjustments ? (
+                          <span className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-800">
+                            ⚠ Súhlasí s úpravou modelu
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 rounded-full border border-neutral-200 bg-neutral-50 px-2.5 py-1 text-xs font-semibold text-neutral-500">
+                            Úprava modelu nepovolená
+                          </span>
+                        )}
                       </div>
                       <div className="mt-1 font-mono text-xs text-neutral-400">
                         {order.id}
