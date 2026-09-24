@@ -1,6 +1,7 @@
 import { after } from "next/server";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { sendMail, FROM, ADMIN_INBOX, hasMailCredentials } from "@/lib/mailer";
 import { FlowiiClient, FlowiiError, getFlowiiCredentials, type JsonApiResource } from "@/lib/flowii/client";
 import {
   buildFlowiiZakazka,
@@ -55,8 +56,9 @@ export function isFlowiiConfigured() {
   return getFlowiiCredentials() !== null;
 }
 
+/** Automatika beží, hneď ako sú nastavené prístupy. FLOWII_ENABLED=false ju vypne. */
 export function isFlowiiAutoEnabled() {
-  return process.env.FLOWII_ENABLED === "true" && isFlowiiConfigured();
+  return isFlowiiConfigured() && process.env.FLOWII_ENABLED?.trim().toLowerCase() !== "false";
 }
 
 /** Spustí prenos po odoslaní odpovede, aby nezdržal Stripe webhook ani administráciu. */
@@ -69,10 +71,40 @@ export function scheduleFlowiiSync(orderId: string) {
         console.log("FLOWii sync:", orderId, result.status);
       } catch (e) {
         console.error("FLOWii sync failed:", orderId, e);
+        await notifyFailure(orderId, e);
       }
     });
   } catch (e) {
     console.error("FLOWii sync could not be scheduled:", orderId, e);
+  }
+}
+
+function escapeHtml(value: string) {
+  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+/** Automatický prenos beží na pozadí — pri chybe o tom musí niekto vedieť. */
+async function notifyFailure(orderId: string, error: unknown) {
+  if (!hasMailCredentials()) return;
+  try {
+    const order = await prisma.order.findUnique({ where: { id: orderId }, select: { orderNumber: true } });
+    const ref = order?.orderNumber ?? orderId;
+    const base = process.env.NEXT_PUBLIC_BASE_URL || "https://www.vytlacto3d.sk";
+    const message = error instanceof FlowiiError && error.body ? `${error.message} — ${error.body}` : String((error as any)?.message ?? error);
+    await sendMail({
+      from: FROM,
+      to: ADMIN_INBOX,
+      subject: `⚠ FLOWii: zákazka pre ${ref} sa nevytvorila`,
+      html: `
+        <div style="font-family:Arial,sans-serif;padding:24px;">
+          <h2 style="margin:0 0 12px;">Prenos objednávky ${escapeHtml(ref)} do FLOWii zlyhal</h2>
+          <p style="margin:0 0 12px;color:#444;">Nič, čo už vo FLOWii bolo, sa nezmenilo. Čo sa stihlo vytvoriť, je uvedené pri objednávke — opakovaný pokus pokračuje odtiaľ.</p>
+          <pre style="white-space:pre-wrap;background:#f6f6f6;border-radius:12px;padding:12px;font-size:13px;">${escapeHtml(message.slice(0, 2000))}</pre>
+          <p><a href="${base}/admin/orders/${orderId}" style="display:inline-block;background:#FFAE00;color:#000;text-decoration:none;font-weight:bold;padding:12px 18px;border-radius:12px;">Otvoriť objednávku a skúsiť znova →</a></p>
+        </div>`,
+    });
+  } catch (mailErr) {
+    console.error("FLOWii failure e-mail could not be sent:", mailErr);
   }
 }
 
@@ -140,9 +172,13 @@ type Refs = {
   orderTypeId: string;
   orderStateId: string;
   responsibleUserIds: string[];
+  countries: JsonApiResource[];
+  users: JsonApiResource[];
+};
+
+type TaskRefs = {
   assigneeUserIds: string[];
   activityTypeId: string;
-  countries: JsonApiResource[];
 };
 
 async function resolveCompanyId(client: FlowiiClient): Promise<string> {
@@ -156,6 +192,15 @@ async function resolveCompanyId(client: FlowiiClient): Promise<string> {
     return fromEnv;
   }
   if (companies.length === 1) return String(companies[0].id);
+
+  // Viac firiem: vyberieme tú, ktorej názov sedí s "4from media, s.r.o. (vytlacto3D.sk)".
+  const wanted = norm(getFlowiiSettings().companyName);
+  const byName = companies.filter((c) => {
+    const name = norm(c.attributes?.name);
+    return Boolean(name) && (wanted.includes(name) || name.includes(wanted));
+  });
+  if (byName.length === 1) return String(byName[0].id);
+
   throw new FlowiiError(
     `API používateľ má prístup k ${companies.length} firmám — nastavte FLOWII_COMPANY_ID (${companies
       .map((c) => `${c.id} = ${c.attributes?.name}`)
@@ -167,12 +212,11 @@ async function resolveRefs(client: FlowiiClient, settings: FlowiiSettings): Prom
   const companyId = await resolveCompanyId(client);
   const q = { companyId };
 
-  const [self, users, orderTypes, orderStates, activityTypes, countries] = await Promise.all([
+  const [self, users, orderTypes, orderStates, countries] = await Promise.all([
     client.get("/users/self", q),
     client.getAll("/users", q),
     client.getAll("/ordertypes", q),
     client.getAll("/orderstates", q),
-    client.getAll("/activitytypes", q),
     client.getAll("/countries", q),
   ]);
 
@@ -182,28 +226,32 @@ async function resolveRefs(client: FlowiiClient, settings: FlowiiSettings): Prom
   // Typ zákazky je hlavný typ, nie podtyp.
   const topLevelTypes = orderTypes.filter((t) => !t.relationships?.parent?.data);
 
-  let activityType: JsonApiResource;
-  if (settings.activityTypeName) {
-    activityType = pickOne(activityTypes, settings.activityTypeName, "Typ činnosti");
-  } else if (activityTypes.length === 1) {
-    activityType = activityTypes[0];
-  } else {
-    throw new FlowiiError(
-      `Nastavte FLOWII_ACTIVITY_TYPE — typ činnosti pre riešiteľov úlohy. Dostupné: ${activityTypes
-        .map((a) => a.attributes?.name)
-        .join(", ")}`
-    );
-  }
-
   return {
     companyId,
     selfUserId: String(selfUserId),
     orderTypeId: pickOne(topLevelTypes.length ? topLevelTypes : orderTypes, settings.contractTypeName, "Typ zákazky").id,
     orderStateId: pickOne(orderStates, settings.contractStateName, "Stav zákazky").id,
     responsibleUserIds: [pickOne(users, settings.responsibleName, "Používateľ", personKey).id],
-    assigneeUserIds: settings.taskAssigneeNames.map((n) => pickOne(users, n, "Používateľ", personKey).id),
-    activityTypeId: activityType.id,
     countries,
+    users,
+  };
+}
+
+/**
+ * Typ činnosti je pri úlohe povinný. Bez nastavenia: "Realizácia", ak ju
+ * FLOWii má, inak prvý typ v poradí FLOWii — ovplyvní len zaradenie úlohy.
+ */
+function pickActivityType(activityTypes: JsonApiResource[], wanted: string | null): JsonApiResource {
+  if (wanted) return pickOne(activityTypes, wanted, "Typ činnosti");
+  if (activityTypes.length === 0) throw new FlowiiError("Vo FLOWii nie je žiadny typ činnosti — úlohu nie je možné vytvoriť.");
+  return activityTypes.find((a) => norm(a.attributes?.name) === "realizacia") ?? activityTypes[0];
+}
+
+async function resolveTaskRefs(client: FlowiiClient, refs: Refs, settings: FlowiiSettings): Promise<TaskRefs> {
+  const activityTypes = await client.getAll("/activitytypes", { companyId: refs.companyId });
+  return {
+    assigneeUserIds: settings.taskAssigneeNames.map((n) => pickOne(refs.users, n, "Používateľ", personKey).id),
+    activityTypeId: pickActivityType(activityTypes, settings.activityTypeName).id,
   };
 }
 
@@ -349,7 +397,7 @@ function buildOrderBody(draft: FlowiiZakazkaDraft, refs: Refs, partnerId: string
   };
 }
 
-function buildTaskBody(draft: FlowiiZakazkaDraft, refs: Refs, partnerId: string, flowiiOrderId: string) {
+function buildTaskBody(draft: FlowiiZakazkaDraft, refs: TaskRefs, partnerId: string, flowiiOrderId: string) {
   const deadline = flowiiDate(draft.task.dueDate);
   return {
     data: {
@@ -455,7 +503,9 @@ export async function syncOrderToFlowii(
     }
 
     if (!row.flowiiTaskId) {
-      const taskId = await client.create("/tasks", refs.companyId, buildTaskBody(draft, refs, partnerId, flowiiOrderId));
+      // Až tu — chýbajúci riešiteľ nesmie zablokovať samotnú zákazku.
+      const taskRefs = await resolveTaskRefs(client, refs, settings);
+      const taskId = await client.create("/tasks", refs.companyId, buildTaskBody(draft, taskRefs, partnerId, flowiiOrderId));
       row = await prisma.flowiiSync.update({ where: { orderId }, data: { flowiiTaskId: taskId } });
     }
 
@@ -519,13 +569,14 @@ export async function checkFlowiiConnection(): Promise<FlowiiCheckResult> {
     };
 
     const refs = await resolveRefs(client, settings);
+    const taskRefs = await resolveTaskRefs(client, refs, settings);
     const byId = (items: JsonApiResource[], id: string) => `${items.find((i) => i.id === id)?.attributes?.name ?? "?"} (ID ${id})`;
     result.resolved = {
       "Typ zákazky": byId(orderTypes, refs.orderTypeId),
       "Stav zákazky": byId(orderStates, refs.orderStateId),
       "Zodpovedný": refs.responsibleUserIds.map((id) => byId(users, id)).join(", "),
-      "Riešitelia úlohy": refs.assigneeUserIds.map((id) => byId(users, id)).join(", "),
-      "Typ činnosti": byId(activityTypes, refs.activityTypeId),
+      "Riešitelia úlohy": taskRefs.assigneeUserIds.map((id) => byId(users, id)).join(", "),
+      "Typ činnosti": byId(activityTypes, taskRefs.activityTypeId),
       "API používateľ": `ID ${refs.selfUserId}`,
     };
     result.ok = true;

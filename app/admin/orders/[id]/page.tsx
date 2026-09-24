@@ -578,7 +578,7 @@ function FlowiiPreview({
             {autoEnabled
               ? "Zákazka a úloha sa vo FLOWii vytvoria automaticky po zaplatení objednávky."
               : configured
-              ? "FLOWii je pripojené, automatika je vypnutá — zákazku vytvoríte tlačidlom nižšie."
+              ? "Automatika je vypnutá (FLOWII_ENABLED=false) — zákazku vytvoríte tlačidlom nižšie."
               : "Náhľad — do FLOWii sa zatiaľ nič neodosiela."}
           </p>
         </div>

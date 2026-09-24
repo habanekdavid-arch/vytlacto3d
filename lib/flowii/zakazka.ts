@@ -23,7 +23,7 @@ export type FlowiiSettings = {
   responsibleName: string;
   deadlineDays: number;
   taskAssigneeNames: string[];
-  // Typ činnosti pre riešiteľov úlohy. Prázdne = použije sa jediný existujúci typ.
+  // Typ činnosti pre riešiteľov úlohy. Prázdne = "Realizácia", inak prvý typ vo FLOWii.
   activityTypeName: string | null;
 };
 
