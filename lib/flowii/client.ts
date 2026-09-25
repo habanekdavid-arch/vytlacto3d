@@ -44,6 +44,27 @@ export type JsonApiResource = {
 
 const REQUEST_TIMEOUT_MS = 20_000;
 
+/** Dôvod odmietnutia prihlásenia v zrozumiteľnej forme (OAuth: error / error_description). */
+function describeTokenError(body: string): string {
+  let error = "";
+  let description = "";
+  try {
+    const json = JSON.parse(body);
+    error = String(json?.error ?? "");
+    description = String(json?.error_description ?? json?.message ?? json?.Message ?? "");
+  } catch {
+    description = body.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 200);
+  }
+  const hints: Record<string, string> = {
+    invalid_grant: "nesprávne prihlasovacie meno alebo heslo používateľa FLOWii",
+    invalid_client: "API kľúč nie je platný alebo nepatrí k tomuto účtu",
+    unauthorized_client: "API kľúč nemá povolený prístup",
+    unsupported_grant_type: "FLOWii nepodporuje tento spôsob prihlásenia",
+  };
+  const parts = [error && `${error}${hints[error] ? ` – ${hints[error]}` : ""}`, description].filter(Boolean);
+  return parts.length ? `: ${parts.join(" · ")}` : ".";
+}
+
 export class FlowiiClient {
   private token: { value: string; expiresAt: number } | null = null;
 
@@ -84,7 +105,11 @@ export class FlowiiClient {
 
     const text = await res.text();
     if (!res.ok) {
-      throw new FlowiiError(`Prihlásenie do FLOWii zlyhalo (HTTP ${res.status}).`, res.status, text.slice(0, 500));
+      throw new FlowiiError(
+        `Prihlásenie do FLOWii zlyhalo (HTTP ${res.status})${describeTokenError(text)}`,
+        res.status,
+        text.slice(0, 500)
+      );
     }
     let json: any;
     try {
