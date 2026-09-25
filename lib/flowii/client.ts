@@ -22,8 +22,12 @@ export type FlowiiCredentials = {
   password: string;
 };
 
+// FLOWii adresu API v nastaveniach neuvádza (dokumentácia má len zástupný
+// FLOWII_API_URL); api.flowii.com je ich API server. Premenná ju môže prepísať.
+const DEFAULT_API_URL = "https://api.flowii.com";
+
 export function getFlowiiCredentials(): FlowiiCredentials | null {
-  const baseUrl = process.env.FLOWII_API_URL?.trim().replace(/\/+$/, "");
+  const baseUrl = (process.env.FLOWII_API_URL?.trim() || DEFAULT_API_URL).replace(/\/+$/, "");
   const apiKey = process.env.FLOWII_API_KEY?.trim();
   const username = process.env.FLOWII_USERNAME?.trim();
   const password = process.env.FLOWII_PASSWORD;

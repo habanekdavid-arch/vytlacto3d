@@ -537,7 +537,7 @@ export async function checkFlowiiConnection(): Promise<FlowiiCheckResult> {
   const result: FlowiiCheckResult = { ok: false, errors: [], companies: [], companyId: null, resolved: {}, available: {} };
   const creds = getFlowiiCredentials();
   if (!creds) {
-    result.errors.push("Chýbajú premenné FLOWII_API_URL, FLOWII_API_KEY, FLOWII_USERNAME alebo FLOWII_PASSWORD.");
+    result.errors.push("Chýbajú premenné FLOWII_API_KEY, FLOWII_USERNAME alebo FLOWII_PASSWORD.");
     return result;
   }
 
