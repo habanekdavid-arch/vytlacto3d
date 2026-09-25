@@ -582,6 +582,26 @@ export async function checkFlowiiConnection(): Promise<FlowiiCheckResult> {
     result.ok = true;
   } catch (e: any) {
     result.errors.push(e?.message ?? String(e));
+    // Pri odmietnutom prihlásení pomôže vidieť, s čím sa web prihlasuje —
+    // meno čiastočne skryté, z hesla len to, či má okolo seba medzery.
+    if (e instanceof FlowiiError && e.status && e.status >= 400 && e.status < 500 && /Prihlásenie/.test(e.message)) {
+      result.errors.push(`Prihlasovacie meno vo Verceli: ${maskLogin(creds.username)}`);
+      const raw = process.env.FLOWII_PASSWORD ?? "";
+      if (raw !== raw.trim()) {
+        result.errors.push("Heslo vo Verceli má na začiatku alebo na konci medzeru či prázdny riadok — vložte ho znova bez nich.");
+      }
+      const rawUser = process.env.FLOWII_USERNAME ?? "";
+      if (rawUser !== rawUser.trim()) {
+        result.errors.push("Meno vo Verceli má okolo seba medzery (web ich odstraňuje, ale oplatí sa ich opraviť).");
+      }
+    }
   }
   return result;
+}
+
+/** "david@4frommedia.sk" → "da•••@4frommedia.sk", "admin" → "ad•••". */
+function maskLogin(login: string): string {
+  const [name, domain] = login.split("@");
+  const visible = name.slice(0, Math.min(2, Math.max(1, name.length - 1)));
+  return `${visible}•••${domain !== undefined ? `@${domain}` : ""} (${login.length} znakov)`;
 }
