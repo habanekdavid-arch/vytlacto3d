@@ -179,6 +179,8 @@ type Refs = {
   orderTypeId: string;
   orderStateId: string;
   responsibleUserIds: string[];
+  // Pole "Firma" zákazky — fakturačné údaje "4from media, s.r.o. (vytlacto3D.sk)".
+  companyDataId: string;
   countries: JsonApiResource[];
   users: JsonApiResource[];
 };
@@ -202,6 +204,7 @@ type RefData = {
   orderStates: JsonApiResource[];
   countries: JsonApiResource[];
   activityTypes: JsonApiResource[];
+  companyData: JsonApiResource[];
 };
 
 const REF_CACHE_MS = 10 * 60_000;
@@ -262,6 +265,7 @@ async function loadRefData(client: FlowiiClient, cacheKey: string): Promise<RefD
     orderStates: await client.list("/orderstates", q),
     countries: await client.list("/countries", q),
     activityTypes: await client.list("/activitytypes", q),
+    companyData: await client.list("/companydata", q),
   };
   refCache = { key, at: Date.now(), data };
   return data;
@@ -276,6 +280,7 @@ function resolveRefs(ref: RefData, settings: FlowiiSettings): Refs {
     orderTypeId: pickOne(topLevelTypes.length ? topLevelTypes : ref.orderTypes, settings.contractTypeName, "Typ zákazky").id,
     orderStateId: pickOne(ref.orderStates, settings.contractStateName, "Stav zákazky").id,
     responsibleUserIds: [pickOne(ref.users, settings.responsibleName, "Používateľ", personKey).id],
+    companyDataId: pickOne(ref.companyData, settings.companyName, "Firma (fakturačné údaje)").id,
     countries: ref.countries,
     users: ref.users,
   };
@@ -418,7 +423,13 @@ function flowiiDateTime(d: Date) {
   return parts.replace(" ", "T");
 }
 
-function buildOrderBody(draft: FlowiiZakazkaDraft, refs: Refs, partnerId: string, createdAt: Date) {
+function buildOrderBody(
+  draft: FlowiiZakazkaDraft,
+  refs: Refs,
+  partnerId: string,
+  createdAt: Date,
+  withCompanyData = true
+): { data: { type: "order"; id?: string; attributes: Record<string, unknown>; relationships: Record<string, unknown> } } {
   return {
     data: {
       type: "order",
@@ -435,9 +446,74 @@ function buildOrderBody(draft: FlowiiZakazkaDraft, refs: Refs, partnerId: string
         partner: { data: { type: "partner", id: partnerId } },
         user: { data: { type: "user", id: refs.selfUserId } },
         "responsible-users": { data: refs.responsibleUserIds.map((id) => ({ type: "user", id })) },
+        ...(withCompanyData ? { "company-data": { data: { type: "company-data", id: refs.companyDataId } } } : {}),
       },
     },
   };
+}
+
+// Pole "Firma" (company-data) pri zákazke v dokumentácii FLOWii chýba, hoci
+// zoznam zákaziek podľa neho filtruje. Keby ho FLOWii odmietlo (400/422 =
+// záznam nevznikol), zákazka sa založí bez neho a upozorní sa na to.
+function isRejected(e: unknown) {
+  return e instanceof FlowiiError && (e.status === 400 || e.status === 422);
+}
+
+const COMPANY_DATA_NOTE = "Pole Firma sa cez API nepodarilo nastaviť — FLOWii ho odmietlo; zákazka má predvolenú firmu.";
+
+async function createOrder(
+  client: FlowiiClient,
+  draft: FlowiiZakazkaDraft,
+  refs: Refs,
+  partnerId: string,
+  createdAt: Date
+): Promise<{ id: string; companyDataApplied: boolean }> {
+  try {
+    return { id: await client.create("/orders", refs.companyId, buildOrderBody(draft, refs, partnerId, createdAt)), companyDataApplied: true };
+  } catch (e) {
+    if (!isRejected(e)) throw e;
+    const id = await client.create("/orders", refs.companyId, buildOrderBody(draft, refs, partnerId, createdAt, false));
+    return { id, companyDataApplied: false };
+  }
+}
+
+/**
+ * Prečíta číslo zákazky, ktoré pridelilo FLOWii, a nastaví názov
+ * "<číslo>_<súbor>". Upravuje výhradne zákazku založenú týmto webom
+ * (so súhlasom majiteľa); ak už názov sedí, neposiela nič.
+ */
+async function applyNumberedName(
+  client: FlowiiClient,
+  draft: FlowiiZakazkaDraft,
+  refs: Refs,
+  partnerId: string,
+  orderId: string,
+  createdAt: Date,
+  withCompanyData: boolean
+): Promise<{ serial: string | null; name: string }> {
+  const detail = await client.get(`/orders/${encodeURIComponent(orderId)}`, { companyId: refs.companyId });
+  const attrs = detail?.data?.attributes ?? {};
+  const serial = String(attrs["serial-nr"] ?? "").trim() || null;
+  if (!serial) return { serial: null, name: String(attrs.name ?? draft.name) };
+
+  const name = `${serial}_${draft.baseName}`;
+  if (attrs.name === name) return { serial, name };
+
+  // Celé telo ako pri založení + nový názov a to isté číslo — aj keby FLOWii
+  // chápalo PATCH ako náhradu celej zákazky, nič sa nestratí.
+  const patch = (withCd: boolean) => {
+    const body = buildOrderBody({ ...draft, name }, refs, partnerId, createdAt, withCd);
+    body.data.id = orderId;
+    body.data.attributes["serial-nr"] = serial;
+    return client.updateOwnOrder(orderId, refs.companyId, body);
+  };
+  try {
+    await patch(withCompanyData);
+  } catch (e) {
+    if (!withCompanyData || !isRejected(e)) throw e;
+    await patch(false);
+  }
+  return { serial, name };
 }
 
 function buildTaskBody(draft: FlowiiZakazkaDraft, refs: TaskRefs, partnerId: string, flowiiOrderId: string) {
@@ -541,19 +617,30 @@ export async function syncOrderToFlowii(
     }
 
     let flowiiOrderId = row.flowiiOrderId;
+    let companyDataApplied = true;
     if (!flowiiOrderId) {
-      flowiiOrderId = await client.create("/orders", refs.companyId, buildOrderBody(draft, refs, partnerId, row.createdAt));
+      const created = await createOrder(client, draft, refs, partnerId, row.createdAt);
+      flowiiOrderId = created.id;
+      companyDataApplied = created.companyDataApplied;
       row = await prisma.flowiiSync.update({ where: { orderId }, data: { flowiiOrderId } });
+    } else {
+      // Zákazku založil tento web v predchádzajúcom pokuse (je v FlowiiSync).
+      client.markOwnOrder(flowiiOrderId);
     }
 
     if (!row.flowiiTaskId) {
+      const { serial } = await applyNumberedName(client, draft, refs, partnerId, flowiiOrderId, row.createdAt, companyDataApplied);
       // Až tu — chýbajúci riešiteľ nesmie zablokovať samotnú zákazku.
       const taskRefs = resolveTaskRefs(ref, settings);
-      const taskId = await client.create("/tasks", refs.companyId, buildTaskBody(draft, taskRefs, partnerId, flowiiOrderId));
+      const taskDraft = { ...draft, task: { ...draft.task, title: serial ? `${serial}_${draft.baseName}` : draft.task.title } };
+      const taskId = await client.create("/tasks", refs.companyId, buildTaskBody(taskDraft, taskRefs, partnerId, flowiiOrderId));
       row = await prisma.flowiiSync.update({ where: { orderId }, data: { flowiiTaskId: taskId } });
     }
 
-    row = await prisma.flowiiSync.update({ where: { orderId }, data: { status: "DONE", lastError: null } });
+    row = await prisma.flowiiSync.update({
+      where: { orderId },
+      data: { status: "DONE", lastError: companyDataApplied ? null : COMPANY_DATA_NOTE },
+    });
     return { status: "DONE", row };
   } catch (e: any) {
     const detail = e instanceof FlowiiError && e.body ? ` — ${e.body}` : "";
@@ -573,14 +660,14 @@ export type FlowiiTestResult = {
   orderId: string;
   taskId: string;
   name: string;
+  note: string | null;
 };
-
-const TEST_MARK = "TEST (zmazať)";
 
 /**
  * Založí vo FLOWii jednu fiktívnu zákazku rovnakou cestou ako skutočná
  * objednávka — na overenie, ako vyzerá. Na webe nič nevzniká (žiadna
- * objednávka, žiadna platba). Všetko je označené "TEST (zmazať)".
+ * objednávka, žiadna platba). Súbor sa volá "TEST_zmazat_model.stl" a popis
+ * aj úloha nesú upozornenie, že ide o test.
  * Najprv sa overia všetky číselníky; ak niečo nesedí, nevznikne nič.
  */
 export async function createFlowiiTestZakazka(): Promise<FlowiiTestResult> {
@@ -596,12 +683,13 @@ export async function createFlowiiTestZakazka(): Promise<FlowiiTestResult> {
   const now = new Date();
   const stamp = flowiiDateTime(now).slice(0, 16).replace("T", " ");
   const itemConfig = { material: "PLA", quality: "STANDARD", color: "black", quantity: 1, infillPct: 20, scalePct: 100 };
+  const testFile = "TEST_zmazat_model.stl";
   const fakeOrder = {
     id: "test",
     orderNumber: `TEST ${stamp}`,
     status: "PAID",
     createdAt: now,
-    fileName: "TEST_model.stl",
+    fileName: testFile,
     fileKey: "test",
     analysis: { dimsXmm: 40, dimsYmm: 30, dimsZmm: 20, volumeCm3: 12.5 },
     config: { ...itemConfig, allowModelAdjustments: true },
@@ -609,7 +697,7 @@ export async function createFlowiiTestZakazka(): Promise<FlowiiTestResult> {
     paidTotalEur: 17.22,
     shippingCost: { amount: 492, currency: "eur" },
     shippingMethod: "Packeta výdajňa / Z-Box",
-    customerEmail: "test@vytlacto3d.sk",
+    customerEmail: "test-klient@vytlacto3d.sk",
     phone: null,
     accountType: "PERSON",
     companyName: null,
@@ -617,38 +705,49 @@ export async function createFlowiiTestZakazka(): Promise<FlowiiTestResult> {
     dic: null,
     icDph: null,
     contactPerson: null,
-    billingAddress: { name: "TEST vytlacto3D (zmazať)", street: "Nezábudková 5", city: "Bratislava", zip: "82101", country: "SK" },
+    billingAddress: { name: "Ján Testovací", street: "Nezábudková 5", city: "Bratislava", zip: "82101", country: "SK" },
     deliveryAddress: { type: "packeta", packetaPointName: "TEST – fiktívne výdajné miesto", country: "SK" },
     shippingAddress: null,
-    orderItems: [{ fileName: "TEST_model.stl", config: itemConfig, pricing: { total: 10 }, analysis: { dimsXmm: 40, dimsYmm: 30, dimsZmm: 20, volumeCm3: 12.5 } }],
+    orderItems: [{ fileName: testFile, config: itemConfig, pricing: { total: 10 }, analysis: { dimsXmm: 40, dimsYmm: 30, dimsZmm: 20, volumeCm3: 12.5 } }],
   } as unknown as OrderWithItems;
 
   const draft = buildFlowiiZakazka(fakeOrder, { now, settings });
   const warning = "⚠ TESTOVACIA ZÁKAZKA z vytlacto3d.sk — iba na kontrolu napojenia, po kontrole ju zmažte.";
-  draft.name = `${TEST_MARK} – ${draft.name}`;
   draft.description = `${warning}\n\n${draft.description}`;
-  draft.task.title = `${TEST_MARK} – ${draft.task.title}`;
   draft.task.description = `${warning}\n\n${draft.task.description}`;
+  draft.partner.note = `${warning} ${draft.partner.note ?? ""}`.trim();
 
   const existingPartnerId = await findExistingPartner(client, refs.companyId, draft.partner);
   const partnerId =
     existingPartnerId ?? (await client.create("/partners", refs.companyId, buildPartnerBody(draft.partner, refs)));
 
-  let orderId: string;
+  let created: { id: string; companyDataApplied: boolean };
   try {
-    orderId = await client.create("/orders", refs.companyId, buildOrderBody(draft, refs, partnerId, now));
+    created = await createOrder(client, draft, refs, partnerId, now);
   } catch (e: any) {
     throw new FlowiiError(`${e?.message ?? e} (testovací partner ID ${partnerId} už existuje)`, e?.status, e?.body);
   }
+  const orderId = created.id;
 
   let taskId: string;
+  let name = draft.name;
   try {
-    taskId = await client.create("/tasks", refs.companyId, buildTaskBody(draft, taskRefs, partnerId, orderId));
+    const numbered = await applyNumberedName(client, draft, refs, partnerId, orderId, now, created.companyDataApplied);
+    name = numbered.name;
+    const taskDraft = { ...draft, task: { ...draft.task, title: numbered.serial ? `${numbered.serial}_${draft.baseName}` : draft.task.title } };
+    taskId = await client.create("/tasks", refs.companyId, buildTaskBody(taskDraft, taskRefs, partnerId, orderId));
   } catch (e: any) {
-    throw new FlowiiError(`${e?.message ?? e} (testovacia zákazka ID ${orderId} už vznikla, úloha nie)`, e?.status, e?.body);
+    throw new FlowiiError(`${e?.message ?? e} (testovacia zákazka ID ${orderId} už vznikla)`, e?.status, e?.body);
   }
 
-  return { partnerId, partnerReused: Boolean(existingPartnerId), orderId, taskId, name: draft.name };
+  return {
+    partnerId,
+    partnerReused: Boolean(existingPartnerId),
+    orderId,
+    taskId,
+    name,
+    note: created.companyDataApplied ? null : COMPANY_DATA_NOTE,
+  };
 }
 
 // ── Test pripojenia (len čítanie) ──────────────────────────────────────────
@@ -679,7 +778,6 @@ export async function checkFlowiiConnection(): Promise<FlowiiCheckResult> {
     const ref = await loadRefData(client, refCacheKey(creds));
     result.companies = ref.companies.map((c) => ({ id: String(c.id), name: String(c.attributes?.name ?? "") }));
     result.companyId = ref.companyId;
-    const companyData = await client.list("/companydata", { companyId: ref.companyId });
 
     const names = (items: JsonApiResource[]) => items.map((i) => String(i.attributes?.name ?? "")).filter(Boolean);
     result.available = {
@@ -687,13 +785,14 @@ export async function checkFlowiiConnection(): Promise<FlowiiCheckResult> {
       "Typy zákaziek": names(ref.orderTypes),
       "Stavy zákaziek": names(ref.orderStates),
       "Typy činností": names(ref.activityTypes),
-      "Firmy (fakturačné údaje)": names(companyData),
+      "Firmy (fakturačné údaje)": names(ref.companyData),
     };
 
     const refs = resolveRefs(ref, settings);
     const taskRefs = resolveTaskRefs(ref, settings);
     const byId = (items: JsonApiResource[], id: string) => `${items.find((i) => i.id === id)?.attributes?.name ?? "?"} (ID ${id})`;
     result.resolved = {
+      "Firma": byId(ref.companyData, refs.companyDataId),
       "Typ zákazky": byId(ref.orderTypes, refs.orderTypeId),
       "Stav zákazky": byId(ref.orderStates, refs.orderStateId),
       "Zodpovedný": refs.responsibleUserIds.map((id) => byId(ref.users, id)).join(", "),

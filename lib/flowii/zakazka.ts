@@ -6,6 +6,7 @@ import { colorLabel, materialLabel, qualityLabel } from "@/lib/print-options";
  * ručne vypĺňa administrácia vo FLOWii. Nič neodosiela — je to čistá funkcia,
  * aby sa dal výsledok vopred skontrolovať v administrácii.
  *
+ * Zákazka aj úloha sa volajú "<číslo zákazky vo FLOWii>_<súbor>", napr. 4553_model.stl.
  * Po zákazke sa k nej vytvorí aj úloha pre výrobu (Dávid Habánek, Adam Bundzel).
  *
  * Číselníky (typ, stav, zodpovedný, riešitelia úlohy, typ činnosti) sú zadané
@@ -79,6 +80,9 @@ export type FlowiiTaskDraft = {
 export type FlowiiZakazkaDraft = {
   orderId: string;
   orderNumber: string | null;
+  // Konečný názov zákazky aj úlohy je "<číslo z FLOWii>_<baseName>". Číslo
+  // pridelí FLOWii až pri založení; `name` je názov do tej chvíle.
+  baseName: string;
   name: string;
   companyName: string;
   partner: FlowiiPartnerDraft;
@@ -242,10 +246,9 @@ export function buildFlowiiZakazka(
   const fileNames = order.orderItems.length > 0
     ? order.orderItems.map((i) => i.fileName)
     : [order.fileName];
-  const name =
-    fileNames.length > 1
-      ? `3D tlac_${fileNames[0]} (+${fileNames.length - 1} ďalšie)`
-      : `3D tlac_${fileNames[0]}`;
+  const baseName =
+    fileNames.length > 1 ? `${fileNames[0]} (+${fileNames.length - 1} ďalšie)` : fileNames[0];
+  const name = `3D tlac_${baseName}`;
 
   const receivedDate = dateInBratislava(opts.now ?? new Date());
   const deadlineDate = addDays(receivedDate, settings.deadlineDays);
@@ -257,8 +260,10 @@ export function buildFlowiiZakazka(
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://www.vytlacto3d.sk";
 
   const task: FlowiiTaskDraft = {
-    title: `Vytlačiť ${order.orderNumber ?? order.id}: ${name}`,
+    title: baseName,
     description: [
+      `Objednávka: ${order.orderNumber ?? order.id}`,
+      "",
       ...items.map((it, idx) => {
         const c = it.config;
         const flex = [c.materialFlexible ? "materiál nezáleží" : null, c.colorFlexible ? "farba nezáleží" : null]
@@ -280,6 +285,7 @@ export function buildFlowiiZakazka(
   return {
     orderId: order.id,
     orderNumber: order.orderNumber,
+    baseName,
     name,
     companyName: settings.companyName,
     partner,

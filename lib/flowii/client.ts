@@ -2,9 +2,10 @@ import { createHash } from "node:crypto";
 /**
  * Minimálny klient FLOWii REST API (JSON:API, https://flowiiapi.docs.apiary.io/).
  *
- * BEZPEČNOSŤ: klient vie iba čítať (GET) a zakladať nové záznamy (POST) na
- * pevnom zozname ciest. PATCH/DELETE ani iné metódy tu zámerne neexistujú —
- * integrácia nesmie nič, čo vo FLOWii už je, upraviť ani zmazať.
+ * BEZPEČNOSŤ: klient vie čítať (GET) a zakladať nové záznamy (POST) na pevnom
+ * zozname ciest. Jediná povolená úprava (PATCH, so súhlasom majiteľa) je názov
+ * zákazky, ktorú tento web sám založil — kvôli číslu z FLOWii v názve.
+ * Úpravu inej zákazky klient odmietne. DELETE tu vôbec neexistuje.
  */
 
 const ALLOWED_POST_PATHS = new Set(["/token", "/partners", "/orders", "/tasks"]);
@@ -93,7 +94,15 @@ function statusMessage(status: number): string {
 }
 
 export class FlowiiClient {
+  // Zákazky, ktoré založil tento web — iba tie smie upraviť (názov s číslom).
+  private readonly ownOrderIds = new Set<string>();
+
   constructor(private readonly creds: FlowiiCredentials) {}
+
+  /** Označí zákazku ako založenú týmto webom (napr. pri pokračovaní z uloženého stavu). */
+  markOwnOrder(id: string) {
+    this.ownOrderIds.add(String(id));
+  }
 
   private get tokenKey() {
     // Aj heslo: po jeho zmene sa nesmie použiť token získaný so starým.
@@ -182,7 +191,7 @@ export class FlowiiClient {
     return `${this.creds.baseUrl}${path}${qs ? `?${qs}` : ""}`;
   }
 
-  private async request(method: "GET" | "POST", path: string, query: Record<string, string | number | undefined>, body?: unknown) {
+  private async request(method: "GET" | "POST" | "PATCH", path: string, query: Record<string, string | number | undefined>, body?: unknown) {
     if (method === "POST") this.assertPostAllowed(path);
 
     // Opakuje sa iba čítanie. Zakladanie záznamu (POST) sa nikdy neopakuje
@@ -234,6 +243,15 @@ export class FlowiiClient {
     const json = await this.request("POST", path, { companyId }, body);
     const id = json?.data?.id;
     if (!id) throw new FlowiiError(`FLOWii nevrátilo ID nového záznamu (${path}).`);
+    if (path === "/orders") this.markOwnOrder(String(id));
     return String(id);
+  }
+
+  /** Upraví zákazku — výhradne takú, ktorú založil tento web. Inak odmietne. */
+  async updateOwnOrder(id: string, companyId: string, body: unknown): Promise<void> {
+    if (!/^\d+$/.test(String(id)) || !this.ownOrderIds.has(String(id))) {
+      throw new FlowiiError(`Zablokované: zákazku ${id} nezaložil tento web, upravovať ju nesmie.`);
+    }
+    await this.request("PATCH", `/orders/${id}`, { companyId }, body);
   }
 }
