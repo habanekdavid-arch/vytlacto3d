@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSafeServerSession } from "@/lib/session";
-import { checkFlowiiConnection, syncOrderToFlowii } from "@/lib/flowii/sync";
+import { checkFlowiiConnection, createFlowiiTestZakazka, syncOrderToFlowii } from "@/lib/flowii/sync";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -26,6 +26,16 @@ export async function POST(req: NextRequest) {
   if (!(await isAdmin())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json().catch(() => null);
+
+  if (body?.action === "test-zakazka") {
+    try {
+      return NextResponse.json(await createFlowiiTestZakazka());
+    } catch (e: any) {
+      const detail = e?.body ? ` — ${String(e.body).slice(0, 500)}` : "";
+      return NextResponse.json({ error: `${e?.message ?? "Vytvorenie testovacej zákazky zlyhalo."}${detail}` }, { status: 502 });
+    }
+  }
+
   const orderId = typeof body?.orderId === "string" ? body.orderId : "";
   if (!orderId) return NextResponse.json({ error: "Chýba orderId." }, { status: 400 });
 

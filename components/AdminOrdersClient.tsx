@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import ModelPreviewAllButton from "@/components/ModelPreviewAllButton";
 import FlowiiCheckButton from "@/components/FlowiiCheckButton";
+import FlowiiTestOrderButton from "@/components/FlowiiTestOrderButton";
 
 type Order = {
   id: string;
@@ -248,6 +249,7 @@ export default function AdminOrdersClient({
               label="Test FLOWii"
               className="rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50 disabled:opacity-60"
             />
+            <FlowiiTestOrderButton className="rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50 disabled:opacity-60" />
             <a
               href="/admin/cms"
               className="rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50"

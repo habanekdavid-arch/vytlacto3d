@@ -9,6 +9,7 @@ import {
   getFlowiiCredentials,
   type JsonApiResource,
 } from "@/lib/flowii/client";
+import type { OrderWithItems } from "@/lib/order-copy-text";
 import {
   buildFlowiiZakazka,
   getFlowiiSettings,
@@ -562,6 +563,92 @@ export async function syncOrderToFlowii(
       .catch((dbErr) => console.error("FLOWii sync: could not record failure", dbErr));
     throw e;
   }
+}
+
+// ── Testovacia zákazka ─────────────────────────────────────────────────────
+
+export type FlowiiTestResult = {
+  partnerId: string;
+  partnerReused: boolean;
+  orderId: string;
+  taskId: string;
+  name: string;
+};
+
+const TEST_MARK = "TEST (zmazať)";
+
+/**
+ * Založí vo FLOWii jednu fiktívnu zákazku rovnakou cestou ako skutočná
+ * objednávka — na overenie, ako vyzerá. Na webe nič nevzniká (žiadna
+ * objednávka, žiadna platba). Všetko je označené "TEST (zmazať)".
+ * Najprv sa overia všetky číselníky; ak niečo nesedí, nevznikne nič.
+ */
+export async function createFlowiiTestZakazka(): Promise<FlowiiTestResult> {
+  const creds = getFlowiiCredentials();
+  if (!creds) throw new FlowiiError("FLOWii nie je nastavené (chýbajú premenné FLOWII_*).");
+
+  const client = new FlowiiClient(creds);
+  const settings = getFlowiiSettings();
+  const ref = await loadRefData(client, refCacheKey(creds));
+  const refs = resolveRefs(ref, settings);
+  const taskRefs = resolveTaskRefs(ref, settings);
+
+  const now = new Date();
+  const stamp = flowiiDateTime(now).slice(0, 16).replace("T", " ");
+  const itemConfig = { material: "PLA", quality: "STANDARD", color: "black", quantity: 1, infillPct: 20, scalePct: 100 };
+  const fakeOrder = {
+    id: "test",
+    orderNumber: `TEST ${stamp}`,
+    status: "PAID",
+    createdAt: now,
+    fileName: "TEST_model.stl",
+    fileKey: "test",
+    analysis: { dimsXmm: 40, dimsYmm: 30, dimsZmm: 20, volumeCm3: 12.5 },
+    config: { ...itemConfig, allowModelAdjustments: true },
+    pricing: { total: 10 },
+    paidTotalEur: 17.22,
+    shippingCost: { amount: 492, currency: "eur" },
+    shippingMethod: "Packeta výdajňa / Z-Box",
+    customerEmail: "test@vytlacto3d.sk",
+    phone: null,
+    accountType: "PERSON",
+    companyName: null,
+    ico: null,
+    dic: null,
+    icDph: null,
+    contactPerson: null,
+    billingAddress: { name: "TEST vytlacto3D (zmazať)", street: "Nezábudková 5", city: "Bratislava", zip: "82101", country: "SK" },
+    deliveryAddress: { type: "packeta", packetaPointName: "TEST – fiktívne výdajné miesto", country: "SK" },
+    shippingAddress: null,
+    orderItems: [{ fileName: "TEST_model.stl", config: itemConfig, pricing: { total: 10 }, analysis: { dimsXmm: 40, dimsYmm: 30, dimsZmm: 20, volumeCm3: 12.5 } }],
+  } as unknown as OrderWithItems;
+
+  const draft = buildFlowiiZakazka(fakeOrder, { now, settings });
+  const warning = "⚠ TESTOVACIA ZÁKAZKA z vytlacto3d.sk — iba na kontrolu napojenia, po kontrole ju zmažte.";
+  draft.name = `${TEST_MARK} – ${draft.name}`;
+  draft.description = `${warning}\n\n${draft.description}`;
+  draft.task.title = `${TEST_MARK} – ${draft.task.title}`;
+  draft.task.description = `${warning}\n\n${draft.task.description}`;
+
+  const existingPartnerId = await findExistingPartner(client, refs.companyId, draft.partner);
+  const partnerId =
+    existingPartnerId ?? (await client.create("/partners", refs.companyId, buildPartnerBody(draft.partner, refs)));
+
+  let orderId: string;
+  try {
+    orderId = await client.create("/orders", refs.companyId, buildOrderBody(draft, refs, partnerId, now));
+  } catch (e: any) {
+    throw new FlowiiError(`${e?.message ?? e} (testovací partner ID ${partnerId} už existuje)`, e?.status, e?.body);
+  }
+
+  let taskId: string;
+  try {
+    taskId = await client.create("/tasks", refs.companyId, buildTaskBody(draft, taskRefs, partnerId, orderId));
+  } catch (e: any) {
+    throw new FlowiiError(`${e?.message ?? e} (testovacia zákazka ID ${orderId} už vznikla, úloha nie)`, e?.status, e?.body);
+  }
+
+  return { partnerId, partnerReused: Boolean(existingPartnerId), orderId, taskId, name: draft.name };
 }
 
 // ── Test pripojenia (len čítanie) ──────────────────────────────────────────
