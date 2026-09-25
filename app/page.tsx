@@ -804,10 +804,15 @@ export default function Home() {
                     key={`${activeItem.fileKey}-${activeItem.config.scalePct}-${activeItem.config.color}`}
                     fileKey={activeItem.fileKey}
                     title="Model sa dá otáčať a zoomovať"
-                    colorId={activeItem.config.color}
+                    colorId={activeItem.config.colorFlexible ? "gray" : activeItem.config.color}
                     height={380}
                     scalePct={activeItem.config.scalePct}
                   />
+                  {activeItem.config.colorFlexible && (
+                    <p className="mt-3 rounded-2xl bg-neutral-50 px-4 py-2.5 text-xs text-neutral-600">
+                      Farba, ktorú aktuálne vidíte, je <span className="font-bold text-neutral-900">ilustračná</span> — na farbe vám nezáleží, vyberieme ju podľa dostupnosti.
+                    </p>
+                  )}
                 </div>
 
                 <div className="rounded-3xl border border-neutral-200 bg-white p-5">

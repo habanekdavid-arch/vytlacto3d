@@ -254,14 +254,24 @@ export default function Configurator({
           <ColorPalette
             value={config.color}
             onChange={(id) => setConfig((c) => ({ ...c, color: id }))}
+            disabled={!!config.colorFlexible}
           />
 
-          <div className="mt-3 rounded-2xl bg-neutral-50 px-4 py-3 text-xs text-neutral-600">
-            Vybraná farba:{" "}
-            <span className="font-bold text-neutral-900">
-              {COLOR_LABELS[config.color] ?? config.color}
-            </span>
-          </div>
+          {config.colorFlexible ? (
+            <div className="mt-3 rounded-2xl bg-neutral-50 px-4 py-3 text-xs text-neutral-600">
+              Farbu vyberieme podľa aktuálnej dostupnosti.{" "}
+              <span className="font-bold text-neutral-900">
+                Farba modelu v 3D náhľade je len ilustračná.
+              </span>
+            </div>
+          ) : (
+            <div className="mt-3 rounded-2xl bg-neutral-50 px-4 py-3 text-xs text-neutral-600">
+              Vybraná farba:{" "}
+              <span className="font-bold text-neutral-900">
+                {COLOR_LABELS[config.color] ?? config.color}
+              </span>
+            </div>
+          )}
 
           <FlexibleCheckbox
             label="Nezáleží mi na farbe"
