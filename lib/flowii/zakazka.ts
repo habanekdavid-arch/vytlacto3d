@@ -6,7 +6,7 @@ import { colorLabel, materialLabel, qualityLabel } from "@/lib/print-options";
  * ručne vypĺňa administrácia vo FLOWii. Nič neodosiela — je to čistá funkcia,
  * aby sa dal výsledok vopred skontrolovať v administrácii.
  *
- * Po zákazke sa k nej vytvorí aj úloha pre výrobu (Dávid Habánek, Adam Bunzel).
+ * Po zákazke sa k nej vytvorí aj úloha pre výrobu (Dávid Habánek, Adam Bundzel).
  *
  * Číselníky (typ, stav, zodpovedný, riešitelia úlohy, typ činnosti) sú zadané
  * názvom, tak ako ich vidno vo FLOWii. ID sa k nim dohľadajú len čítaním — ak
@@ -35,7 +35,7 @@ export function getFlowiiSettings(): FlowiiSettings {
     contractStateName: process.env.FLOWII_CONTRACT_STATE || "vo vyrobe",
     responsibleName: process.env.FLOWII_RESPONSIBLE || "Machalíková Denisa",
     deadlineDays: Number.isFinite(days) && days >= 0 ? days : 1,
-    taskAssigneeNames: (process.env.FLOWII_TASK_ASSIGNEES || "Dávid Habánek,Adam Bunzel")
+    taskAssigneeNames: (process.env.FLOWII_TASK_ASSIGNEES || "Dávid Habánek,Adam Bundzel")
       .split(",")
       .map((n) => n.trim())
       .filter(Boolean),
