@@ -3,10 +3,20 @@
 import { useState } from "react";
 
 type Result =
-  | { ok: true; partnerId: string; partnerReused: boolean; orderId: string; taskId: string; name: string; note: string | null }
+  | {
+      ok: true;
+      partnerId: string;
+      partnerReused: boolean;
+      orderId: string;
+      taskId: string;
+      name: string;
+      taskName: string;
+      orderNumber: string | null;
+      note: string | null;
+    }
   | { ok: false; error: string };
 
-/** Založí vo FLOWii jednu fiktívnu zákazku označenú "TEST (zmazať)". */
+/** Založí vo FLOWii jednu fiktívnu zákazku (súbor TEST_zmazat_model.stl, partner Ján Testovací). */
 export default function FlowiiTestOrderButton({ className }: { className?: string }) {
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<Result | null>(null);
@@ -75,7 +85,10 @@ export default function FlowiiTestOrderButton({ className }: { className?: strin
                   <span className="font-semibold">Zákazka:</span> {result.name} (ID {result.orderId})
                 </div>
                 <div>
-                  <span className="font-semibold">Úloha:</span> ID {result.taskId}
+                  <span className="font-semibold">Detail → objednávka:</span> {result.orderNumber ?? "—"}
+                </div>
+                <div>
+                  <span className="font-semibold">Úloha:</span> {result.taskName} (ID {result.taskId})
                 </div>
                 <div>
                   <span className="font-semibold">Partner:</span> ID {result.partnerId}

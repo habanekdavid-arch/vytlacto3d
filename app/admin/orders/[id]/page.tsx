@@ -632,7 +632,7 @@ function FlowiiPreview({
         <div>
           <div className="text-xs font-bold uppercase tracking-wide text-neutral-500">Zákazka</div>
           <div className="mt-3 grid gap-3 md:grid-cols-2">
-            <InfoCard label="Názov" value={`[číslo z FLOWii]_${draft.baseName}`} />
+            <InfoCard label="Názov" value={draft.name} />
             <InfoCard label="Firma" value={draft.companyName} />
             <InfoCard label="Partner" value={p.name ?? ([p.firstName, p.lastName].filter(Boolean).join(" ") || "—")} />
             <InfoCard label="Typ zákazky" value={draft.contractTypeName} />
@@ -641,6 +641,7 @@ function FlowiiPreview({
             <InfoCard label="Prijatá" value={formatIsoDateSK(draft.receivedDate)} />
             <InfoCard label="Termín dokončenia" value={formatIsoDateSK(draft.deadlineDate)} />
             <InfoCard label="Číslo" value="pridelí FLOWii" />
+            <InfoCard label="Detail → objednávka" value={draft.orderNumber ?? "—"} />
           </div>
         </div>
 

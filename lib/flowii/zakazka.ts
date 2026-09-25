@@ -6,7 +6,8 @@ import { colorLabel, materialLabel, qualityLabel } from "@/lib/print-options";
  * ručne vypĺňa administrácia vo FLOWii. Nič neodosiela — je to čistá funkcia,
  * aby sa dal výsledok vopred skontrolovať v administrácii.
  *
- * Zákazka aj úloha sa volajú "<číslo zákazky vo FLOWii>_<súbor>", napr. 4553_model.stl.
+ * Zákazka sa volá "3D tlac_<súbor>", úloha "<číslo zákazky vo FLOWii>_<súbor>",
+ * napr. 4553_model.stl. Číslo objednávky z webu ide do poľa Detail → objednavka.
  * Po zákazke sa k nej vytvorí aj úloha pre výrobu (Dávid Habánek, Adam Bundzel).
  *
  * Číselníky (typ, stav, zodpovedný, riešitelia úlohy, typ činnosti) sú zadané
@@ -24,6 +25,8 @@ export type FlowiiSettings = {
   responsibleName: string;
   deadlineDays: number;
   taskAssigneeNames: string[];
+  // Vlastné pole zákazky (záložka Detail), kam ide číslo objednávky z webu.
+  orderNumberFieldName: string;
   // Typ činnosti pre riešiteľov úlohy. Prázdne = "Realizácia", inak prvý typ vo FLOWii.
   activityTypeName: string | null;
 };
@@ -40,6 +43,7 @@ export function getFlowiiSettings(): FlowiiSettings {
       .split(",")
       .map((n) => n.trim())
       .filter(Boolean),
+    orderNumberFieldName: process.env.FLOWII_ORDER_NUMBER_FIELD?.trim() || "objednavka",
     activityTypeName: process.env.FLOWII_ACTIVITY_TYPE?.trim() || null,
   };
 }
@@ -80,8 +84,8 @@ export type FlowiiTaskDraft = {
 export type FlowiiZakazkaDraft = {
   orderId: string;
   orderNumber: string | null;
-  // Konečný názov zákazky aj úlohy je "<číslo z FLOWii>_<baseName>". Číslo
-  // pridelí FLOWii až pri založení; `name` je názov do tej chvíle.
+  // Zákazka: "3D tlac_<baseName>". Úloha: "<číslo zákazky vo FLOWii>_<baseName>"
+  // — číslo pridelí FLOWii až pri založení zákazky.
   baseName: string;
   name: string;
   companyName: string;

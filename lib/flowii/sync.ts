@@ -181,6 +181,8 @@ type Refs = {
   responsibleUserIds: string[];
   // Pole "Firma" zákazky — fakturačné údaje "4from media, s.r.o. (vytlacto3D.sk)".
   companyDataId: string;
+  // Vlastné pole "objednavka" (Detail) — null, ak sa vo FLOWii nenašlo.
+  orderNumberFieldId: string | null;
   countries: JsonApiResource[];
   users: JsonApiResource[];
 };
@@ -205,6 +207,7 @@ type RefData = {
   countries: JsonApiResource[];
   activityTypes: JsonApiResource[];
   companyData: JsonApiResource[];
+  orderCustomFields: JsonApiResource[];
 };
 
 const REF_CACHE_MS = 10 * 60_000;
@@ -266,9 +269,19 @@ async function loadRefData(client: FlowiiClient, cacheKey: string): Promise<RefD
     countries: await client.list("/countries", q),
     activityTypes: await client.list("/activitytypes", q),
     companyData: await client.list("/companydata", q),
+    orderCustomFields: await client.list("/orders/customfields", q),
   };
   refCache = { key, at: Date.now(), data };
   return data;
+}
+
+// value-type 3 = text (podľa príkladov v dokumentácii FLOWii)
+function findOrderNumberField(ref: RefData, settings: FlowiiSettings): JsonApiResource | null {
+  const wanted = norm(settings.orderNumberFieldName);
+  const matches = ref.orderCustomFields.filter(
+    (f) => norm(f.attributes?.name) === wanted && [undefined, null, 3].includes(f.attributes?.["value-type"])
+  );
+  return matches.length === 1 ? matches[0] : null;
 }
 
 function resolveRefs(ref: RefData, settings: FlowiiSettings): Refs {
@@ -281,6 +294,7 @@ function resolveRefs(ref: RefData, settings: FlowiiSettings): Refs {
     orderStateId: pickOne(ref.orderStates, settings.contractStateName, "Stav zákazky").id,
     responsibleUserIds: [pickOne(ref.users, settings.responsibleName, "Používateľ", personKey).id],
     companyDataId: pickOne(ref.companyData, settings.companyName, "Firma (fakturačné údaje)").id,
+    orderNumberFieldId: findOrderNumberField(ref, settings)?.id ?? null,
     countries: ref.countries,
     users: ref.users,
   };
@@ -428,8 +442,22 @@ function buildOrderBody(
   refs: Refs,
   partnerId: string,
   createdAt: Date,
-  withCompanyData = true
-): { data: { type: "order"; id?: string; attributes: Record<string, unknown>; relationships: Record<string, unknown> } } {
+  withOptional = true
+) {
+  const orderNumberField =
+    withOptional && refs.orderNumberFieldId && draft.orderNumber
+      ? {
+          "custom-field-string-values": {
+            data: [
+              {
+                type: "custom-field-string-value",
+                attributes: { value: draft.orderNumber },
+                relationships: { "custom-field": { data: { type: "custom-field", id: refs.orderNumberFieldId } } },
+              },
+            ],
+          },
+        }
+      : {};
   return {
     data: {
       type: "order",
@@ -446,20 +474,31 @@ function buildOrderBody(
         partner: { data: { type: "partner", id: partnerId } },
         user: { data: { type: "user", id: refs.selfUserId } },
         "responsible-users": { data: refs.responsibleUserIds.map((id) => ({ type: "user", id })) },
-        ...(withCompanyData ? { "company-data": { data: { type: "company-data", id: refs.companyDataId } } } : {}),
+        ...(withOptional ? { "company-data": { data: { type: "company-data", id: refs.companyDataId } } } : {}),
+        ...orderNumberField,
       },
     },
   };
 }
 
-// Pole "Firma" (company-data) pri zákazke v dokumentácii FLOWii chýba, hoci
-// zoznam zákaziek podľa neho filtruje. Keby ho FLOWii odmietlo (400/422 =
-// záznam nevznikol), zákazka sa založí bez neho a upozorní sa na to.
+// Firma (company-data) ani vlastné polia pri zákazke nie sú v dokumentácii
+// FLOWii opísané úplne. Keby ich FLOWii odmietlo (400/422 = záznam
+// nevznikol), zákazka sa založí bez nich a upozorní sa na to.
 function isRejected(e: unknown) {
   return e instanceof FlowiiError && (e.status === 400 || e.status === 422);
 }
 
-const COMPANY_DATA_NOTE = "Pole Firma sa cez API nepodarilo nastaviť — FLOWii ho odmietlo; zákazka má predvolenú firmu.";
+const OPTIONAL_REJECTED_NOTE =
+  "FLOWii odmietlo pole Firma / Detail → objednávka — zákazka vznikla bez nich, doplňte ich ručne.";
+
+function orderNotes(refs: Refs, draft: FlowiiZakazkaDraft, optionalApplied: boolean, settings: FlowiiSettings): string | null {
+  const notes: string[] = [];
+  if (!optionalApplied) notes.push(OPTIONAL_REJECTED_NOTE);
+  else if (!refs.orderNumberFieldId && draft.orderNumber) {
+    notes.push(`Vlastné pole "${settings.orderNumberFieldName}" (Detail) sa vo FLOWii nenašlo — číslo objednávky treba doplniť ručne.`);
+  }
+  return notes.length ? notes.join(" ") : null;
+}
 
 async function createOrder(
   client: FlowiiClient,
@@ -467,53 +506,24 @@ async function createOrder(
   refs: Refs,
   partnerId: string,
   createdAt: Date
-): Promise<{ id: string; companyDataApplied: boolean }> {
+): Promise<{ id: string; optionalApplied: boolean }> {
   try {
-    return { id: await client.create("/orders", refs.companyId, buildOrderBody(draft, refs, partnerId, createdAt)), companyDataApplied: true };
+    return { id: await client.create("/orders", refs.companyId, buildOrderBody(draft, refs, partnerId, createdAt)), optionalApplied: true };
   } catch (e) {
     if (!isRejected(e)) throw e;
     const id = await client.create("/orders", refs.companyId, buildOrderBody(draft, refs, partnerId, createdAt, false));
-    return { id, companyDataApplied: false };
+    return { id, optionalApplied: false };
   }
 }
 
-/**
- * Prečíta číslo zákazky, ktoré pridelilo FLOWii, a nastaví názov
- * "<číslo>_<súbor>". Upravuje výhradne zákazku založenú týmto webom
- * (so súhlasom majiteľa); ak už názov sedí, neposiela nič.
- */
-async function applyNumberedName(
-  client: FlowiiClient,
-  draft: FlowiiZakazkaDraft,
-  refs: Refs,
-  partnerId: string,
-  orderId: string,
-  createdAt: Date,
-  withCompanyData: boolean
-): Promise<{ serial: string | null; name: string }> {
+/** Číslo zákazky, ktoré pridelilo FLOWii (len čítanie) — na názov úlohy. */
+async function readOrderSerial(client: FlowiiClient, refs: Refs, orderId: string): Promise<string | null> {
   const detail = await client.get(`/orders/${encodeURIComponent(orderId)}`, { companyId: refs.companyId });
-  const attrs = detail?.data?.attributes ?? {};
-  const serial = String(attrs["serial-nr"] ?? "").trim() || null;
-  if (!serial) return { serial: null, name: String(attrs.name ?? draft.name) };
+  return String(detail?.data?.attributes?.["serial-nr"] ?? "").trim() || null;
+}
 
-  const name = `${serial}_${draft.baseName}`;
-  if (attrs.name === name) return { serial, name };
-
-  // Celé telo ako pri založení + nový názov a to isté číslo — aj keby FLOWii
-  // chápalo PATCH ako náhradu celej zákazky, nič sa nestratí.
-  const patch = (withCd: boolean) => {
-    const body = buildOrderBody({ ...draft, name }, refs, partnerId, createdAt, withCd);
-    body.data.id = orderId;
-    body.data.attributes["serial-nr"] = serial;
-    return client.updateOwnOrder(orderId, refs.companyId, body);
-  };
-  try {
-    await patch(withCompanyData);
-  } catch (e) {
-    if (!withCompanyData || !isRejected(e)) throw e;
-    await patch(false);
-  }
-  return { serial, name };
+function numberedTaskDraft(draft: FlowiiZakazkaDraft, serial: string | null): FlowiiZakazkaDraft {
+  return { ...draft, task: { ...draft.task, title: serial ? `${serial}_${draft.baseName}` : draft.task.title } };
 }
 
 function buildTaskBody(draft: FlowiiZakazkaDraft, refs: TaskRefs, partnerId: string, flowiiOrderId: string) {
@@ -617,30 +627,27 @@ export async function syncOrderToFlowii(
     }
 
     let flowiiOrderId = row.flowiiOrderId;
-    let companyDataApplied = true;
+    let note: string | null = null;
     if (!flowiiOrderId) {
       const created = await createOrder(client, draft, refs, partnerId, row.createdAt);
       flowiiOrderId = created.id;
-      companyDataApplied = created.companyDataApplied;
+      note = orderNotes(refs, draft, created.optionalApplied, settings);
       row = await prisma.flowiiSync.update({ where: { orderId }, data: { flowiiOrderId } });
-    } else {
-      // Zákazku založil tento web v predchádzajúcom pokuse (je v FlowiiSync).
-      client.markOwnOrder(flowiiOrderId);
     }
 
     if (!row.flowiiTaskId) {
-      const { serial } = await applyNumberedName(client, draft, refs, partnerId, flowiiOrderId, row.createdAt, companyDataApplied);
+      const serial = await readOrderSerial(client, refs, flowiiOrderId);
       // Až tu — chýbajúci riešiteľ nesmie zablokovať samotnú zákazku.
       const taskRefs = resolveTaskRefs(ref, settings);
-      const taskDraft = { ...draft, task: { ...draft.task, title: serial ? `${serial}_${draft.baseName}` : draft.task.title } };
-      const taskId = await client.create("/tasks", refs.companyId, buildTaskBody(taskDraft, taskRefs, partnerId, flowiiOrderId));
+      const taskId = await client.create(
+        "/tasks",
+        refs.companyId,
+        buildTaskBody(numberedTaskDraft(draft, serial), taskRefs, partnerId, flowiiOrderId)
+      );
       row = await prisma.flowiiSync.update({ where: { orderId }, data: { flowiiTaskId: taskId } });
     }
 
-    row = await prisma.flowiiSync.update({
-      where: { orderId },
-      data: { status: "DONE", lastError: companyDataApplied ? null : COMPANY_DATA_NOTE },
-    });
+    row = await prisma.flowiiSync.update({ where: { orderId }, data: { status: "DONE", lastError: note } });
     return { status: "DONE", row };
   } catch (e: any) {
     const detail = e instanceof FlowiiError && e.body ? ` — ${e.body}` : "";
@@ -660,6 +667,8 @@ export type FlowiiTestResult = {
   orderId: string;
   taskId: string;
   name: string;
+  taskName: string;
+  orderNumber: string | null;
   note: string | null;
 };
 
@@ -721,7 +730,7 @@ export async function createFlowiiTestZakazka(): Promise<FlowiiTestResult> {
   const partnerId =
     existingPartnerId ?? (await client.create("/partners", refs.companyId, buildPartnerBody(draft.partner, refs)));
 
-  let created: { id: string; companyDataApplied: boolean };
+  let created: { id: string; optionalApplied: boolean };
   try {
     created = await createOrder(client, draft, refs, partnerId, now);
   } catch (e: any) {
@@ -730,11 +739,10 @@ export async function createFlowiiTestZakazka(): Promise<FlowiiTestResult> {
   const orderId = created.id;
 
   let taskId: string;
-  let name = draft.name;
+  let taskName: string;
   try {
-    const numbered = await applyNumberedName(client, draft, refs, partnerId, orderId, now, created.companyDataApplied);
-    name = numbered.name;
-    const taskDraft = { ...draft, task: { ...draft.task, title: numbered.serial ? `${numbered.serial}_${draft.baseName}` : draft.task.title } };
+    const taskDraft = numberedTaskDraft(draft, await readOrderSerial(client, refs, orderId));
+    taskName = taskDraft.task.title;
     taskId = await client.create("/tasks", refs.companyId, buildTaskBody(taskDraft, taskRefs, partnerId, orderId));
   } catch (e: any) {
     throw new FlowiiError(`${e?.message ?? e} (testovacia zákazka ID ${orderId} už vznikla)`, e?.status, e?.body);
@@ -745,8 +753,10 @@ export async function createFlowiiTestZakazka(): Promise<FlowiiTestResult> {
     partnerReused: Boolean(existingPartnerId),
     orderId,
     taskId,
-    name,
-    note: created.companyDataApplied ? null : COMPANY_DATA_NOTE,
+    name: draft.name,
+    taskName,
+    orderNumber: draft.orderNumber,
+    note: orderNotes(refs, draft, created.optionalApplied, settings),
   };
 }
 
@@ -786,6 +796,7 @@ export async function checkFlowiiConnection(): Promise<FlowiiCheckResult> {
       "Stavy zákaziek": names(ref.orderStates),
       "Typy činností": names(ref.activityTypes),
       "Firmy (fakturačné údaje)": names(ref.companyData),
+      "Vlastné polia zákazky": names(ref.orderCustomFields),
     };
 
     const refs = resolveRefs(ref, settings);
@@ -793,6 +804,9 @@ export async function checkFlowiiConnection(): Promise<FlowiiCheckResult> {
     const byId = (items: JsonApiResource[], id: string) => `${items.find((i) => i.id === id)?.attributes?.name ?? "?"} (ID ${id})`;
     result.resolved = {
       "Firma": byId(ref.companyData, refs.companyDataId),
+      "Detail → objednávka": refs.orderNumberFieldId
+        ? byId(ref.orderCustomFields, refs.orderNumberFieldId)
+        : `NENAŠLO SA pole "${settings.orderNumberFieldName}" — číslo objednávky sa nevyplní`,
       "Typ zákazky": byId(ref.orderTypes, refs.orderTypeId),
       "Stav zákazky": byId(ref.orderStates, refs.orderStateId),
       "Zodpovedný": refs.responsibleUserIds.map((id) => byId(ref.users, id)).join(", "),
