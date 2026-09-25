@@ -2,7 +2,13 @@ import { after } from "next/server";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { sendMail, FROM, ADMIN_INBOX, hasMailCredentials } from "@/lib/mailer";
-import { FlowiiClient, FlowiiError, getFlowiiCredentials, type JsonApiResource } from "@/lib/flowii/client";
+import {
+  FlowiiClient,
+  FlowiiError,
+  clearFlowiiTokenCache,
+  getFlowiiCredentials,
+  type JsonApiResource,
+} from "@/lib/flowii/client";
 import {
   buildFlowiiZakazka,
   getFlowiiSettings,
@@ -181,10 +187,37 @@ type TaskRefs = {
   activityTypeId: string;
 };
 
-async function resolveCompanyId(client: FlowiiClient): Promise<string> {
+/**
+ * Číselníky z FLOWii (firmy, používatelia, typy, stavy, krajiny, typy činností).
+ * Čítajú sa postupne a pamätajú sa 10 minút, aby sme FLOWii nezahltili —
+ * pri veľa požiadavkách naraz vracia HTTP 429.
+ */
+type RefData = {
+  companies: JsonApiResource[];
+  companyId: string;
+  selfUserId: string;
+  users: JsonApiResource[];
+  orderTypes: JsonApiResource[];
+  orderStates: JsonApiResource[];
+  countries: JsonApiResource[];
+  activityTypes: JsonApiResource[];
+};
+
+const REF_CACHE_MS = 10 * 60_000;
+let refCache: { key: string; at: number; data: RefData } | null = null;
+
+/** Zabudne číselníky aj prihlásenie — "Test FLOWii" tak vždy overí aktuálny stav. */
+export function clearFlowiiCache() {
+  refCache = null;
+  clearFlowiiTokenCache();
+}
+
+function refCacheKey(creds: { baseUrl: string; apiKey: string; username: string }) {
+  return `${creds.baseUrl}|${creds.apiKey}|${creds.username}`;
+}
+
+function pickCompanyId(companies: JsonApiResource[]): string {
   const fromEnv = process.env.FLOWII_COMPANY_ID?.trim();
-  const json = await client.get("/companies");
-  const companies: JsonApiResource[] = Array.isArray(json?.data) ? json.data : [];
   if (fromEnv) {
     if (!companies.some((c) => String(c.id) === fromEnv)) {
       throw new FlowiiError(`FLOWII_COMPANY_ID=${fromEnv} nie je medzi firmami, ku ktorým má API používateľ prístup.`);
@@ -208,32 +241,42 @@ async function resolveCompanyId(client: FlowiiClient): Promise<string> {
   );
 }
 
-async function resolveRefs(client: FlowiiClient, settings: FlowiiSettings): Promise<Refs> {
-  const companyId = await resolveCompanyId(client);
+async function loadRefData(client: FlowiiClient, cacheKey: string): Promise<RefData> {
+  const key = `${cacheKey}|${process.env.FLOWII_COMPANY_ID ?? ""}`;
+  if (refCache && refCache.key === key && Date.now() - refCache.at < REF_CACHE_MS) return refCache.data;
+
+  const companies = await client.list("/companies");
+  const companyId = pickCompanyId(companies);
   const q = { companyId };
-
-  const [self, users, orderTypes, orderStates, countries] = await Promise.all([
-    client.get("/users/self", q),
-    client.getAll("/users", q),
-    client.getAll("/ordertypes", q),
-    client.getAll("/orderstates", q),
-    client.getAll("/countries", q),
-  ]);
-
+  const self = await client.get("/users/self", q);
   const selfUserId = self?.data?.id;
   if (!selfUserId) throw new FlowiiError("FLOWii nevrátilo ID API používateľa (/users/self).");
 
-  // Typ zákazky je hlavný typ, nie podtyp.
-  const topLevelTypes = orderTypes.filter((t) => !t.relationships?.parent?.data);
-
-  return {
+  const data: RefData = {
+    companies,
     companyId,
     selfUserId: String(selfUserId),
-    orderTypeId: pickOne(topLevelTypes.length ? topLevelTypes : orderTypes, settings.contractTypeName, "Typ zákazky").id,
-    orderStateId: pickOne(orderStates, settings.contractStateName, "Stav zákazky").id,
-    responsibleUserIds: [pickOne(users, settings.responsibleName, "Používateľ", personKey).id],
-    countries,
-    users,
+    users: await client.list("/users", q),
+    orderTypes: await client.list("/ordertypes", q),
+    orderStates: await client.list("/orderstates", q),
+    countries: await client.list("/countries", q),
+    activityTypes: await client.list("/activitytypes", q),
+  };
+  refCache = { key, at: Date.now(), data };
+  return data;
+}
+
+function resolveRefs(ref: RefData, settings: FlowiiSettings): Refs {
+  // Typ zákazky je hlavný typ, nie podtyp.
+  const topLevelTypes = ref.orderTypes.filter((t) => !t.relationships?.parent?.data);
+  return {
+    companyId: ref.companyId,
+    selfUserId: ref.selfUserId,
+    orderTypeId: pickOne(topLevelTypes.length ? topLevelTypes : ref.orderTypes, settings.contractTypeName, "Typ zákazky").id,
+    orderStateId: pickOne(ref.orderStates, settings.contractStateName, "Stav zákazky").id,
+    responsibleUserIds: [pickOne(ref.users, settings.responsibleName, "Používateľ", personKey).id],
+    countries: ref.countries,
+    users: ref.users,
   };
 }
 
@@ -247,11 +290,10 @@ function pickActivityType(activityTypes: JsonApiResource[], wanted: string | nul
   return activityTypes.find((a) => norm(a.attributes?.name) === "realizacia") ?? activityTypes[0];
 }
 
-async function resolveTaskRefs(client: FlowiiClient, refs: Refs, settings: FlowiiSettings): Promise<TaskRefs> {
-  const activityTypes = await client.getAll("/activitytypes", { companyId: refs.companyId });
+function resolveTaskRefs(ref: RefData, settings: FlowiiSettings): TaskRefs {
   return {
-    assigneeUserIds: settings.taskAssigneeNames.map((n) => pickOne(refs.users, n, "Používateľ", personKey).id),
-    activityTypeId: pickActivityType(activityTypes, settings.activityTypeName).id,
+    assigneeUserIds: settings.taskAssigneeNames.map((n) => pickOne(ref.users, n, "Používateľ", personKey).id),
+    activityTypeId: pickActivityType(ref.activityTypes, settings.activityTypeName).id,
   };
 }
 
@@ -484,7 +526,8 @@ export async function syncOrderToFlowii(
   const settings = getFlowiiSettings();
 
   try {
-    const refs = await resolveRefs(client, settings);
+    const ref = await loadRefData(client, refCacheKey(creds));
+    const refs = resolveRefs(ref, settings);
     // Dátum prvého pokusu — pri opakovaní sa "prijatá" neposúva.
     const draft = buildFlowiiZakazka(order, { accountName: order.user?.name, now: row.createdAt, settings });
 
@@ -504,7 +547,7 @@ export async function syncOrderToFlowii(
 
     if (!row.flowiiTaskId) {
       // Až tu — chýbajúci riešiteľ nesmie zablokovať samotnú zákazku.
-      const taskRefs = await resolveTaskRefs(client, refs, settings);
+      const taskRefs = resolveTaskRefs(ref, settings);
       const taskId = await client.create("/tasks", refs.companyId, buildTaskBody(draft, taskRefs, partnerId, flowiiOrderId));
       row = await prisma.flowiiSync.update({ where: { orderId }, data: { flowiiTaskId: taskId } });
     }
@@ -544,39 +587,31 @@ export async function checkFlowiiConnection(): Promise<FlowiiCheckResult> {
   const client = new FlowiiClient(creds);
   const settings = getFlowiiSettings();
   try {
-    const json = await client.get("/companies");
-    result.companies = (Array.isArray(json?.data) ? json.data : []).map((c: JsonApiResource) => ({
-      id: String(c.id),
-      name: String(c.attributes?.name ?? ""),
-    }));
-    result.companyId = await resolveCompanyId(client);
+    // Test vždy číta čerstvé údaje; bežné zakladanie zákaziek používa pamäť.
+    clearFlowiiCache();
+    const ref = await loadRefData(client, refCacheKey(creds));
+    result.companies = ref.companies.map((c) => ({ id: String(c.id), name: String(c.attributes?.name ?? "") }));
+    result.companyId = ref.companyId;
+    const companyData = await client.list("/companydata", { companyId: ref.companyId });
 
-    const q = { companyId: result.companyId };
-    const [users, orderTypes, orderStates, activityTypes, companyData] = await Promise.all([
-      client.getAll("/users", q),
-      client.getAll("/ordertypes", q),
-      client.getAll("/orderstates", q),
-      client.getAll("/activitytypes", q),
-      client.getAll("/companydata", q),
-    ]);
     const names = (items: JsonApiResource[]) => items.map((i) => String(i.attributes?.name ?? "")).filter(Boolean);
     result.available = {
-      "Používatelia": names(users),
-      "Typy zákaziek": names(orderTypes),
-      "Stavy zákaziek": names(orderStates),
-      "Typy činností": names(activityTypes),
+      "Používatelia": names(ref.users),
+      "Typy zákaziek": names(ref.orderTypes),
+      "Stavy zákaziek": names(ref.orderStates),
+      "Typy činností": names(ref.activityTypes),
       "Firmy (fakturačné údaje)": names(companyData),
     };
 
-    const refs = await resolveRefs(client, settings);
-    const taskRefs = await resolveTaskRefs(client, refs, settings);
+    const refs = resolveRefs(ref, settings);
+    const taskRefs = resolveTaskRefs(ref, settings);
     const byId = (items: JsonApiResource[], id: string) => `${items.find((i) => i.id === id)?.attributes?.name ?? "?"} (ID ${id})`;
     result.resolved = {
-      "Typ zákazky": byId(orderTypes, refs.orderTypeId),
-      "Stav zákazky": byId(orderStates, refs.orderStateId),
-      "Zodpovedný": refs.responsibleUserIds.map((id) => byId(users, id)).join(", "),
-      "Riešitelia úlohy": taskRefs.assigneeUserIds.map((id) => byId(users, id)).join(", "),
-      "Typ činnosti": byId(activityTypes, taskRefs.activityTypeId),
+      "Typ zákazky": byId(ref.orderTypes, refs.orderTypeId),
+      "Stav zákazky": byId(ref.orderStates, refs.orderStateId),
+      "Zodpovedný": refs.responsibleUserIds.map((id) => byId(ref.users, id)).join(", "),
+      "Riešitelia úlohy": taskRefs.assigneeUserIds.map((id) => byId(ref.users, id)).join(", "),
+      "Typ činnosti": byId(ref.activityTypes, taskRefs.activityTypeId),
       "API používateľ": `ID ${refs.selfUserId}`,
     };
     result.ok = true;
