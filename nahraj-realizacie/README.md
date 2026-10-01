@@ -15,7 +15,12 @@ objavia na webe aj v CMS.
      priečinok, napr. `drziak-na-bicykel/` s fotkami vnútri. Ak nahrávate
      jednotlivé fotky, pomenujte ich podľa projektu, napr.
      `drziak-na-bicykel-1.jpg`, `drziak-na-bicykel-2.jpg`.
-   - Prvá fotka (podľa abecedy) bude hlavná. Ostatné pôjdu do galérie.
+   - **Priečinok vytvoríte aj priamo na GitHube, napr. z mobilu:** tu v
+     priečinku kliknite **Add file → Create new file**. Do názvu napíšte
+     `technicka-suciastka/popis.txt` (lomka vytvorí priečinok), do súboru
+     pár slov o projekte a dajte **Commit changes**. Potom otvorte nový
+     priečinok a cez **Add file → Upload files** doň nahrajte fotky.
+   - Hlavnú fotku vyberie Claude (celkový záber). Ostatné pôjdu do galérie.
    - Jedna fotka môže mať najviac 25 MB.
 4. Dole kliknite **Commit changes**.
 5. Napíšte Claudovi „doplň realizácie“. Pridať môžete pár slov o projekte,
