@@ -9,6 +9,7 @@ import CartSidebar from "@/components/CartSidebar";
 import MaterialPricing from "@/components/MaterialPricing";
 import HowItWorks from "@/components/HowItWorks";
 import FaqPreview from "@/components/FaqPreview";
+import InstagramFeed from "@/components/InstagramFeed";
 import FloatingCta from "@/components/FloatingCta";
 import ModelSummaryBar from "@/components/ModelSummaryBar";
 import { CartItem, CartItemConfig, CartItemPricing } from "@/lib/types";
@@ -875,6 +876,7 @@ export default function Home() {
 
         <HowItWorks />
         <MaterialPricing />
+        <InstagramFeed />
         <FaqPreview />
       </main>
 

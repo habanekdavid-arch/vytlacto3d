@@ -207,3 +207,14 @@ model FlowiiSync {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }
+
+// Automaticky obnovovaný prístupový token pre Instagram API. Pôvodný token je
+// vo Verceli (INSTAGRAM_ACCESS_TOKEN); obnovený sa ukladá sem, lebo premennú
+// prostredia aplikácia prepísať nevie. sourceHash = otlačok tokenu z Vercelu,
+// z ktorého obnovený vznikol — keď sa vo Verceli zmení, použije sa nový.
+model InstagramToken {
+  id          String   @id
+  token       String
+  sourceHash  String
+  refreshedAt DateTime @default(now())
+}

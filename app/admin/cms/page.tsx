@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getSafeServerSession } from "@/lib/session";
+import { getInstagramStatus } from "@/lib/instagram";
 
 export const dynamic = "force-dynamic";
 
@@ -18,9 +19,10 @@ async function requireAdmin() {
 export default async function CmsPage() {
   await requireAdmin();
 
-  const [blogPosts, realizacie] = await Promise.all([
+  const [blogPosts, realizacie, instagram] = await Promise.all([
     prisma.blogPost.findMany({ orderBy: { publishedAt: "desc" } }),
     prisma.realizacia.findMany({ orderBy: { createdAt: "asc" } }),
+    getInstagramStatus(),
   ]);
 
   return (
@@ -55,6 +57,38 @@ export default async function CmsPage() {
             </a>
           </div>
         </div>
+
+        {/* Instagram */}
+        <section className="mb-10 rounded-3xl border border-neutral-200 bg-white p-5 shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-lg font-extrabold text-neutral-900">Instagram na hlavnej stránke</h2>
+            {!instagram.configured ? (
+              <span className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-bold text-neutral-600">Nenastavené</span>
+            ) : instagram.ok ? (
+              <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-bold text-green-800">✓ Pripojené</span>
+            ) : (
+              <span className="rounded-full bg-red-100 px-3 py-1 text-xs font-bold text-red-800">✗ Chyba</span>
+            )}
+          </div>
+          {!instagram.configured ? (
+            <p className="mt-2 text-sm text-neutral-600">
+              Vo Verceli chýba premenná <code className="rounded bg-neutral-100 px-1">INSTAGRAM_ACCESS_TOKEN</code>.
+              Kým nie je nastavená, na webe sa zobrazí len pozvánka na @vytlacto3d bez príspevkov.
+            </p>
+          ) : instagram.ok ? (
+            <p className="mt-2 text-sm text-neutral-600">
+              Účet <span className="font-semibold">@{instagram.username ?? "?"}</span>
+              {instagram.followersCount !== null && <> · {instagram.followersCount.toLocaleString("sk-SK")} sledujúcich</>}
+              {" "}· načítaných príspevkov: {instagram.postCount}.{" "}
+              {instagram.tokenSource === "refreshed" && instagram.tokenRefreshedAt
+                ? `Token web naposledy sám obnovil ${new Date(instagram.tokenRefreshedAt).toLocaleDateString("sk-SK")}.`
+                : "Token z Vercelu — web ho sám predĺži, keď bude starší ako 24 hodín, a potom každý týždeň."}{" "}
+              Nové príspevky sa na webe objavia do hodiny.
+            </p>
+          ) : (
+            <p className="mt-2 break-words text-sm text-red-700">{instagram.error}</p>
+          )}
+        </section>
 
         {/* Blog posts section */}
         <section className="mb-10">
