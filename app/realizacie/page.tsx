@@ -1,6 +1,6 @@
-import Image from "next/image";
-import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { syncRepoRealizacie } from "@/lib/realizacie-sync";
+import RealizacieGrid from "@/components/RealizacieGrid";
 
 export const dynamic = "force-dynamic";
 
@@ -11,6 +11,7 @@ export const metadata = {
 };
 
 export default async function RealizaciePage() {
+  await syncRepoRealizacie();
   const realizacie = await prisma.realizacia.findMany({
     where: { published: true },
     orderBy: { createdAt: "asc" },
@@ -35,65 +36,23 @@ export default async function RealizaciePage() {
         </p>
       </section>
 
-      <section className="grid auto-rows-[320px] gap-6 md:grid-cols-2 lg:grid-cols-4">
-        {realizacie.map((project) => {
-          const isLarge = project.featured;
-
-          return (
-            <Link
-              key={project.slug}
-              href={`/realizacie/${project.slug}`}
-              className={[
-                "group relative overflow-hidden rounded-[32px] border border-neutral-200 bg-white shadow-sm transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl hover:shadow-[#FFAE00]/10",
-                isLarge ? "md:col-span-2 md:row-span-2" : "",
-              ].join(" ")}
-            >
-              <Image
-                src={project.image}
-                alt={project.title}
-                fill
-                sizes={
-                  isLarge
-                    ? "(max-width: 768px) 100vw, 50vw"
-                    : "(max-width: 768px) 100vw, 25vw"
-                }
-                className="object-cover transition duration-700 ease-out group-hover:scale-110"
-              />
-
-              <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent opacity-80 transition duration-500 group-hover:opacity-95" />
-
-              <div className="absolute left-5 top-5 rounded-full bg-white/15 px-4 py-2 text-xs font-bold text-white backdrop-blur-md ring-1 ring-white/20">
-                {project.category}
-              </div>
-
-              <div className="absolute inset-x-0 bottom-0 p-6">
-                <div className="translate-y-5 transition duration-500 ease-out group-hover:translate-y-0">
-                  <h2
-                    className={[
-                      "font-extrabold tracking-tight text-white",
-                      isLarge ? "text-3xl md:text-4xl" : "text-2xl",
-                    ].join(" ")}
-                  >
-                    {project.title}
-                  </h2>
-
-                  <p className="mt-2 text-sm font-medium text-white/80">
-                    {project.subtitle}
-                  </p>
-
-                  <p className="mt-4 max-h-0 overflow-hidden text-sm leading-7 text-white/85 opacity-0 transition-all duration-500 group-hover:max-h-40 group-hover:opacity-100">
-                    {project.description}
-                  </p>
-
-                  <div className="mt-5 inline-flex translate-y-3 items-center rounded-full bg-[#FFAE00] px-4 py-2 text-xs font-bold text-black opacity-0 transition duration-500 group-hover:translate-y-0 group-hover:opacity-100">
-                    Otvoriť projekt
-                  </div>
-                </div>
-              </div>
-            </Link>
-          );
-        })}
-      </section>
+      {realizacie.length ? (
+        <RealizacieGrid
+          projects={realizacie.map((p) => ({
+            slug: p.slug,
+            title: p.title,
+            subtitle: p.subtitle,
+            description: p.description,
+            image: p.image,
+            category: p.category,
+            material: p.material,
+            leadTime: p.leadTime,
+            featured: p.featured,
+          }))}
+        />
+      ) : (
+        <p className="text-center text-neutral-500">Realizácie pripravujeme.</p>
+      )}
     </main>
   );
 }

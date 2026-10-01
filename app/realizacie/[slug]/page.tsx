@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import RealizaciaGallery from "@/components/RealizaciaGallery";
+import { syncRepoRealizacie } from "@/lib/realizacie-sync";
 
 export const dynamic = "force-dynamic";
 
@@ -39,6 +40,7 @@ export default async function RealizationDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
+  await syncRepoRealizacie();
   const project = await prisma.realizacia.findUnique({ where: { slug, published: true } });
 
   if (!project) notFound();
