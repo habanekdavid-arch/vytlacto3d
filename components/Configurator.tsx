@@ -67,9 +67,12 @@ export default function Configurator({
 
   const scaleFactor = config.scalePct / 100;
 
+  // Závislosti sú čísla, nie objekt `analysis` — ten rodič pri každom
+  // vykreslení vytvára nanovo a prepočet ceny by sa točil dookola.
+  const { volumeCm3, surfaceAreaCm2, supportCm3, dimsZmm } = analysis;
   const geometry = useMemo(
-    () => scaledGeometry(analysis, config.scalePct),
-    [analysis, config.scalePct]
+    () => scaledGeometry({ volumeCm3, surfaceAreaCm2, supportCm3, dimsZmm }, config.scalePct),
+    [volumeCm3, surfaceAreaCm2, supportCm3, dimsZmm, config.scalePct]
   );
 
   const scaledDims = useMemo(() => ({
