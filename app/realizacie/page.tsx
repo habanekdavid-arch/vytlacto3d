@@ -13,7 +13,8 @@ export const metadata = {
 export default async function RealizaciePage() {
   await syncRepoRealizacie();
   const realizacie = await prisma.realizacia.findMany({
-    where: { published: true },
+    // Bez fotky sa realizácia nezobrazí, ani keby bola omylom zverejnená.
+    where: { published: true, image: { not: "" } },
     orderBy: { createdAt: "asc" },
   });
 

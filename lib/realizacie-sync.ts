@@ -7,10 +7,15 @@ export const syncRepoRealizacie = oncePerInstance("Doplnenie realizácií z repo
   importOnce(
     repoRealizacie,
     (item) => `realizacia:${item.slug}`,
-    async (item) => !!(await prisma.realizacia.findUnique({ where: { slug: item.slug }, select: { id: true } })),
+    async (item) =>
+      !!(await prisma.realizacia.findFirst({
+        where: { OR: [{ slug: item.slug }, ...(item.id ? [{ id: item.id }] : [])] },
+        select: { id: true },
+      })),
     async (item) => {
       await prisma.realizacia.create({
         data: {
+          ...(item.id ? { id: item.id } : {}),
           slug: item.slug,
           title: item.title,
           subtitle: item.subtitle,
@@ -25,7 +30,7 @@ export const syncRepoRealizacie = oncePerInstance("Doplnenie realizácií z repo
           featured: item.featured ?? false,
           seoKeywords: item.seoKeywords,
           content: item.content,
-          published: true,
+          published: item.published ?? true,
         },
       });
     }

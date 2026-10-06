@@ -43,10 +43,11 @@ export default async function RealizationDetailPage({
   await syncRepoRealizacie();
   const project = await prisma.realizacia.findUnique({ where: { slug, published: true } });
 
-  if (!project) notFound();
+  // Bez fotky sa realizácia nezobrazí, ani keby bola omylom zverejnená.
+  if (!project || !project.image) notFound();
 
   const otherProjects = await prisma.realizacia.findMany({
-    where: { published: true, slug: { not: slug } },
+    where: { published: true, image: { not: "" }, slug: { not: slug } },
     take: 3,
     orderBy: { createdAt: "asc" },
   });

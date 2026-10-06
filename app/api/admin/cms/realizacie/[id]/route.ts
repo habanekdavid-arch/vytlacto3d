@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSafeServerSession } from "@/lib/session";
+import { syncRepoRealizacie } from "@/lib/realizacie-sync";
 
 async function isAdmin(): Promise<boolean> {
   const session = await getSafeServerSession();
@@ -19,6 +20,9 @@ export async function GET(
   if (!(await isAdmin()))
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const { id } = await params;
+  // Realizácia z repozitára sa môže otvoriť priamym odkazom skôr, než sa
+  // vloží na /realizacie — vtedy ju treba najprv vložiť.
+  await syncRepoRealizacie();
   const item = await prisma.realizacia.findUnique({ where: { id } });
   if (!item) return NextResponse.json({ error: "Not found" }, { status: 404 });
   return NextResponse.json(item);
