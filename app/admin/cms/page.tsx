@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getSafeServerSession } from "@/lib/session";
+import PublishToggle from "@/components/admin/PublishToggle";
 import { getInstagramStatus } from "@/lib/instagram";
 import { syncRepoRealizacie } from "@/lib/realizacie-sync";
 import { syncRepoBlog } from "@/lib/blog-sync";
@@ -154,16 +155,11 @@ export default async function CmsPage() {
                         {post.publishedAt}
                       </td>
                       <td className="px-5 py-4">
-                        <span
-                          className={[
-                            "rounded-full px-2 py-1 text-xs font-bold",
-                            post.published
-                              ? "bg-green-100 text-green-700"
-                              : "bg-neutral-100 text-neutral-500",
-                          ].join(" ")}
-                        >
-                          {post.published ? "Zverejnený" : "Skrytý"}
-                        </span>
+                        <PublishToggle
+                          endpoint={`/api/admin/cms/blog/${post.id}`}
+                          published={post.published}
+                          labels={{ on: "Zverejnený", off: "Skrytý" }}
+                        />
                       </td>
                       <td className="px-5 py-4 text-right">
                         <Link
@@ -242,16 +238,12 @@ export default async function CmsPage() {
                         {item.material}
                       </td>
                       <td className="px-5 py-4">
-                        <span
-                          className={[
-                            "rounded-full px-2 py-1 text-xs font-bold",
-                            item.published
-                              ? "bg-green-100 text-green-700"
-                              : "bg-neutral-100 text-neutral-500",
-                          ].join(" ")}
-                        >
-                          {item.published ? "Zverejnená" : "Skrytá"}
-                        </span>
+                        <PublishToggle
+                          endpoint={`/api/admin/cms/realizacie/${item.id}`}
+                          published={item.published}
+                          labels={{ on: "Zverejnená", off: "Skrytá" }}
+                          missingImage={!item.image}
+                        />
                       </td>
                       <td className="px-5 py-4 text-right">
                         <Link
