@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSafeServerSession } from "@/lib/session";
+import { syncRepoBlog } from "@/lib/blog-sync";
 
 async function isAdmin(): Promise<boolean> {
   const session = await getSafeServerSession();
@@ -19,6 +20,9 @@ export async function GET(
   if (!(await isAdmin()))
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const { id } = await params;
+  // Článok z repozitára sa môže otvoriť priamym odkazom skôr, než ho
+  // niekto uvidí na /blog — vtedy ho treba najprv vložiť.
+  await syncRepoBlog();
   const post = await prisma.blogPost.findUnique({ where: { id } });
   if (!post) return NextResponse.json({ error: "Not found" }, { status: 404 });
   return NextResponse.json(post);

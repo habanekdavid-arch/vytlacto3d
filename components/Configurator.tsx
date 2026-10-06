@@ -317,20 +317,41 @@ export default function Configurator({
             {/* Rozpis DPH */}
             <div className="mt-5 rounded-[20px] bg-neutral-50 border border-neutral-100 p-4">
               <div className="text-xs font-bold uppercase tracking-wide text-neutral-400 mb-3">
-                Rozpis DPH
+                Rozpis ceny
               </div>
               <div className="space-y-2">
+                <PriceLine
+                  label="Manipulačný poplatok"
+                  hint="spracovanie objednávky a príprava dát, raz za model"
+                  value={formatEur(addVat(quote.setupFee))}
+                />
+                <PriceLine
+                  label="Výroba"
+                  hint="materiál a čas tlače"
+                  // Dopočet z cien s DPH, aby riadky dali presne „Cenu s DPH“ aj po zaokrúhlení.
+                  value={formatEur(
+                    Math.round((addVat(quote.total) - addVat(quote.setupFee) + addVat(quote.flexibleDiscountEur)) * 100) / 100
+                  )}
+                />
                 {quote.flexibleDiscountEur > 0 && (
                   <PriceLine
                     label="Zľava za flexibilitu materiálu/farby"
-                    value={`−${formatEur(quote.flexibleDiscountEur)}`}
+                    value={`−${formatEur(addVat(quote.flexibleDiscountEur))}`}
                   />
                 )}
+                <div className="my-1 border-t border-neutral-200" />
                 <PriceLine label="Základ bez DPH" value={formatEur(quote.total)} />
                 <PriceLine label="DPH 23 %" value={formatEur(vatAmount(quote.total))} />
                 <div className="my-1 border-t border-neutral-200" />
                 <PriceLine label="Cena s DPH" value={formatEur(addVat(quote.total))} bold />
               </div>
+              <a
+                href="/blog/co-ovplyvnuje-cenu-3d-tlace-manipulacny-poplatok"
+                target="_blank"
+                className="mt-3 inline-block text-xs font-semibold text-neutral-500 underline decoration-[#FFAE00] decoration-2 underline-offset-4 hover:text-neutral-900"
+              >
+                Z čoho sa skladá cena?
+              </a>
             </div>
 
             {/* Technické detaily */}
@@ -529,10 +550,13 @@ function formatWeight(grams: number): string {
   return `${Math.round(grams)} g`;
 }
 
-function PriceLine({ label, value, bold }: { label: string; value: string; bold?: boolean }) {
+function PriceLine({ label, value, bold, hint }: { label: string; value: string; bold?: boolean; hint?: string }) {
   return (
-    <div className="flex items-center justify-between">
-      <span className={bold ? "text-sm font-extrabold text-black" : "text-sm text-black/70"}>{label}</span>
+    <div className="flex items-center justify-between gap-3">
+      <span className={bold ? "text-sm font-extrabold text-black" : "text-sm text-black/70"}>
+        {label}
+        {hint && <span className="block text-[11px] leading-tight text-black/40">{hint}</span>}
+      </span>
       <span className={bold ? "text-sm font-extrabold text-black" : "text-sm font-semibold text-black"}>{value}</span>
     </div>
   );

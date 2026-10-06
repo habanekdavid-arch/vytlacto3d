@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getSafeServerSession } from "@/lib/session";
 import { getInstagramStatus } from "@/lib/instagram";
 import { syncRepoRealizacie } from "@/lib/realizacie-sync";
+import { syncRepoBlog } from "@/lib/blog-sync";
 
 export const dynamic = "force-dynamic";
 
@@ -19,7 +20,7 @@ async function requireAdmin() {
 
 export default async function CmsPage() {
   await requireAdmin();
-  await syncRepoRealizacie();
+  await Promise.all([syncRepoRealizacie(), syncRepoBlog()]);
 
   const [blogPosts, realizacie, instagram] = await Promise.all([
     prisma.blogPost.findMany({ orderBy: { publishedAt: "desc" } }),

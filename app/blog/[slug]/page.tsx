@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { syncRepoBlog } from "@/lib/blog-sync";
 
 export const dynamic = "force-dynamic";
 
@@ -37,6 +38,7 @@ export default async function BlogPostPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
+  await syncRepoBlog();
   const post = await prisma.blogPost.findUnique({ where: { slug, published: true } });
 
   if (!post) notFound();
