@@ -12,6 +12,15 @@ export async function POST(req: NextRequest) {
     const quantity = Number(body?.quantity);
     const materialFlexible = Boolean(body?.materialFlexible);
     const colorFlexible = Boolean(body?.colorFlexible);
+    // Voliteľná geometria (už v zvolenej mierke). Chýbajúca alebo neplatná
+    // hodnota = odhad v quote(), nie chyba — staršie položky ju nemajú.
+    const optionalNumber = (v: unknown) => {
+      const n = Number(v);
+      return v !== undefined && v !== null && Number.isFinite(n) && n >= 0 ? n : undefined;
+    };
+    const surfaceAreaCm2 = optionalNumber(body?.surfaceAreaCm2);
+    const supportCm3 = optionalNumber(body?.supportCm3);
+    const heightMm = optionalNumber(body?.heightMm);
 
     if (!Number.isFinite(volumeCm3) || volumeCm3 <= 0) {
       return NextResponse.json(
@@ -53,6 +62,9 @@ export async function POST(req: NextRequest) {
 
     const result = quote({
       volumeCm3,
+      surfaceAreaCm2,
+      supportCm3,
+      heightMm,
       material,
       quality,
       infillPct,

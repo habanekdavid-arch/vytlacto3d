@@ -116,7 +116,7 @@ export default function HowItWorks() {
     {
       number: "1",
       title: "Nahrajte váš 3D model",
-      text: "Nahrajte STL, OBJ alebo SVG súbor vášho 3D modelu priamo na našu stránku. Náš systém automaticky analyzuje model a vypočíta objem, hmotnosť a presný čas tlače.",
+      text: "Nahrajte STL, OBJ alebo SVG súbor vášho 3D modelu priamo na našu stránku. Náš systém automaticky analyzuje model — objem, povrch aj previsy — a vypočíta hmotnosť a presnú cenu.",
       icon: <UploadIcon />,
     },
     {

@@ -3,6 +3,9 @@ export type CartItemAnalysis = {
   dimsYmm: number;
   dimsZmm: number;
   volumeCm3: number;
+  /** Povrch a odhad podpier — chýbajú pri modeloch nahratých pred ich zavedením. */
+  surfaceAreaCm2?: number;
+  supportCm3?: number;
 };
 
 export type CartItemConfig = {

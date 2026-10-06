@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 
 import { prisma } from "@/lib/prisma";
-import { isMaterial, isQuality, quote } from "@/lib/pricing";
+import { isMaterial, isQuality, quote, scaledGeometry } from "@/lib/pricing";
 import { createOrderWithNumber } from "@/lib/order-number";
 import { materialLabel, qualityLabel } from "@/lib/print-options";
 import { addVat } from "@/lib/vat";
@@ -31,7 +31,7 @@ type RawItem = {
   fileKey: string;
   fileName: string;
   fileSize?: number;
-  analysis: { volumeCm3: number; dimsXmm?: number; dimsYmm?: number; dimsZmm?: number };
+  analysis: { volumeCm3: number; dimsXmm?: number; dimsYmm?: number; dimsZmm?: number; surfaceAreaCm2?: number; supportCm3?: number };
   config: { material: string; quality: string; infillPct?: number; quantity?: number; scalePct?: number; color?: string; materialFlexible?: boolean; colorFlexible?: boolean };
 };
 
@@ -137,13 +137,13 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: `Neznáma kvalita tlače pre ${item.fileName}` }, { status: 400 });
       }
 
-      const scaleFactor = scale / 100;
-      const scaledVol = rawVol * Math.pow(scaleFactor, 3);
+      const geometry = scaledGeometry(item.analysis, scale);
+      const scaledVol = geometry.volumeCm3;
       const materialFlexible = Boolean(item.config.materialFlexible);
       const colorFlexible = Boolean(item.config.colorFlexible);
 
       const serverPricing = quote({
-        volumeCm3: scaledVol,
+        ...geometry,
         material: item.config.material as any,
         quality: item.config.quality as any,
         infillPct: infill,

@@ -12,6 +12,8 @@ type Uploaded = {
     dimsYmm: number;
     dimsZmm: number;
     volumeCm3: number;
+    surfaceAreaCm2?: number;
+    supportCm3?: number;
   };
 };
 

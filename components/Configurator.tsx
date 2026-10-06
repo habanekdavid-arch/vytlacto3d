@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import ColorPalette, { COLOR_LABELS } from "@/components/ColorPalette";
 import { formatEur, addVat, vatAmount } from "@/lib/vat";
+import { scaledGeometry } from "@/lib/pricing";
 
 
 type Analysis = {
@@ -10,6 +11,8 @@ type Analysis = {
   dimsXmm?: number;
   dimsYmm?: number;
   dimsZmm?: number;
+  surfaceAreaCm2?: number;
+  supportCm3?: number;
 };
 
 type Quote = {
@@ -64,9 +67,10 @@ export default function Configurator({
 
   const scaleFactor = config.scalePct / 100;
 
-  const scaledVolumeCm3 = useMemo(() => {
-    return analysis.volumeCm3 * Math.pow(scaleFactor, 3);
-  }, [analysis.volumeCm3, scaleFactor]);
+  const geometry = useMemo(
+    () => scaledGeometry(analysis, config.scalePct),
+    [analysis, config.scalePct]
+  );
 
   const scaledDims = useMemo(() => ({
     x: (analysis.dimsXmm ?? 0) * scaleFactor,
@@ -76,7 +80,10 @@ export default function Configurator({
 
   const payload = useMemo(
     () => ({
-      volumeCm3: scaledVolumeCm3,
+      volumeCm3: geometry.volumeCm3,
+      surfaceAreaCm2: geometry.surfaceAreaCm2,
+      supportCm3: geometry.supportCm3,
+      heightMm: geometry.heightMm,
       material: config.material,
       quality: config.quality,
       infillPct: config.infillPct,
@@ -86,7 +93,7 @@ export default function Configurator({
       materialFlexible: config.materialFlexible,
       colorFlexible: config.colorFlexible,
     }),
-    [scaledVolumeCm3, config]
+    [geometry, config]
   );
 
   useEffect(() => {
@@ -341,14 +348,6 @@ export default function Configurator({
                   label="Hmotnosť celkom"
                   value={formatWeight(quote.gramsPerPart * config.quantity)}
                 />
-                <TechLine
-                  label="Čas tlače / ks"
-                  value={formatPrintTime(quote.printTimeMinPerPart)}
-                />
-                <TechLine
-                  label="Čas tlače celkom"
-                  value={formatPrintTime(quote.printTimeMinPerPart * config.quantity)}
-                />
                 <TechLine label="Mierka" value={`${config.scalePct} %`} />
                 <TechLine
                   label="Množstevná zľava"
@@ -525,19 +524,6 @@ function formatWeight(grams: number): string {
     return `${(grams / 1000).toFixed(2).replace(".", ",")} kg`;
   }
   return `${Math.round(grams)} g`;
-}
-
-function formatPrintTime(minutes: number): string {
-  const totalMin = Math.round(minutes);
-  if (totalMin < 60) return `${totalMin} min`;
-  const days = Math.floor(totalMin / (60 * 24));
-  const hours = Math.floor((totalMin % (60 * 24)) / 60);
-  const mins = totalMin % 60;
-  const parts: string[] = [];
-  if (days > 0) parts.push(`${days} d`);
-  if (hours > 0) parts.push(`${hours} hod`);
-  if (mins > 0 && days === 0) parts.push(`${mins} min`);
-  return parts.join(" ");
 }
 
 function PriceLine({ label, value, bold }: { label: string; value: string; bold?: boolean }) {

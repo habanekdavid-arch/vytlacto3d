@@ -28,6 +28,8 @@ type Uploaded = {
     dimsYmm: number;
     dimsZmm: number;
     volumeCm3: number;
+    surfaceAreaCm2?: number;
+    supportCm3?: number;
   };
 };
 
@@ -834,6 +836,8 @@ export default function Home() {
                       dimsXmm: activeItem.analysis.dimsXmm,
                       dimsYmm: activeItem.analysis.dimsYmm,
                       dimsZmm: activeItem.analysis.dimsZmm,
+                      surfaceAreaCm2: activeItem.analysis.surfaceAreaCm2,
+                      supportCm3: activeItem.analysis.supportCm3,
                     }}
                     initialConfig={activeItem.config}
                     onQuote={handleQuote}

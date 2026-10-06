@@ -47,6 +47,46 @@ function triangleVolume(
   ) / 6;
 }
 
+// Previs strmší ako 45° od zvislice potrebuje podperu (ako v sliceri).
+const OVERHANG_COS = Math.cos(Math.PI / 4);
+// Plochy tesne pri podložke ležia na nej, podperu nepotrebujú.
+const BED_CONTACT_MM = 0.3;
+
+/**
+ * Povrch a "stĺpec" pod prevismi pre jeden trojuholník. Smer normály závisí
+ * od poradia vrcholov, ktoré nie každý exportér dodrží — preto sa previsy
+ * zbierajú pre obe orientácie a správnu vyberie až znamienko objemu.
+ */
+class SurfaceStats {
+  areaMm2 = 0;
+  supportDownMm3 = 0;
+  supportUpMm3 = 0;
+
+  constructor(private readonly minZ: number) {}
+
+  add(coords: ArrayLike<number>, a: number, b: number, c: number) {
+    const ux = coords[b] - coords[a], uy = coords[b + 1] - coords[a + 1], uz = coords[b + 2] - coords[a + 2];
+    const vx = coords[c] - coords[a], vy = coords[c + 1] - coords[a + 1], vz = coords[c + 2] - coords[a + 2];
+    const nx = uy * vz - uz * vy;
+    const ny = uz * vx - ux * vz;
+    const nz = ux * vy - uy * vx;
+    const len = Math.sqrt(nx * nx + ny * ny + nz * nz);
+    if (!(len > 0)) return;
+
+    this.areaMm2 += len / 2;
+
+    const cosZ = nz / len;
+    if (Math.abs(cosZ) <= OVERHANG_COS) return;
+    const height = (coords[a + 2] + coords[b + 2] + coords[c + 2]) / 3 - this.minZ;
+    if (height <= BED_CONTACT_MM) return;
+
+    // Priemet plochy do pôdorysu × výška nad podložkou.
+    const column = (Math.abs(nz) / 2) * height;
+    if (cosZ < 0) this.supportDownMm3 += column;
+    else this.supportUpMm3 += column;
+  }
+}
+
 /**
  * Rastúce pole súradníc pre formáty, ktoré počet vrcholov vopred neprezradia.
  */
@@ -107,6 +147,7 @@ function buildAnalysis(
   }
 
   let signedVolume = 0;
+  const surface = new SurfaceStats(minZ);
 
   if (faces?.length) {
     for (const face of faces) {
@@ -123,11 +164,13 @@ function buildAnalysis(
         if (third < 0 || third >= vertexCount) continue;
 
         signedVolume += triangleVolume(coords, first * 3, second * 3, third * 3);
+        surface.add(coords, first * 3, second * 3, third * 3);
       }
     }
   } else {
     for (let i = 0; i + 2 < vertexCount; i += 3) {
       signedVolume += triangleVolume(coords, i * 3, (i + 1) * 3, (i + 2) * 3);
+      surface.add(coords, i * 3, (i + 1) * 3, (i + 2) * 3);
     }
   }
 
@@ -138,11 +181,16 @@ function buildAnalysis(
   const volumeMm3 = Math.abs(signedVolume);
   const volumeCm3 = Number((volumeMm3 / 1000).toFixed(2));
 
+  // Kladný objem = normály smerujú von, previsy sú plochy otočené nadol.
+  const supportMm3 = signedVolume >= 0 ? surface.supportDownMm3 : surface.supportUpMm3;
+
   return {
     dimsXmm,
     dimsYmm,
     dimsZmm,
     volumeCm3,
+    surfaceAreaCm2: Number((surface.areaMm2 / 100).toFixed(2)),
+    supportCm3: Number((supportMm3 / 1000).toFixed(2)),
   };
 }
 
