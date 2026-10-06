@@ -279,6 +279,11 @@ export default function ContactForm() {
                 fileInputRef.current?.click();
               }
             }}
+            // Safari a Firefox pustia súbor na prvok, len keď ho prijme už pri dragenter.
+            onDragEnter={(e) => {
+              e.preventDefault();
+              setDragOver(true);
+            }}
             onDragOver={(e) => {
               e.preventDefault();
               setDragOver(true);
