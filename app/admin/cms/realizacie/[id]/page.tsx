@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import ImageDropZone from "@/components/admin/ImageDropZone";
 import { useRouter } from "next/navigation";
 
 type ContentSection = {
@@ -159,18 +160,21 @@ export default function RealizacieEditorPage({
     }
   }
 
-  // Used by the individual empty gallery slots — always appends, since
-  // filled slots are rendered first and empty ones always come after.
-  async function handleGallerySlotUpload(file: File) {
+  // Used by the empty gallery slots — always appends, since filled slots are
+  // rendered first and empty ones always come after. Accepts several photos
+  // at once (dragged in together); they keep the order they came in.
+  async function handleGalleryUpload(files: File[]) {
     setUploading(true);
     setError("");
     try {
       const { upload } = await import("@vercel/blob/client");
-      const blob = await upload(file.name, file, {
-        access: "public",
-        handleUploadUrl: "/api/blob/upload",
-      });
-      setForm((prev) => ({ ...prev, images: [...prev.images, blob.url] }));
+      for (const file of files) {
+        const blob = await upload(file.name, file, {
+          access: "public",
+          handleUploadUrl: "/api/blob/upload",
+        });
+        setForm((prev) => ({ ...prev, images: [...prev.images, blob.url] }));
+      }
     } catch (e: unknown) {
       setError("Chyba pri nahrávaní: " + (e instanceof Error ? e.message : ""));
     } finally {
@@ -448,36 +452,39 @@ export default function RealizacieEditorPage({
                 className={inputCls}
               />
             </Field>
-            <div className="flex flex-wrap items-center gap-3">
-              <label
-                className={`cursor-pointer rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-2 text-sm font-semibold text-neutral-700 hover:bg-neutral-100 ${uploading ? "pointer-events-none opacity-50" : ""}`}
-              >
-                {uploading ? "Nahrávam..." : "Nahrať obrázok"}
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) handleImageUpload(file);
-                    e.target.value = "";
-                  }}
-                />
-              </label>
-              {form.image && (
+            <ImageDropZone
+              onFiles={([file]) => handleImageUpload(file)}
+              disabled={uploading}
+              className="flex items-center gap-4 rounded-2xl border-2 border-dashed border-neutral-300 bg-neutral-50 p-4 hover:border-[#FFAE00]"
+            >
+              {form.image ? (
                 <img
                   src={form.image}
                   alt=""
-                  className="h-20 w-32 rounded-xl border border-neutral-200 bg-neutral-100 object-contain"
+                  className="h-24 w-40 shrink-0 rounded-xl border border-neutral-200 bg-neutral-100 object-contain"
                 />
+              ) : (
+                <div className="flex h-24 w-40 shrink-0 items-center justify-center rounded-xl border border-neutral-200 bg-white text-3xl text-neutral-300">
+                  +
+                </div>
               )}
-            </div>
+              <div className="text-sm">
+                <div className="font-semibold text-neutral-800">
+                  {uploading
+                    ? "Nahrávam…"
+                    : form.image
+                      ? "Pretiahni sem novú fotku — nahradí súčasnú"
+                      : "Pretiahni sem fotku"}
+                </div>
+                <div className="mt-0.5 text-neutral-500">alebo klikni a vyber ju z počítača</div>
+              </div>
+            </ImageDropZone>
           </Card>
 
           {/* Gallery */}
           <Card title={`Galéria projektu (${form.images.length} ${form.images.length === 1 ? "fotka" : "fotiek"})`}>
             <p className="-mt-2 text-sm text-neutral-500">
-              Doplnkové fotky k tejto realizácii (okrem hlavného obrázka vyššie). Klikni na prázdne miesto a nahraj fotku — miest pribúda automaticky.
+              Doplnkové fotky k tejto realizácii (okrem hlavného obrázka vyššie). Fotky pretiahni na prázdne miesto (aj viac naraz) alebo naň klikni — miest pribúda automaticky.
               V náhľade sa orežú na štvorec, po kliknutí sa zobrazia celé bez orezania — min. <strong>1200×1200 px</strong>.
             </p>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -523,23 +530,19 @@ export default function RealizacieEditorPage({
                 }
 
                 return (
-                  <label
+                  <ImageDropZone
                     key={i}
-                    className={`flex h-28 cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-neutral-300 bg-neutral-50 text-xs font-semibold text-neutral-400 transition hover:border-[#FFAE00] hover:text-neutral-600 ${uploading ? "pointer-events-none opacity-50" : ""}`}
+                    multiple
+                    onFiles={handleGalleryUpload}
+                    disabled={uploading}
+                    className="flex h-28 flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-neutral-300 bg-neutral-50 text-center text-xs font-semibold text-neutral-400 hover:border-[#FFAE00] hover:text-neutral-600"
                   >
                     <span className="text-xl leading-none">+</span>
-                    <span>Fotka {i + 2}</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) handleGallerySlotUpload(file);
-                        e.target.value = "";
-                      }}
-                    />
-                  </label>
+                    <span>{uploading ? "Nahrávam…" : `Fotka ${i + 2}`}</span>
+                    {i === form.images.length && !uploading && (
+                      <span className="px-2 font-normal">pretiahni sem aj viac fotiek naraz</span>
+                    )}
+                  </ImageDropZone>
                 );
               })}
             </div>

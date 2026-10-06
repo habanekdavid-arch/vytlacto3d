@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import ImageDropZone from "@/components/admin/ImageDropZone";
 import { useRouter } from "next/navigation";
 
 type Section = {
@@ -347,30 +348,33 @@ export default function BlogEditorPage({
                 className={inputCls}
               />
             </Field>
-            <div className="flex flex-wrap items-center gap-3">
-              <label
-                className={`cursor-pointer rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-2 text-sm font-semibold text-neutral-700 hover:bg-neutral-100 ${uploading ? "pointer-events-none opacity-50" : ""}`}
-              >
-                {uploading ? "Nahrávam..." : "Nahrať obrázok"}
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) handleImageUpload(file);
-                    e.target.value = "";
-                  }}
-                />
-              </label>
-              {form.image && (
+            <ImageDropZone
+              onFiles={([file]) => handleImageUpload(file)}
+              disabled={uploading}
+              className="flex items-center gap-4 rounded-2xl border-2 border-dashed border-neutral-300 bg-neutral-50 p-4 hover:border-[#FFAE00]"
+            >
+              {form.image ? (
                 <img
                   src={form.image}
                   alt=""
-                  className="h-14 w-24 rounded-xl border border-neutral-200 object-cover"
+                  className="h-24 w-40 shrink-0 rounded-xl border border-neutral-200 object-cover"
                 />
+              ) : (
+                <div className="flex h-24 w-40 shrink-0 items-center justify-center rounded-xl border border-neutral-200 bg-white text-3xl text-neutral-300">
+                  +
+                </div>
               )}
-            </div>
+              <div className="text-sm">
+                <div className="font-semibold text-neutral-800">
+                  {uploading
+                    ? "Nahrávam…"
+                    : form.image
+                      ? "Pretiahni sem novú fotku — nahradí súčasnú"
+                      : "Pretiahni sem fotku"}
+                </div>
+                <div className="mt-0.5 text-neutral-500">alebo klikni a vyber ju z počítača</div>
+              </div>
+            </ImageDropZone>
           </Card>
 
           {/* CTA */}
