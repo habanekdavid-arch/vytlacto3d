@@ -63,7 +63,7 @@ export const repoBlogPosts: RepoBlogPost[] = [
         heading: "Prečo ho neschovávame do ceny",
         paragraphs: [
           "Tento poplatok nechceme schovávať priamo v cene samotného materiálu a výtlačku, ako to zvyknú robiť iné weby. Chýbajúca transparentnosť na našej strane priamo pri kalkulácii však bola chyba, za ktorú sa ospravedlňujeme.",
-          "Preto ho odteraz v kalkulácii uvidíte ako samostatnú položku — hneď vedľa ceny za výrobu. Presne viete, koľko platíte za prácu s objednávkou a koľko za samotnú tlač.",
+          "Preto o ňom píšeme otvorene: v každej cene z našej kalkulačky je manipulačný poplatok 12,30 € už započítaný a zvyšok tvorí samotná výroba. Žiadne ďalšie skryté položky — k cene sa pripočíta už len doprava.",
         ],
       },
       {
@@ -141,6 +141,6 @@ export const repoBlogPosts: RepoBlogPost[] = [
         ],
       },
     ],
-    cta: "Nahrajte svoj model do kalkulačky — presnú cenu uvidíte hneď, vrátane manipulačného poplatku ako samostatnej položky.",
+    cta: "Nahrajte svoj model do kalkulačky — presnú cenu vrátane manipulačného poplatku uvidíte hneď.",
   },
 ];

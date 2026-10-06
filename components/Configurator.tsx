@@ -320,26 +320,15 @@ export default function Configurator({
                 Rozpis ceny
               </div>
               <div className="space-y-2">
-                <PriceLine
-                  label="Manipulačný poplatok"
-                  hint="spracovanie objednávky a príprava dát, raz za model"
-                  value={formatEur(addVat(quote.setupFee))}
-                />
-                <PriceLine
-                  label="Výroba"
-                  hint="materiál a čas tlače"
-                  // Dopočet z cien s DPH, aby riadky dali presne „Cenu s DPH“ aj po zaokrúhlení.
-                  value={formatEur(
-                    Math.round((addVat(quote.total) - addVat(quote.setupFee) + addVat(quote.flexibleDiscountEur)) * 100) / 100
-                  )}
-                />
                 {quote.flexibleDiscountEur > 0 && (
-                  <PriceLine
-                    label="Zľava za flexibilitu materiálu/farby"
-                    value={`−${formatEur(addVat(quote.flexibleDiscountEur))}`}
-                  />
+                  <>
+                    <PriceLine
+                      label="Zľava za flexibilitu materiálu/farby"
+                      value={`−${formatEur(addVat(quote.flexibleDiscountEur))}`}
+                    />
+                    <div className="my-1 border-t border-neutral-200" />
+                  </>
                 )}
-                <div className="my-1 border-t border-neutral-200" />
                 <PriceLine label="Základ bez DPH" value={formatEur(quote.total)} />
                 <PriceLine label="DPH 23 %" value={formatEur(vatAmount(quote.total))} />
                 <div className="my-1 border-t border-neutral-200" />
