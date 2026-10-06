@@ -128,18 +128,23 @@ export default async function CmsPage() {
                       className="border-b border-neutral-100 last:border-0 hover:bg-neutral-50"
                     >
                       <td className="px-5 py-4">
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold text-neutral-900">
-                            {post.title}
-                          </span>
-                          {post.featured && (
-                            <span className="rounded-full bg-[#FFAE00]/20 px-2 py-0.5 text-[10px] font-bold text-neutral-700">
-                              Featured
-                            </span>
-                          )}
-                        </div>
-                        <div className="mt-0.5 text-xs text-neutral-500">
-                          {post.readingTime}
+                        <div className="flex items-center gap-3">
+                          <CmsThumb src={post.image} />
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="font-semibold text-neutral-900">
+                                {post.title}
+                              </span>
+                              {post.featured && (
+                                <span className="rounded-full bg-[#FFAE00]/20 px-2 py-0.5 text-[10px] font-bold text-neutral-700">
+                                  Featured
+                                </span>
+                              )}
+                            </div>
+                            <div className="mt-0.5 text-xs text-neutral-500">
+                              {post.readingTime}
+                            </div>
+                          </div>
                         </div>
                       </td>
                       <td className="px-5 py-4 font-mono text-xs text-neutral-500">
@@ -211,18 +216,23 @@ export default async function CmsPage() {
                       className="border-b border-neutral-100 last:border-0 hover:bg-neutral-50"
                     >
                       <td className="px-5 py-4">
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold text-neutral-900">
-                            {item.title}
-                          </span>
-                          {item.featured && (
-                            <span className="rounded-full bg-[#FFAE00]/20 px-2 py-0.5 text-[10px] font-bold text-neutral-700">
-                              Featured
-                            </span>
-                          )}
-                        </div>
-                        <div className="mt-0.5 font-mono text-xs text-neutral-400">
-                          {item.slug}
+                        <div className="flex items-center gap-3">
+                          <CmsThumb src={item.image} />
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="font-semibold text-neutral-900">
+                                {item.title}
+                              </span>
+                              {item.featured && (
+                                <span className="rounded-full bg-[#FFAE00]/20 px-2 py-0.5 text-[10px] font-bold text-neutral-700">
+                                  Featured
+                                </span>
+                              )}
+                            </div>
+                            <div className="mt-0.5 font-mono text-xs text-neutral-400">
+                              {item.slug}
+                            </div>
+                          </div>
                         </div>
                       </td>
                       <td className="px-5 py-4 text-sm text-neutral-600">
@@ -260,5 +270,26 @@ export default async function CmsPage() {
         </section>
       </div>
     </main>
+  );
+}
+
+/** Malý náhľad fotky v zozname, aby bolo hneď jasné, o ktorú položku ide. */
+function CmsThumb({ src }: { src: string }) {
+  if (!src) {
+    return (
+      <div className="flex h-12 w-16 shrink-0 items-center justify-center rounded-lg border border-dashed border-neutral-300 text-[10px] text-neutral-400">
+        bez fotky
+      </div>
+    );
+  }
+  return (
+    // Obyčajný <img>: v CMS môže byť URL z ľubovoľnej domény, ktorú next/image nepozná.
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={src}
+      alt=""
+      loading="lazy"
+      className="h-12 w-16 shrink-0 rounded-lg border border-neutral-200 bg-neutral-100 object-cover"
+    />
   );
 }
