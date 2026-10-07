@@ -3,7 +3,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getSafeServerSession } from "@/lib/session";
 import PublishToggle from "@/components/admin/PublishToggle";
-import { getInstagramStatus } from "@/lib/instagram";
+import { getInstagramStatus, instagramRedirectUri, isInstagramLoginConfigured } from "@/lib/instagram";
 import { syncRepoRealizacie } from "@/lib/realizacie-sync";
 import { syncRepoBlog } from "@/lib/blog-sync";
 
@@ -19,7 +19,12 @@ async function requireAdmin() {
   if (!email || !admins.includes(email)) redirect("/");
 }
 
-export default async function CmsPage() {
+export default async function CmsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ instagram?: string; account?: string; msg?: string }>;
+}) {
+  const igResult = await searchParams;
   await requireAdmin();
   await Promise.all([syncRepoRealizacie(), syncRepoBlog()]);
 
@@ -66,31 +71,70 @@ export default async function CmsPage() {
         <section className="mb-10 rounded-3xl border border-neutral-200 bg-white p-5 shadow-sm">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-lg font-extrabold text-neutral-900">Instagram na hlavnej stránke</h2>
-            {!instagram.configured ? (
-              <span className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-bold text-neutral-600">Nenastavené</span>
-            ) : instagram.ok ? (
-              <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-bold text-green-800">✓ Pripojené</span>
-            ) : (
-              <span className="rounded-full bg-red-100 px-3 py-1 text-xs font-bold text-red-800">✗ Chyba</span>
-            )}
+            <div className="flex flex-wrap items-center gap-2">
+              {!instagram.configured ? (
+                <span className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-bold text-neutral-600">Nepripojené</span>
+              ) : instagram.ok ? (
+                <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-bold text-green-800">✓ Pripojené</span>
+              ) : (
+                <span className="rounded-full bg-red-100 px-3 py-1 text-xs font-bold text-red-800">✗ Chyba</span>
+              )}
+              {isInstagramLoginConfigured() && (
+                // Obyčajný odkaz: presmerovanie na instagram.com nesmie ísť cez klientsky router.
+                <a
+                  href="/api/admin/instagram/connect"
+                  className="rounded-full bg-gradient-to-r from-[#FFAE00] via-[#ff5f6d] to-[#c13584] px-4 py-1.5 text-xs font-extrabold text-white shadow-sm hover:opacity-90"
+                >
+                  {instagram.configured && instagram.ok ? "Pripojiť znova" : "Pripojiť Instagram"}
+                </a>
+              )}
+            </div>
           </div>
+
+          {igResult.instagram === "connected" && (
+            <p className="mt-3 rounded-xl bg-green-50 px-3 py-2 text-sm text-green-800">
+              Pripojený účet <span className="font-semibold">@{igResult.account || "?"}</span>. Príspevky sa na webe objavia do hodiny.
+            </p>
+          )}
+          {igResult.instagram === "error" && (
+            <p className="mt-3 break-words rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">
+              {igResult.msg === "missing-app"
+                ? "Vo Verceli chýba INSTAGRAM_APP_ID alebo INSTAGRAM_APP_SECRET."
+                : `Pripojenie sa nepodarilo: ${igResult.msg || "neznáma chyba"}`}
+            </p>
+          )}
+
           {!instagram.configured ? (
             <p className="mt-2 text-sm text-neutral-600">
-              Vo Verceli chýba premenná <code className="rounded bg-neutral-100 px-1">INSTAGRAM_ACCESS_TOKEN</code>.
-              Kým nie je nastavená, na webe sa zobrazí len pozvánka na @vytlacto3d bez príspevkov.
+              {isInstagramLoginConfigured()
+                ? "Kliknite na „Pripojiť Instagram“ a prihláste sa ako @vytlacto3d. Kým to neurobíte, na webe sa zobrazí len pozvánka na Instagram bez príspevkov."
+                : "Vo Verceli chýba INSTAGRAM_APP_ID a INSTAGRAM_APP_SECRET (alebo INSTAGRAM_ACCESS_TOKEN). Kým nie sú nastavené, na webe sa zobrazí len pozvánka na Instagram bez príspevkov."}
             </p>
           ) : instagram.ok ? (
             <p className="mt-2 text-sm text-neutral-600">
               Účet <span className="font-semibold">@{instagram.username ?? "?"}</span>
               {instagram.followersCount !== null && <> · {instagram.followersCount.toLocaleString("sk-SK")} sledujúcich</>}
               {" "}· načítaných príspevkov: {instagram.postCount}.{" "}
-              {instagram.tokenSource === "refreshed" && instagram.tokenRefreshedAt
-                ? `Token web naposledy sám obnovil ${new Date(instagram.tokenRefreshedAt).toLocaleDateString("sk-SK")}.`
+              {instagram.tokenRefreshedAt
+                ? `Token naposledy obnovený ${new Date(instagram.tokenRefreshedAt).toLocaleDateString("sk-SK")} — web ho predlžuje sám každý týždeň.`
                 : "Token z Vercelu — web ho sám predĺži, keď bude starší ako 24 hodín, a potom každý týždeň."}{" "}
               Nové príspevky sa na webe objavia do hodiny.
             </p>
           ) : (
             <p className="mt-2 break-words text-sm text-red-700">{instagram.error}</p>
+          )}
+
+          {instagram.configured && instagram.ok && instagram.username && instagram.username.toLowerCase() !== "vytlacto3d" && (
+            <p className="mt-2 rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-800">
+              Pozor: pripojený je účet @{instagram.username}, nie @vytlacto3d. Kliknite na „Pripojiť znova“ a prihláste sa do správneho účtu.
+            </p>
+          )}
+
+          {isInstagramLoginConfigured() && (
+            <p className="mt-3 text-xs text-neutral-400">
+              Adresa návratu (musí byť v Meta aplikácii medzi „Valid OAuth Redirect URIs“):{" "}
+              <code className="rounded bg-neutral-100 px-1 text-neutral-600">{instagramRedirectUri()}</code>
+            </p>
           )}
         </section>
 

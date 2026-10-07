@@ -5,8 +5,10 @@ import { prisma } from "@/lib/prisma";
  * Posledné príspevky z Instagramu @vytlacto3d cez oficiálne Instagram API
  * (Instagram Login). Iba čítanie — web na Instagrame nič nemení.
  *
- * Token z Vercelu (INSTAGRAM_ACCESS_TOKEN) platí 60 dní. Web ho raz za týždeň
- * sám obnoví a nový uloží do tabuľky InstagramToken, takže ho netreba meniť.
+ * Token sa získa tlačidlom „Pripojiť Instagram“ v CMS (prihlásenie cez
+ * Instagram, potrebuje INSTAGRAM_APP_ID a INSTAGRAM_APP_SECRET), alebo sa
+ * vloží ručne do Vercelu (INSTAGRAM_ACCESS_TOKEN). Platí 60 dní — web ho raz
+ * za týždeň sám obnoví a nový uloží do tabuľky InstagramToken.
  */
 
 const API_URL = "https://graph.instagram.com";
@@ -71,31 +73,131 @@ function envToken() {
   return process.env.INSTAGRAM_ACCESS_TOKEN?.trim() || null;
 }
 
+/** Rýchla kontrola bez DB — pripojenie cez CMS sa ukáže až v getActiveToken. */
 export function isInstagramConfigured() {
-  return envToken() !== null;
+  return envToken() !== null || isInstagramLoginConfigured();
 }
+
+// Token získaný prihlásením v CMS má v sourceHash túto predponu.
+const OAUTH_SOURCE = "oauth:";
 
 function hashToken(token: string) {
   return createHash("sha256").update(token).digest("hex");
 }
 
-type ActiveToken = { token: string; sourceHash: string; refreshedAt: Date | null; source: "env" | "refreshed" };
+type ActiveToken = {
+  token: string;
+  sourceHash: string;
+  refreshedAt: Date | null;
+  source: "env" | "refreshed" | "connected";
+};
 
-/** Obnovený token z DB, pokiaľ vznikol z aktuálneho tokenu vo Verceli; inak token z Vercelu. */
+/**
+ * Poradie: token z pripojenia v CMS → obnovený token z Vercelu → token z Vercelu.
+ * Obnovený token z Vercelu sa použije len ak vznikol z aktuálnej hodnoty
+ * premennej — keď ju niekto vo Verceli zmení, platí nová.
+ */
 async function getActiveToken(): Promise<ActiveToken | null> {
   const fromEnv = envToken();
-  if (!fromEnv) return null;
-  const sourceHash = hashToken(fromEnv);
+  const envHash = fromEnv ? hashToken(fromEnv) : null;
   try {
     await ensureTable();
     const row = await prisma.instagramToken.findUnique({ where: { id: TOKEN_ROW_ID } });
-    if (row && row.sourceHash === sourceHash) {
-      return { token: row.token, sourceHash, refreshedAt: row.refreshedAt, source: "refreshed" };
+    if (row?.sourceHash.startsWith(OAUTH_SOURCE)) {
+      return { token: row.token, sourceHash: row.sourceHash, refreshedAt: row.refreshedAt, source: "connected" };
+    }
+    if (row && envHash && row.sourceHash === envHash) {
+      return { token: row.token, sourceHash: envHash, refreshedAt: row.refreshedAt, source: "refreshed" };
     }
   } catch (e) {
     console.error("Instagram token store unavailable:", e);
   }
-  return { token: fromEnv, sourceHash, refreshedAt: null, source: "env" };
+  return fromEnv && envHash ? { token: fromEnv, sourceHash: envHash, refreshedAt: null, source: "env" } : null;
+}
+
+// ── Pripojenie účtu tlačidlom v CMS (Instagram Login, OAuth) ─────────────
+
+const AUTHORIZE_URL = "https://www.instagram.com/oauth/authorize";
+const SHORT_TOKEN_URL = "https://api.instagram.com/oauth/access_token";
+
+function appCredentials() {
+  const id = process.env.INSTAGRAM_APP_ID?.trim();
+  const secret = process.env.INSTAGRAM_APP_SECRET?.trim();
+  return id && secret ? { id, secret } : null;
+}
+
+export function isInstagramLoginConfigured() {
+  return appCredentials() !== null;
+}
+
+/** Adresa, kam Instagram po prihlásení vráti — musí byť zapísaná v Meta aplikácii. */
+export function instagramRedirectUri() {
+  const base = (process.env.NEXT_PUBLIC_BASE_URL || "https://www.vytlacto3d.sk").replace(/\/$/, "");
+  return `${base}/api/admin/instagram/callback`;
+}
+
+export function instagramAuthorizeUrl(state: string) {
+  const app = appCredentials();
+  if (!app) throw new Error("Chýba INSTAGRAM_APP_ID alebo INSTAGRAM_APP_SECRET.");
+  const params = new URLSearchParams({
+    client_id: app.id,
+    redirect_uri: instagramRedirectUri(),
+    response_type: "code",
+    scope: "instagram_business_basic",
+    state,
+    // Ponúkne výber účtu, aj keď je v prehliadači prihlásený iný (napr. 4from_media).
+    force_reauth: "true",
+  });
+  return `${AUTHORIZE_URL}?${params}`;
+}
+
+/**
+ * Kód z prihlásenia → krátkodobý token → dlhodobý token (60 dní), uložený
+ * do DB. Vráti meno pripojeného účtu.
+ */
+export async function connectInstagramWithCode(code: string): Promise<{ username: string | null }> {
+  const app = appCredentials();
+  if (!app) throw new Error("Chýba INSTAGRAM_APP_ID alebo INSTAGRAM_APP_SECRET.");
+
+  const shortRes = await fetch(SHORT_TOKEN_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      client_id: app.id,
+      client_secret: app.secret,
+      grant_type: "authorization_code",
+      redirect_uri: instagramRedirectUri(),
+      code: code.replace(/#_$/, ""),
+    }),
+    cache: "no-store",
+  });
+  const shortBody = await shortRes.json().catch(() => null);
+  const shortToken = typeof shortBody?.access_token === "string" ? shortBody.access_token : null;
+  if (!shortRes.ok || !shortToken) {
+    const msg = shortBody?.error_message || describeApiError(shortBody);
+    throw new InstagramApiError(`Instagram odmietol prihlásenie: ${msg}`);
+  }
+
+  const longUrl = `${API_URL}/access_token?grant_type=ig_exchange_token&client_secret=${encodeURIComponent(app.secret)}&access_token=${encodeURIComponent(shortToken)}`;
+  const longRes = await fetch(longUrl, { cache: "no-store" });
+  const longBody = await longRes.json().catch(() => null);
+  const token = typeof longBody?.access_token === "string" ? longBody.access_token : null;
+  if (!longRes.ok || !token) {
+    throw new InstagramApiError(`Dlhodobý token sa nepodarilo získať: ${describeApiError(longBody)}`);
+  }
+
+  const profile = await apiGet<RawProfile>(`/me?fields=username`, token).catch(() => null);
+  const username = typeof profile?.username === "string" ? profile.username : null;
+
+  await ensureTable();
+  const sourceHash = `${OAUTH_SOURCE}${username ?? String(shortBody?.user_id ?? "")}`;
+  await prisma.instagramToken.upsert({
+    where: { id: TOKEN_ROW_ID },
+    create: { id: TOKEN_ROW_ID, token, sourceHash, refreshedAt: new Date() },
+    update: { token, sourceHash, refreshedAt: new Date() },
+  });
+  feedCache = null;
+  return { username };
 }
 
 let lastRefreshAttempt = 0;
@@ -231,7 +333,7 @@ export type InstagramStatus =
       username: string | null;
       followersCount: number | null;
       postCount: number;
-      tokenSource: "env" | "refreshed";
+      tokenSource: "env" | "refreshed" | "connected";
       tokenRefreshedAt: string | null;
     };
 
