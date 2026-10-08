@@ -58,6 +58,12 @@ export default async function CmsPage({
             >
               ← Objednávky
             </a>
+            <Link
+              href="/admin/komunita"
+              className="rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50"
+            >
+              Komunita
+            </Link>
             <a
               href="/"
               className="rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 shadow-sm hover:bg-neutral-50"
