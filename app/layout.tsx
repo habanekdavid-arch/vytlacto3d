@@ -7,6 +7,7 @@ import Providers from "@/components/Providers";
 import FourFromFloatingButton from "@/components/FourFromFloatingButton";
 import PromoTipPopup from "@/components/PromoTipPopup";
 import RegisterNudgePopup from "@/components/RegisterNudgePopup";
+import CompleteProfilePopup from "@/components/CompleteProfilePopup";
 
 const baseUrl =
   process.env.NEXT_PUBLIC_BASE_URL || "https://www.vytlacto3d.sk";
@@ -114,6 +115,7 @@ export default function RootLayout({
           <FourFromFloatingButton />
           <PromoTipPopup />
           <RegisterNudgePopup />
+          <CompleteProfilePopup />
         </Providers>
       </body>
     </html>

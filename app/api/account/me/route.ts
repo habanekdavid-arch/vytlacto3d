@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSafeServerSession } from "@/lib/session";
+import { missingProfileFields } from "@/lib/profile";
 
 export const runtime = "nodejs";
 
@@ -17,6 +18,7 @@ export async function GET() {
       phone: true,
       accountType: true,
       companyName: true,
+      ico: true,
       contactPerson: true,
       billingStreet: true,
       billingCity: true,
@@ -32,5 +34,5 @@ export async function GET() {
   });
 
   if (!user) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  return NextResponse.json(user);
+  return NextResponse.json({ ...user, missingFields: missingProfileFields(user) });
 }

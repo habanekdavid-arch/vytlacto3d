@@ -1,10 +1,16 @@
 import { prisma } from "@/lib/prisma";
 import { getSafeServerSession } from "@/lib/session";
 import AccountEditForm from "@/components/AccountEditForm";
+import { missingProfileFields } from "@/lib/profile";
 
 export const dynamic = "force-dynamic";
 
-export default async function AccountPage() {
+export default async function AccountPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ dokoncit?: string; vitajte?: string }>;
+}) {
+  const { dokoncit, vitajte } = await searchParams;
   const session = await getSafeServerSession();
   const sessionUser = session?.user as { id?: string } | undefined;
 
@@ -42,23 +48,38 @@ export default async function AccountPage() {
 
   const isCompany = user.accountType === "COMPANY";
 
-  const missingFields: string[] = [];
-  if (!user.name) missingFields.push("Meno a priezvisko");
-  if (!user.phone) missingFields.push("Telefón");
-  if (!user.shippingStreet) missingFields.push("Doručovacia ulica");
-  if (!user.shippingCity) missingFields.push("Doručovacie mesto");
-  if (!user.shippingZip) missingFields.push("PSČ");
-  if (isCompany) {
-    if (!user.companyName) missingFields.push("Názov spoločnosti");
-    if (!user.ico) missingFields.push("IČO");
-    if (!user.contactPerson) missingFields.push("Kontaktná osoba");
-    if (!user.billingStreet) missingFields.push("Fakturačná ulica");
-    if (!user.billingCity) missingFields.push("Fakturačné mesto");
-    if (!user.billingZip) missingFields.push("Fakturačné PSČ");
-  }
+  const missingFields = missingProfileFields(user);
 
   return (
     <div className="space-y-5">
+      {/* Dokončenie registrácie — po rýchlej registrácii chýba adresa */}
+      {missingFields.length > 0 && (
+        <div className="rounded-3xl border border-[#FFAE00]/50 bg-[#FFAE00]/10 p-5">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="min-w-0">
+              <div className="text-base font-extrabold text-neutral-900">
+                {vitajte === "1" ? "Vitajte! Účet je vytvorený — ešte dokončite registráciu" : "Dokončite registráciu"}
+              </div>
+              <p className="mt-1 max-w-xl text-sm text-neutral-700">
+                Účet už funguje. Keď doplníte zvyšné údaje, pri objednávke ich nebudete musieť vypisovať
+                a faktúru vystavíme bez otázok.
+              </p>
+            </div>
+            <a
+              href="?dokoncit=1#upravit-udaje"
+              className="shrink-0 rounded-2xl bg-[#FFAE00] px-5 py-2.5 text-sm font-bold text-black transition hover:brightness-95"
+            >
+              Doplniť údaje
+            </a>
+          </div>
+          <ul className="mt-3 flex flex-wrap gap-2">
+            {missingFields.map(f => (
+              <li key={f} className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-neutral-700 ring-1 ring-[#FFAE00]/40">{f}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {/* Osobné údaje */}
       <Section title="Osobné údaje">
         <Grid>
@@ -125,23 +146,8 @@ export default async function AccountPage() {
         />
       </Section>
 
-      {/* Chýbajúce údaje – amber banner */}
-      {missingFields.length > 0 && (
-        <div className="rounded-3xl border border-amber-200 bg-amber-50 p-5">
-          <div className="text-sm font-bold text-amber-800">Doplňte chýbajúce údaje</div>
-          <p className="mt-1 text-xs text-amber-700">
-            Nasledujúce polia sú prázdne. Bez nich nemôže byť adresa predvyplnená pri objednávke:
-          </p>
-          <ul className="mt-2 flex flex-wrap gap-2">
-            {missingFields.map(f => (
-              <li key={f} className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800">{f}</li>
-            ))}
-          </ul>
-        </div>
-      )}
-
       {/* Editácia údajov */}
-      <section className="rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm">
+      <section id="upravit-udaje" className="scroll-mt-28 rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm">
         <h2 className="text-lg font-extrabold tracking-tight text-neutral-900">
           Upraviť moje údaje
         </h2>
@@ -149,6 +155,7 @@ export default async function AccountPage() {
           Fakturačná a dodacia adresa sa predvyplní pri ďalšej objednávke.
         </p>
         <AccountEditForm
+          defaultEditing={dokoncit === "1" && missingFields.length > 0}
           user={{
             name: user.name ?? null,
             phone: user.phone ?? null,
