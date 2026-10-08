@@ -3,9 +3,14 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { signIn } from "next-auth/react";
 
 export default function RegisterPage() {
   const router = useRouter();
+  // Rýchla registrácia = len meno, e-mail, telefón a heslo. Adresu a firemné
+  // údaje si zákazník doplní neskôr v účte (alebo pri prvej objednávke).
+  const [mode, setMode] = useState<"QUICK" | "FULL">("QUICK");
+  const quick = mode === "QUICK";
   const [accountType, setAccountType] = useState<"PERSON" | "COMPANY">("PERSON");
   const [vatPayer, setVatPayer] = useState(false);
   const [isSzco, setIsSzco] = useState(false);
@@ -38,6 +43,7 @@ export default function RegisterPage() {
     if (!data.password) errs.password = "Heslo je povinné.";
     else if (data.password.length < 8) errs.password = "Heslo musí mať aspoň 8 znakov.";
     if (!data.phone.trim()) errs.phone = "Telefón je povinný.";
+    if (quick) return errs;
     if (accountType === "COMPANY") {
       if (!data.companyName.trim()) errs.companyName = "Názov firmy je povinný.";
       if (!data.ico.trim()) errs.ico = "IČO je povinné.";
@@ -60,7 +66,9 @@ export default function RegisterPage() {
       ? { shippingStreet: payload.billingStreet, shippingCity: payload.billingCity, shippingZip: payload.billingZip, shippingCountry: payload.billingCountry }
       : {};
 
-    const finalPayload = {
+    const finalPayload = quick
+      ? { name: payload.name, email: payload.email, phone: payload.phone, password: payload.password, accountType: "PERSON" }
+      : {
       ...payload,
       ...shippingOverride,
       // Billing fallback: if PERSON didn't fill billing, copy from shipping
@@ -74,7 +82,7 @@ export default function RegisterPage() {
       // Clear SZČO fields if not SZČO and not COMPANY
       ico: accountType === "COMPANY" || isSzco ? payload.ico : "",
       dic: accountType === "COMPANY" || isSzco ? payload.dic : "",
-    };
+      };
 
     const errs = validate({ ...payload, ...shippingOverride });
     if (Object.keys(errs).length > 0) {
@@ -105,7 +113,19 @@ export default function RegisterPage() {
         }
         return;
       }
-      router.push("/prihlasenie?registered=1");
+      // Rovno prihlásiť — po rýchlej registrácii do účtu, kde je výzva
+      // na dokončenie; keby prihlásenie zlyhalo, ostáva bežná cesta.
+      const login = await signIn("credentials", {
+        email: payload.email.trim().toLowerCase(),
+        password: payload.password,
+        redirect: false,
+      });
+      if (!login || login.error) {
+        router.push("/prihlasenie?registered=1");
+        return;
+      }
+      router.push(quick ? "/ucet?vitajte=1" : "/ucet");
+      router.refresh();
     } catch {
       setErrors({ _form: "Sieťová chyba. Skúste znova." });
     } finally {
@@ -119,11 +139,39 @@ export default function RegisterPage() {
         <div className="text-sm font-semibold text-neutral-500">Registrácia</div>
         <h1 className="mt-2 text-3xl font-extrabold tracking-tight">Vytvoriť účet</h1>
         <p className="mt-2 text-sm text-neutral-600">
-          Vyberte, či sa registrujete ako súkromná osoba alebo firma.
+          {quick
+            ? "Stačia štyri údaje — zvyšok doplníte, keď ho budete potrebovať."
+            : "Vyberte, či sa registrujete ako súkromná osoba alebo firma."}
         </p>
+
+        <div className="mt-6 grid grid-cols-2 gap-1 rounded-2xl bg-neutral-100 p-1" role="tablist">
+          {([
+            ["QUICK", "Rýchla registrácia"],
+            ["FULL", "Úplná registrácia"],
+          ] as const).map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              role="tab"
+              aria-selected={mode === value}
+              onClick={() => {
+                setMode(value);
+                setErrors({});
+                if (value === "QUICK") setAccountType("PERSON");
+              }}
+              className={[
+                "rounded-xl px-4 py-2.5 text-sm font-bold transition",
+                mode === value ? "bg-white text-neutral-900 shadow-sm" : "text-neutral-500 hover:text-neutral-800",
+              ].join(" ")}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
 
         <form onSubmit={handleSubmit} className="mt-8 space-y-8" noValidate>
           {/* Typ účtu */}
+          {!quick && (
           <section>
             <label className="text-sm font-semibold text-neutral-800">Typ účtu</label>
             <select
@@ -140,6 +188,7 @@ export default function RegisterPage() {
               <option value="COMPANY">Firma</option>
             </select>
           </section>
+          )}
 
           {/* Osobné údaje */}
           <section>
@@ -152,6 +201,25 @@ export default function RegisterPage() {
             </div>
           </section>
 
+          {quick && (
+            <div className="flex gap-3 rounded-2xl border border-[#FFAE00]/40 bg-[#FFAE00]/10 p-4 text-sm text-neutral-700">
+              <span className="text-lg leading-none">💡</span>
+              <div>
+                <div className="font-bold text-neutral-900">Adresu a fakturačné údaje doplníte neskôr</div>
+                <p className="mt-1 text-xs leading-relaxed">
+                  Po registrácii vás v účte upozorníme, čo ešte chýba na úplnú registráciu. Adresu môžete zadať
+                  aj priamo pri prvej objednávke. Registrujete firmu?{" "}
+                  <button type="button" onClick={() => setMode("FULL")} className="font-semibold underline decoration-[#FFAE00] decoration-2 underline-offset-2">
+                    Prejdite na úplnú registráciu
+                  </button>
+                  .
+                </p>
+              </div>
+            </div>
+          )}
+
+          {!quick && (
+          <>
           {/* DPH */}
           <section className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
             <label className="flex cursor-pointer items-start gap-3">
@@ -298,6 +366,9 @@ export default function RegisterPage() {
               />
             </div>
           </section>
+
+          </>
+          )}
 
           {errors._form && (
             <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">

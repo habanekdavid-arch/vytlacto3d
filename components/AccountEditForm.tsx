@@ -24,8 +24,14 @@ type UserData = {
   shippingCountry: string | null;
 };
 
-export default function AccountEditForm({ user }: { user: UserData }) {
-  const [editing, setEditing] = useState(false);
+export default function AccountEditForm({
+  user,
+  defaultEditing = false,
+}: {
+  user: UserData;
+  defaultEditing?: boolean;
+}) {
+  const [editing, setEditing] = useState(defaultEditing);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
