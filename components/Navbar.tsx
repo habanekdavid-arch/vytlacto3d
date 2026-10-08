@@ -24,7 +24,7 @@ export default function Navbar() {
         </Link>
 
         {/* CENTER NAVIGATION */}
-        <div className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-8 md:flex">
+        <div className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-4 whitespace-nowrap md:flex lg:gap-8">
           <Link
             href="/#kalkulator"
             className="text-sm font-medium text-neutral-700 transition hover:text-neutral-900"
@@ -47,6 +47,13 @@ export default function Navbar() {
           </Link>
 
           <Link
+            href="/komunita"
+            className="text-sm font-medium text-neutral-700 transition hover:text-neutral-900"
+          >
+            Komunita
+          </Link>
+
+          <Link
             href="/#faq"
             className="text-sm font-medium text-neutral-700 transition hover:text-neutral-900"
           >
@@ -64,7 +71,8 @@ export default function Navbar() {
             href="https://www.4from.media/?gad_source=1&gad_campaignid=21391373681&gbraid=0AAAAADyxKkl3uOWw6VN6UM8ekC4FAegi_"
             target="_blank"
             rel="noreferrer"
-            className="text-sm font-medium text-neutral-700 transition hover:text-neutral-900"
+            // Na tablete by sa menu s odkazom na partnera prekrývalo s logom.
+            className="hidden text-sm font-medium text-neutral-700 transition hover:text-neutral-900 lg:inline"
           >
             4from media
           </a>

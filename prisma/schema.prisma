@@ -41,6 +41,10 @@ model User {
   stripeCustomerId String? @unique
 
   orders Order[]
+
+  communityPosts     CommunityPost[]
+  communityComments  CommunityComment[]
+  communityReactions CommunityReaction[]
 }
 
 model Order {
@@ -217,4 +221,59 @@ model InstagramToken {
   token       String
   sourceHash  String
   refreshedAt DateTime @default(now())
+}
+
+// Komunita — príbehy zákazníkov o ich výtlačkoch. Príspevok sa zobrazí až po
+// schválení v administrácii (PENDING → PUBLISHED, prípadne HIDDEN), komentáre
+// a reakcie sa zobrazujú hneď. orderId = príspevok k vlastnej objednávke,
+// vtedy sa pri ňom ukáže „Overený zákazník“.
+model CommunityPost {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  status   String   @default("PENDING")
+  title    String
+  story    String
+  images   String[] @default([])
+  category String
+  material String?
+  orderId  String?
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  comments  CommunityComment[]
+  reactions CommunityReaction[]
+
+  @@index([status, createdAt])
+  @@index([userId])
+}
+
+model CommunityComment {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  text   String
+  hidden Boolean @default(false)
+
+  postId String
+  post   CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId String
+  user   User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([postId, createdAt])
+}
+
+// Jedna reakcia od používateľa na príspevok; type = kľúč z COMMUNITY_REACTIONS.
+model CommunityReaction {
+  createdAt DateTime @default(now())
+  type      String
+
+  postId String
+  post   CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId String
+  user   User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([postId, userId])
 }
