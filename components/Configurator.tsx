@@ -361,6 +361,14 @@ export default function Configurator({
                   label="Hmotnosť celkom"
                   value={formatWeight(quote.gramsPerPart * config.quantity)}
                 />
+                <TechLine
+                  label="Čas tlače / ks"
+                  value={formatPrintTime(quote.printTimeMinPerPart)}
+                />
+                <TechLine
+                  label="Čas tlače celkom"
+                  value={formatPrintTime(quote.printTimeMinPerPart * config.quantity)}
+                />
                 <TechLine label="Mierka" value={`${config.scalePct} %`} />
                 <TechLine
                   label="Množstevná zľava"
@@ -537,6 +545,19 @@ function formatWeight(grams: number): string {
     return `${(grams / 1000).toFixed(2).replace(".", ",")} kg`;
   }
   return `${Math.round(grams)} g`;
+}
+
+function formatPrintTime(minutes: number): string {
+  const totalMin = Math.round(minutes);
+  if (totalMin < 60) return `${totalMin} min`;
+  const days = Math.floor(totalMin / (60 * 24));
+  const hours = Math.floor((totalMin % (60 * 24)) / 60);
+  const mins = totalMin % 60;
+  const parts: string[] = [];
+  if (days > 0) parts.push(`${days} d`);
+  if (hours > 0) parts.push(`${hours} hod`);
+  if (mins > 0 && days === 0) parts.push(`${mins} min`);
+  return parts.join(" ");
 }
 
 function PriceLine({ label, value, bold, hint }: { label: string; value: string; bold?: boolean; hint?: string }) {
