@@ -4,11 +4,11 @@ export type Locale = (typeof LOCALES)[number];
 export const DEFAULT_LOCALE: Locale = "sk";
 export const LOCALE_COOKIE = "vytlacto3d_lang";
 
-export const LOCALE_INFO: Record<Locale, { code: string; name: string; flag: string; intl: string }> = {
-  sk: { code: "SK", name: "Slovenčina", flag: "🇸🇰", intl: "sk-SK" },
-  en: { code: "EN", name: "English", flag: "🇬🇧", intl: "en-GB" },
-  hu: { code: "HU", name: "Magyar", flag: "🇭🇺", intl: "hu-HU" },
-  de: { code: "DE", name: "Deutsch", flag: "🇩🇪", intl: "de-DE" },
+export const LOCALE_INFO: Record<Locale, { code: string; name: string; intl: string }> = {
+  sk: { code: "SK", name: "Slovenčina", intl: "sk-SK" },
+  en: { code: "EN", name: "English", intl: "en-GB" },
+  hu: { code: "HU", name: "Magyar", intl: "hu-HU" },
+  de: { code: "DE", name: "Deutsch", intl: "de-DE" },
 };
 
 export function isLocale(value: unknown): value is Locale {

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { LOCALES, LOCALE_COOKIE, LOCALE_INFO, type Locale } from "@/lib/i18n/config";
 import { useLocale, useT } from "@/lib/i18n/client";
+import FlagIcon from "@/components/FlagIcon";
 
 function saveLocale(locale: Locale) {
   document.cookie = `${LOCALE_COOKIE}=${locale}; path=/; max-age=31536000; samesite=lax`;
@@ -51,7 +52,7 @@ export default function LanguageSwitcher() {
         aria-label={t("Zmeniť jazyk")}
         className="flex h-10 items-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-2.5 text-sm font-semibold text-neutral-700 shadow-sm transition hover:border-[#FFAE00] hover:shadow-md"
       >
-        <span className="text-base leading-none">{current.flag}</span>
+        <FlagIcon locale={locale} />
         <span>{current.code}</span>
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden className={open ? "rotate-180 transition" : "transition"}>
           <path d="m6 9 6 6 6-6" />
@@ -76,7 +77,7 @@ export default function LanguageSwitcher() {
                   l === locale ? "bg-[#FFAE00]/15 font-bold text-neutral-900" : "text-neutral-700 hover:bg-neutral-50",
                 ].join(" ")}
               >
-                <span className="text-base leading-none">{LOCALE_INFO[l].flag}</span>
+                <FlagIcon locale={l} />
                 <span className="flex-1">{LOCALE_INFO[l].name}</span>
                 <span className="text-xs text-neutral-400">{LOCALE_INFO[l].code}</span>
               </button>
@@ -111,7 +112,7 @@ export function LanguageButtons() {
             l === locale ? "border-[#FFAE00] bg-[#FFAE00]/15 text-neutral-900" : "border-neutral-200 bg-white text-neutral-600",
           ].join(" ")}
         >
-          <span className="text-base leading-none">{LOCALE_INFO[l].flag}</span>
+          <FlagIcon locale={l} />
           {LOCALE_INFO[l].code}
         </button>
       ))}
