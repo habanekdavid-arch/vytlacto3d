@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ReactNode } from "react";
+import { getT } from "@/lib/i18n/server";
 
 type BlogArticleLayoutProps = {
   title: string;
@@ -13,13 +14,14 @@ type BlogArticleLayoutProps = {
   children: ReactNode;
 };
 
-export default function BlogArticleLayout({
+export default async function BlogArticleLayout({
   title,
   subtitle,
   intro,
   image,
   children,
 }: BlogArticleLayoutProps) {
+  const { t } = await getT();
   return (
     <article className="bg-white text-zinc-900">
       <section className="px-4 pt-14 pb-10 md:pt-20 md:pb-14 animate-fade-up">
@@ -28,7 +30,7 @@ export default function BlogArticleLayout({
             href="/blog"
             className="mb-6 inline-flex items-center gap-1.5 text-sm font-medium text-zinc-500 transition-all duration-200 hover:gap-2.5 hover:text-zinc-900"
           >
-            <span className="transition-transform duration-200 group-hover:-translate-x-0.5">←</span> Späť na blog
+            <span className="transition-transform duration-200 group-hover:-translate-x-0.5">←</span> {t("Späť na blog")}
           </Link>
 
           {/* Hlavný názov */}

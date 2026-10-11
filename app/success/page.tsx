@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import SuccessAutoRefresh from "@/components/SuccessAutoRefresh";
 import ClearCartStorage from "@/components/ClearCartStorage";
 import GA4PurchaseEvent from "@/components/GA4PurchaseEvent";
+import { getT } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
 
@@ -42,6 +43,7 @@ async function SuccessContent({
   searchParams?: { orderId?: string; session_id?: string };
 }) {
   const order = await getVerifiedOrder(searchParams?.orderId, searchParams?.session_id);
+  const { t } = await getT();
 
   const isPending = order?.status === "PENDING";
   const isCancelled = order?.status === "CANCELLED";
@@ -78,16 +80,15 @@ async function SuccessContent({
             </div>
 
             <h1 className="mt-6 text-3xl font-extrabold tracking-tight">
-              Platba prebehla úspešne
+              {t("Platba prebehla úspešne")}
             </h1>
 
             <p className="mt-4 text-base leading-relaxed text-neutral-600">
-              Ďakujeme za objednávku. Vaša platba bola úspešne prijatá a objednávka
-              je zaevidovaná.
+              {t("Ďakujeme za objednávku. Vaša platba bola úspešne prijatá a objednávka je zaevidovaná.")}
             </p>
 
             <p className="mt-3 text-sm leading-relaxed text-neutral-500">
-              Potvrdenie objednávky a ďalšie informácie sme vám poslali e-mailom.
+              {t("Potvrdenie objednávky a ďalšie informácie sme vám poslali e-mailom.")}
             </p>
           </>
         )}
@@ -102,18 +103,15 @@ async function SuccessContent({
             </div>
 
             <h1 className="mt-6 text-3xl font-extrabold tracking-tight">
-              Platba sa spracováva
+              {t("Platba sa spracováva")}
             </h1>
 
             <p className="mt-4 text-base leading-relaxed text-neutral-600">
-              Platbu sme prijali od Stripe, ale potvrdenie ešte len spracovávame.
-              Táto stránka sa automaticky obnoví, len čo bude objednávka potvrdená —
-              zvyčajne to trvá pár sekúnd.
+              {t("Platbu sme prijali od Stripe, ale potvrdenie ešte len spracovávame. Táto stránka sa automaticky obnoví, len čo bude objednávka potvrdená — zvyčajne to trvá pár sekúnd.")}
             </p>
 
             <p className="mt-3 text-sm leading-relaxed text-neutral-500">
-              Ak sa stav nezmení ani po chvíli, potvrdenie nájdete aj v histórii
-              objednávok alebo vám príde e-mailom.
+              {t("Ak sa stav nezmení ani po chvíli, potvrdenie nájdete aj v histórii objednávok alebo vám príde e-mailom.")}
             </p>
 
             <SuccessAutoRefresh />
@@ -130,26 +128,24 @@ async function SuccessContent({
             </div>
 
             <h1 className="mt-6 text-3xl font-extrabold tracking-tight">
-              Objednávku sa nepodarilo overiť
+              {t("Objednávku sa nepodarilo overiť")}
             </h1>
 
             <p className="mt-4 text-base leading-relaxed text-neutral-600">
-              Túto objednávku sme nenašli alebo sa nedá overiť z tohto odkazu.
-              Ak ste práve dokončili platbu, skontrolujte si e-mail alebo históriu
-              objednávok — v prípade problému nás kontaktujte.
+              {t("Túto objednávku sme nenašli alebo sa nedá overiť z tohto odkazu. Ak ste práve dokončili platbu, skontrolujte si e-mail alebo históriu objednávok — v prípade problému nás kontaktujte.")}
             </p>
           </>
         )}
 
         {isCancelled && (
           <p className="mt-3 text-sm leading-relaxed text-red-500">
-            Táto objednávka bola zrušená.
+            {t("Táto objednávka bola zrušená.")}
           </p>
         )}
 
         {order && (
           <div className="mt-6 rounded-2xl border border-neutral-200 bg-neutral-50 p-4 text-sm">
-            <div className="text-neutral-500">Číslo objednávky</div>
+            <div className="text-neutral-500">{t("Číslo objednávky")}</div>
             <div className="mt-1 break-all font-mono text-neutral-900">
               {order.orderNumber}
             </div>
@@ -161,14 +157,14 @@ async function SuccessContent({
             href="/"
             className="rounded-2xl bg-[#FFAE00] px-5 py-3 text-sm font-semibold text-black shadow-sm hover:opacity-90"
           >
-            Späť na hlavnú stránku
+            {t("Späť na hlavnú stránku")}
           </Link>
 
           <Link
             href="/#kalkulator"
             className="rounded-2xl border border-neutral-200 bg-white px-5 py-3 text-sm font-semibold text-neutral-900 hover:bg-neutral-50"
           >
-            Vytvoriť ďalšiu objednávku
+            {t("Vytvoriť ďalšiu objednávku")}
           </Link>
         </div>
       </div>

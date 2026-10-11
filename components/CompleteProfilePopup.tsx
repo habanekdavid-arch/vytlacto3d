@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
+import { useT } from "@/lib/i18n/client";
 
 const STORAGE_KEY = "vytlacto3d:complete-profile-last-seen";
 const SHOW_AFTER_MS = 20_000;
@@ -34,6 +35,7 @@ function IconCheck() {
  */
 export default function CompleteProfilePopup() {
   const { status } = useSession();
+  const t = useT();
   const pathname = usePathname() ?? "/";
   const [missing, setMissing] = useState<string[]>([]);
   const [visible, setVisible] = useState(false);
@@ -98,17 +100,17 @@ export default function CompleteProfilePopup() {
                 </div>
                 <div>
                   <div className="text-[11px] font-bold uppercase tracking-[0.1em] text-white/40">
-                    Váš účet
+                    {t("Váš účet")}
                   </div>
                   <div className="text-[15px] font-extrabold leading-snug text-white">
-                    Dokončite kompletnú registráciu
+                    {t("Dokončite kompletnú registráciu")}
                   </div>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={doClose}
-                aria-label="Zatvoriť"
+                aria-label={t("Zatvoriť")}
                 className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/10 transition hover:bg-white/20"
               >
                 <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeOpacity="0.7">
@@ -121,13 +123,13 @@ export default function CompleteProfilePopup() {
 
           <div className="px-6 pt-5 pb-6">
             <p className="text-[13px] leading-relaxed text-neutral-500">
-              Zaregistrovali ste sa rýchlo — ešte nám chýba:
+              {t("Zaregistrovali ste sa rýchlo — ešte nám chýba:")}
             </p>
 
             <ul className="mt-3 flex flex-wrap gap-1.5">
               {missing.map((f) => (
                 <li key={f} className="rounded-full bg-[#FFAE00]/15 px-2.5 py-1 text-[12px] font-semibold text-neutral-800">
-                  {f}
+                  {t(f)}
                 </li>
               ))}
             </ul>
@@ -136,7 +138,7 @@ export default function CompleteProfilePopup() {
               <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-[#FFAE00] text-black">
                 <IconCheck />
               </span>
-              Pri objednávke potom nič nevypisujete — adresu predvyplníme za vás.
+              {t("Pri objednávke potom nič nevypisujete — adresu predvyplníme za vás.")}
             </div>
 
             <div className="mt-5 flex gap-2">
@@ -145,14 +147,14 @@ export default function CompleteProfilePopup() {
                 onClick={doClose}
                 className="flex-1 rounded-xl bg-[#FFAE00] px-4 py-2.5 text-center text-[13px] font-extrabold text-black transition hover:bg-[#e09d00]"
               >
-                Dokončiť registráciu
+                {t("Dokončiť registráciu")}
               </Link>
               <button
                 type="button"
                 onClick={doClose}
                 className="flex-1 rounded-xl border border-neutral-200 bg-white px-4 py-2.5 text-center text-[13px] font-semibold text-neutral-700 transition hover:bg-neutral-50"
               >
-                Neskôr
+                {t("Neskôr")}
               </button>
             </div>
           </div>

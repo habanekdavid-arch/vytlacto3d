@@ -2,16 +2,21 @@ import Link from "next/link";
 import Image from "next/image";
 import { prisma } from "@/lib/prisma";
 import { syncRepoBlog } from "@/lib/blog-sync";
+import { getT } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = {
-  title: "Blog o 3D tlači",
+export async function generateMetadata() {
+  const { t } = await getT();
+  return {
+  title: t("Blog o 3D tlači"),
   description:
-    "Články o 3D tlači, cenách 3D tlače, materiáloch, STL súboroch a možnostiach výroby na mieru.",
-};
+    t("Články o 3D tlači, cenách 3D tlače, materiáloch, STL súboroch a možnostiach výroby na mieru."),
+  };
+}
 
 export default async function BlogPage() {
+  const { t } = await getT();
   await syncRepoBlog();
   const allPosts = await prisma.blogPost.findMany({
     where: { published: true },
@@ -24,7 +29,7 @@ export default async function BlogPage() {
   if (!featuredPost) {
     return (
       <main className="mx-auto max-w-6xl px-6 py-12">
-        <p className="text-neutral-500">Žiadne články.</p>
+        <p className="text-neutral-500">{t("Žiadne články.")}</p>
       </main>
     );
   }
@@ -34,11 +39,10 @@ export default async function BlogPage() {
       <section className="mb-14 animate-fade-up">
         <div className="mb-3 text-sm font-semibold text-neutral-500">Blog</div>
         <h1 className="text-4xl font-extrabold tracking-tight text-neutral-900 md:text-5xl">
-          Blog o 3D tlači
+          {t("Blog o 3D tlači")}
         </h1>
         <p className="mt-4 max-w-3xl text-base leading-relaxed text-neutral-600">
-          Praktické články o 3D tlači, cenách, materiáloch, STL modeloch,
-          prototypovaní a výrobe na mieru.
+          {t("Praktické články o 3D tlači, cenách, materiáloch, STL modeloch, prototypovaní a výrobe na mieru.")}
         </p>
       </section>
 
@@ -60,7 +64,7 @@ export default async function BlogPage() {
 
           <div className="flex flex-col justify-center p-8">
             <div className="text-sm font-semibold text-[#FFAE00]">
-              Hlavný článok
+              {t("Hlavný článok")}
             </div>
             <h2 className="mt-3 text-3xl font-extrabold tracking-tight text-neutral-900 transition-colors duration-200 group-hover:text-neutral-700">
               {featuredPost.title}
@@ -79,7 +83,7 @@ export default async function BlogPage() {
             </div>
 
             <div className="mt-6 inline-flex w-fit items-center gap-2 rounded-xl bg-[#FFAE00] px-5 py-3 text-sm font-semibold text-black transition-all duration-200 group-hover:gap-3">
-              Prečítať článok
+              {t("Prečítať článok")}
               <span className="transition-transform duration-200 group-hover:translate-x-0.5">→</span>
             </div>
           </div>
@@ -89,7 +93,7 @@ export default async function BlogPage() {
       {otherPosts.length > 0 && (
         <section>
           <h2 className="mb-6 text-2xl font-bold text-neutral-900 animate-fade-up" style={{ animationDelay: "160ms" }}>
-            Ďalšie články
+            {t("Ďalšie články")}
           </h2>
 
           <div className="grid gap-6 md:grid-cols-2">
@@ -127,7 +131,7 @@ export default async function BlogPage() {
                       <span>{post.publishedAt}</span>
                     </div>
                     <span className="inline-flex items-center gap-1 text-xs font-semibold text-neutral-400 transition-all duration-200 group-hover:gap-2 group-hover:text-neutral-700">
-                      Čítať <span className="transition-transform duration-200 group-hover:translate-x-0.5">→</span>
+                      {t("Čítať")} <span className="transition-transform duration-200 group-hover:translate-x-0.5">→</span>
                     </span>
                   </div>
                 </div>

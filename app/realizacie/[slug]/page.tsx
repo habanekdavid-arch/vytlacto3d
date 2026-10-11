@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import RealizaciaGallery from "@/components/RealizaciaGallery";
 import { syncRepoRealizacie } from "@/lib/realizacie-sync";
+import { getT } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
 
@@ -20,10 +21,11 @@ export async function generateMetadata({
   const { slug } = await params;
   const project = await prisma.realizacia.findUnique({ where: { slug } });
 
-  if (!project) return { title: "Realizácia nenájdená | VytlačTo3D" };
+  const { t } = await getT();
+  if (!project) return { title: t("Realizácia nenájdená") + " | VytlačTo3D" };
 
   return {
-    title: `${project.title} | Realizácie VytlačTo3D`,
+    title: `${project.title} | ${t("Realizácie")} VytlačTo3D`,
     description: project.description,
     keywords: project.seoKeywords as string[],
     openGraph: {
@@ -39,6 +41,7 @@ export default async function RealizationDetailPage({
 }: {
   params: Promise<{ slug: string }>;
 }) {
+  const { t } = await getT();
   const { slug } = await params;
   await syncRepoRealizacie();
   const project = await prisma.realizacia.findUnique({ where: { slug, published: true } });
@@ -60,7 +63,7 @@ export default async function RealizationDetailPage({
         href="/realizacie"
         className="mb-8 inline-flex rounded-full border border-neutral-200 bg-white px-4 py-2 text-sm font-semibold text-neutral-700 shadow-sm transition hover:bg-neutral-50"
       >
-        ← Späť na realizácie
+        {t("← Späť na realizácie")}
       </Link>
 
       <article className="overflow-hidden rounded-[36px] border border-neutral-200 bg-white shadow-sm">
@@ -94,10 +97,10 @@ export default async function RealizationDetailPage({
             </p>
 
             <div className="mt-8 grid gap-3 sm:grid-cols-2">
-              <InfoCard label="Materiál" value={project.material} />
-              <InfoCard label="Rozmer" value={project.size} />
-              <InfoCard label="Realizácia" value={project.year} />
-              <InfoCard label="Dodanie" value={project.leadTime} />
+              <InfoCard label={t("Materiál")} value={project.material} />
+              <InfoCard label={t("Rozmer")} value={project.size} />
+              <InfoCard label={t("Realizácia")} value={project.year} />
+              <InfoCard label={t("Dodanie")} value={project.leadTime} />
             </div>
           </div>
         </section>
@@ -106,7 +109,7 @@ export default async function RealizationDetailPage({
           <section className="border-t border-neutral-200 px-6 py-12 md:px-12">
             <div className="mx-auto max-w-5xl">
               <h2 className="text-2xl font-extrabold tracking-tight text-neutral-900">
-                Galéria
+                {t("Galéria")}
               </h2>
               <div className="mt-6">
                 <RealizaciaGallery images={project.images} title={project.title} />
@@ -141,10 +144,10 @@ export default async function RealizationDetailPage({
           <div className="mb-6 flex items-end justify-between gap-4">
             <div>
               <div className="text-sm font-semibold text-[#FFAE00]">
-                Ďalšie realizácie
+                {t("Ďalšie realizácie")}
               </div>
               <h2 className="mt-2 text-3xl font-extrabold tracking-tight">
-                Pozrite si aj ďalšie projekty
+                {t("Pozrite si aj ďalšie projekty")}
               </h2>
             </div>
 
@@ -152,7 +155,7 @@ export default async function RealizationDetailPage({
               href="/realizacie"
               className="hidden rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm font-bold text-neutral-900 shadow-sm transition hover:bg-neutral-50 md:inline-flex"
             >
-              Všetky realizácie
+              {t("Všetky realizácie")}
             </Link>
           </div>
 

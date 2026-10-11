@@ -1,3 +1,4 @@
+import { useT } from "@/lib/i18n/client";
 function UploadIcon() {
   return (
     <svg
@@ -112,6 +113,7 @@ function BoxIcon() {
 }
 
 export default function HowItWorks() {
+  const t = useT();
   const steps = [
     {
       number: "1",
@@ -143,7 +145,7 @@ export default function HowItWorks() {
     <section id="how" className="bg-white px-6 py-20">
       <div className="mx-auto max-w-7xl">
         <h2 className="text-center text-4xl font-extrabold tracking-tight sm:text-5xl">
-          Ako to funguje
+          {t("Ako to funguje")}
         </h2>
 
         <div className="mt-16 grid gap-10 md:grid-cols-2 xl:grid-cols-4">
@@ -165,11 +167,11 @@ export default function HowItWorks() {
               </div>
 
               <h3 className="mx-auto mt-6 max-w-xs text-2xl font-extrabold leading-snug text-neutral-900 transition-colors duration-300 group-hover:text-black">
-                {step.title}
+                {t(step.title)}
               </h3>
 
               <p className="mx-auto mt-4 max-w-xs text-sm leading-8 text-neutral-600">
-                {step.text}
+                {t(step.text)}
               </p>
             </article>
           ))}

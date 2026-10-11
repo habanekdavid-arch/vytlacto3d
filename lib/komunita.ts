@@ -69,8 +69,8 @@ export function publicName(name: string | null | undefined): string {
   return `${parts[0]} ${parts[parts.length - 1].charAt(0).toUpperCase()}.`;
 }
 
-export function formatCommunityDate(date: Date | string): string {
-  return new Date(date).toLocaleDateString("sk-SK", {
+export function formatCommunityDate(date: Date | string, intl = "sk-SK"): string {
+  return new Date(date).toLocaleDateString(intl, {
     day: "numeric",
     month: "long",
     year: "numeric",

@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { CommunityStatus } from "@/lib/komunita";
+import { useT } from "@/lib/i18n/client";
 
 /** Zmazanie príspevku (autor/admin) a moderovanie (admin). */
 export default function PostActions({
@@ -18,6 +19,7 @@ export default function PostActions({
   isAdmin: boolean;
   afterDelete?: string | null;
 }) {
+  const t = useT();
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -41,7 +43,7 @@ export default function PostActions({
   }
 
   async function remove() {
-    if (!confirm("Naozaj zmazať príspevok aj s komentármi?")) return;
+    if (!confirm(t("Naozaj zmazať príspevok aj s komentármi?"))) return;
     setBusy(true);
     setError(null);
     try {
@@ -50,7 +52,7 @@ export default function PostActions({
       if (afterDelete) router.push(afterDelete);
       router.refresh();
     } catch {
-      setError("Príspevok sa nepodarilo zmazať.");
+      setError(t("Príspevok sa nepodarilo zmazať."));
       setBusy(false);
     }
   }
@@ -62,17 +64,17 @@ export default function PostActions({
     <div className="flex flex-wrap items-center gap-2">
       {isAdmin && status !== "PUBLISHED" && (
         <button type="button" disabled={busy} onClick={() => setStatus("PUBLISHED")} className={`${btn} border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100`}>
-          Schváliť a zverejniť
+          {t("Schváliť a zverejniť")}
         </button>
       )}
       {isAdmin && status !== "HIDDEN" && (
         <button type="button" disabled={busy} onClick={() => setStatus("HIDDEN")} className={`${btn} border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50`}>
-          Skryť
+          {t("Skryť")}
         </button>
       )}
       {canDelete && (
         <button type="button" disabled={busy} onClick={remove} className={`${btn} border-red-200 bg-white text-red-600 hover:bg-red-50`}>
-          Zmazať
+          {t("Zmazať")}
         </button>
       )}
       {error && <span className="text-xs font-semibold text-red-600">{error}</span>}

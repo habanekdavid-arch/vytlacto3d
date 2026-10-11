@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { COMMUNITY_COMMENT_MAX } from "@/lib/komunita";
+import { useT } from "@/lib/i18n/client";
 
 export type CommunityCommentView = {
   id: string;
@@ -28,6 +29,7 @@ export default function CommentSection({
   loginHref: string;
   canComment: boolean;
 }) {
+  const t = useT();
   const router = useRouter();
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
@@ -46,25 +48,25 @@ export default function CommentSection({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: value }),
       });
-      if (!res.ok) throw new Error((await res.json().catch(() => null))?.error ?? "Komentár sa nepodarilo odoslať.");
+      if (!res.ok) throw new Error((await res.json().catch(() => null))?.error ?? t("Komentár sa nepodarilo odoslať."));
       setText("");
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Komentár sa nepodarilo odoslať.");
+      setError(err instanceof Error ? err.message : t("Komentár sa nepodarilo odoslať."));
     } finally {
       setSending(false);
     }
   }
 
   async function remove(id: string) {
-    if (!confirm("Naozaj zmazať komentár?")) return;
+    if (!confirm(t("Naozaj zmazať komentár?"))) return;
     setDeleting(id);
     try {
       const res = await fetch(`/api/komunita/comments/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error();
       router.refresh();
     } catch {
-      setError("Komentár sa nepodarilo zmazať.");
+      setError(t("Komentár sa nepodarilo zmazať."));
     } finally {
       setDeleting(null);
     }
@@ -73,7 +75,7 @@ export default function CommentSection({
   return (
     <section>
       <h2 className="text-2xl font-extrabold tracking-tight text-neutral-900">
-        Komentáre <span className="text-neutral-400">{comments.length}</span>
+        {t("Komentáre")} <span className="text-neutral-400">{comments.length}</span>
       </h2>
 
       {canComment &&
@@ -84,7 +86,7 @@ export default function CommentSection({
               onChange={(e) => setText(e.target.value)}
               maxLength={COMMUNITY_COMMENT_MAX}
               rows={3}
-              placeholder="Napíš, čo si o tom myslíš, alebo sa opýtaj na detaily…"
+              placeholder={t("Napíš, čo si o tom myslíš, alebo sa opýtaj na detaily…")}
               className="w-full resize-y rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-[#FFAE00] focus:ring-4 focus:ring-[#FFAE00]/20"
             />
             <div className="mt-2 flex items-center justify-between gap-3">
@@ -96,16 +98,16 @@ export default function CommentSection({
                 disabled={sending || !text.trim()}
                 className="rounded-2xl bg-[#FFAE00] px-5 py-2.5 text-sm font-bold text-black shadow-sm transition hover:brightness-95 disabled:opacity-50"
               >
-                {sending ? "Odosielam…" : "Pridať komentár"}
+                {sending ? "Odosielam…" : t("Pridať komentár")}
               </button>
             </div>
           </form>
         ) : (
           <div className="mt-5 rounded-2xl border border-dashed border-neutral-300 bg-neutral-50 p-5 text-sm text-neutral-600">
             <Link href={loginHref} className="font-bold text-neutral-900 underline decoration-[#FFAE00] decoration-2 underline-offset-4">
-              Prihlás sa
+              {t("Prihlás sa")}
             </Link>{" "}
-            a pridaj komentár.
+            {t("a pridaj komentár.")}
           </div>
         ))}
 
@@ -122,7 +124,7 @@ export default function CommentSection({
                 <span className="font-semibold text-neutral-900">{c.author}</span>
                 {c.isTeam && (
                   <span className="rounded-full bg-[#FFAE00]/20 px-2 py-0.5 text-[11px] font-bold text-neutral-900">
-                    VytlačTo3D
+                    {t("VytlačTo3D")}
                   </span>
                 )}
                 {c.isAuthorOfPost && !c.isTeam && <AuthorBadge />}
@@ -134,7 +136,7 @@ export default function CommentSection({
                     disabled={deleting === c.id}
                     className="ml-auto text-xs font-semibold text-neutral-400 transition hover:text-red-600"
                   >
-                    Zmazať
+                    {t("Zmazať")}
                   </button>
                 )}
               </div>
@@ -145,14 +147,15 @@ export default function CommentSection({
       </ul>
 
       {!comments.length && canComment && (
-        <p className="mt-4 text-sm text-neutral-500">Zatiaľ bez komentárov. Začni debatu ako prvý.</p>
+        <p className="mt-4 text-sm text-neutral-500">{t("Zatiaľ bez komentárov. Začni debatu ako prvý.")}</p>
       )}
     </section>
   );
 }
 
 function AuthorBadge() {
+  const t = useT();
   return (
-    <span className="rounded-full bg-neutral-200 px-2 py-0.5 text-[11px] font-bold text-neutral-700">Autor</span>
+    <span className="rounded-full bg-neutral-200 px-2 py-0.5 text-[11px] font-bold text-neutral-700">{t("Autor")}</span>
   );
 }

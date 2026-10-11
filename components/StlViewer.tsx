@@ -5,6 +5,7 @@ import * as THREE from "three";
 import { STLLoader } from "three/examples/jsm/loaders/STLLoader.js";
 import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader.js";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+import { useT } from "@/lib/i18n/client";
 
 type Props = {
   fileKey: string;
@@ -68,6 +69,7 @@ export default function StlViewer({
   height = 380,
   scalePct = 100,
 }: Props) {
+  const t = useT();
   const mountRef = useRef<HTMLDivElement | null>(null);
 
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
@@ -388,12 +390,12 @@ export default function StlViewer({
     <div className="rounded-3xl border border-neutral-200 bg-white p-4">
       <div className="mb-4 flex items-start justify-between gap-3">
         <div>
-          <div className="text-sm text-neutral-500">3D náhľad</div>
-          <div className="text-xl font-extrabold text-neutral-900">{title}</div>
+          <div className="text-sm text-neutral-500">{t("3D náhľad")}</div>
+          <div className="text-xl font-extrabold text-neutral-900">{t(title)}</div>
         </div>
 
         <div className="text-xs text-neutral-500">
-          {loading ? "načítavam..." : "otáčanie / zoom"}
+          {loading ? t("načítavam...") : t("otáčanie / zoom")}
         </div>
       </div>
 
@@ -404,22 +406,22 @@ export default function StlViewer({
       >
         {loading && (
           <div className="absolute inset-0 flex items-center justify-center">
-            <div className="text-sm text-neutral-500">Načítavam model...</div>
+            <div className="text-sm text-neutral-500">{t("Načítavam model...")}</div>
           </div>
         )}
 
         {error && !loading && (
           <div className="absolute inset-0 flex items-center justify-center px-6 text-center">
-            <div className="text-sm text-red-500">{error}</div>
+            <div className="text-sm text-red-500">{t(error)}</div>
           </div>
         )}
       </div>
 
       {!loading && !error && (
         <div className="mt-4 text-sm text-neutral-500">
-          Model sa dá otáčať, približovať a odďaľovať.
+          {t("Model sa dá otáčať, približovať a odďaľovať.")}
           {isObjFile(fileKey)
-            ? " Pri OBJ súboroch odporúčame skontrolovať rozmery modelu."
+            ? " " + t("Pri OBJ súboroch odporúčame skontrolovať rozmery modelu.")
             : ""}
         </div>
       )}

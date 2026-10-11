@@ -2,6 +2,7 @@
 
 import { forwardRef, useImperativeHandle, useRef, useState } from "react";
 import { upload } from "@vercel/blob/client";
+import { useT } from "@/lib/i18n/client";
 
 type Uploaded = {
   fileKey: string;
@@ -31,6 +32,7 @@ const UploadBox = forwardRef<UploadBoxHandle, {
   // this component must stay mounted so that state isn't lost.
   hideDropzone?: boolean;
 }>(function UploadBox({ onUploaded, onUploadingChange, hideDropzone }, ref) {
+  const t = useT();
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   useImperativeHandle(ref, () => ({
@@ -82,8 +84,10 @@ const UploadBox = forwardRef<UploadBoxHandle, {
   async function uploadAndAnalyze(file: File): Promise<void> {
     if (file.size > MAX_MODEL_MB * 1024 * 1024) {
       throw new Error(
-        `Súbor má ${(file.size / 1024 / 1024).toFixed(1)} MB, maximum je ${MAX_MODEL_MB} MB. ` +
-          "Skúste znížiť počet trojuholníkov modelu."
+        t("Súbor má {size} MB, maximum je {max} MB. Skúste znížiť počet trojuholníkov modelu.", {
+          size: (file.size / 1024 / 1024).toFixed(1),
+          max: MAX_MODEL_MB,
+        })
       );
     }
 
@@ -113,7 +117,7 @@ const UploadBox = forwardRef<UploadBoxHandle, {
     let analyzeData: any = null;
     try { analyzeData = JSON.parse(analyzeText); } catch { analyzeData = { error: analyzeText }; }
 
-    if (!analyzeRes.ok) throw new Error(analyzeData?.error || "Analýza zlyhala.");
+    if (!analyzeRes.ok) throw new Error(analyzeData?.error || t("Analýza zlyhala."));
     if (!analyzeData?.analysis) throw new Error("Analyze API nevrátil analysis.");
 
     onUploaded({
@@ -138,7 +142,7 @@ const UploadBox = forwardRef<UploadBoxHandle, {
         originalFileName.endsWith(".obj") ||
         originalFileName.endsWith(".svg");
 
-      if (!isAllowed) throw new Error("Podporujeme len STL, OBJ a SVG súbory.");
+      if (!isAllowed) throw new Error(t("Podporujeme len STL, OBJ a SVG súbory."));
 
       if (originalFileName.endsWith(".svg")) {
         setOriginalSvgFile(originalFile);
@@ -150,7 +154,7 @@ const UploadBox = forwardRef<UploadBoxHandle, {
       }
     } catch (e: any) {
       console.error("UPLOAD FLOW ERROR:", e);
-      setError(e?.message || "Nepodarilo sa spracovať súbor.");
+      setError(e?.message || t("Nepodarilo sa spracovať súbor."));
     } finally {
       onUploadingChange?.(false);
     }
@@ -203,20 +207,19 @@ const UploadBox = forwardRef<UploadBoxHandle, {
           </div>
 
           <h3 className="mt-4 text-xl font-extrabold text-neutral-900">
-            Nahrajte STL, OBJ alebo SVG súbor
+            {t("Nahrajte STL, OBJ alebo SVG súbor")}
           </h3>
 
           <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-neutral-600">
-            SVG súbor automaticky prevedieme na 3D model s nastavenou hrúbkou.
-            STL a OBJ súbory sa spracujú priamo.
+            {t("SVG súbor automaticky prevedieme na 3D model s nastavenou hrúbkou. STL a OBJ súbory sa spracujú priamo.")}
           </p>
 
           <div className="mt-5 inline-flex rounded-2xl bg-[#FFAE00] px-5 py-3 text-sm font-semibold text-black shadow-sm">
-            Vybrať súbor
+            {t("Vybrať súbor")}
           </div>
 
           <p className="mt-3 text-xs text-neutral-500">
-            Podporované formáty: .STL, .OBJ, .SVG
+            {t("Podporované formáty:")} .STL, .OBJ, .SVG
           </p>
         </div>
       )}
@@ -224,10 +227,10 @@ const UploadBox = forwardRef<UploadBoxHandle, {
       {showThicknessInput && (
         <div className="mt-4 rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
           <div className="text-sm font-semibold text-neutral-800">
-            Výška SVG modelu
+            {t("Výška SVG modelu")}
           </div>
           <div className="mt-1 text-xs text-neutral-500">
-            Používa sa iba pri SVG súboroch. Odporúčaná hodnota je 10 mm.
+            {t("Používa sa iba pri SVG súboroch. Odporúčaná hodnota je 10 mm.")}
           </div>
 
           <div className="mt-3 flex flex-wrap items-center gap-3">
@@ -249,15 +252,15 @@ const UploadBox = forwardRef<UploadBoxHandle, {
                 disabled={isReconverting}
                 className="rounded-xl bg-[#FFAE00] px-4 py-2 text-sm font-bold text-black transition hover:bg-[#e09d00] disabled:opacity-60"
               >
-                {isReconverting ? "Prepočítavam..." : "↺ Použiť novú výšku"}
+                {isReconverting ? t("Prepočítavam...") : t("↺ Použiť novú výšku")}
               </button>
             )}
           </div>
 
           {isSvgMode && !isReconverting && (
             <p className="mt-2 text-xs text-neutral-400">
-              Aktuálna výška modelu: <strong>{svgThicknessMm} mm</strong>. Zmeň hodnotu a klikni
-              „Použiť novú výšku" — model sa prepočíta a cena sa automaticky aktualizuje.
+              {t("Aktuálna výška modelu:")} <strong>{svgThicknessMm} mm</strong>.{" "}
+              {t("Zmeň hodnotu a klikni „Použiť novú výšku“ — model sa prepočíta a cena sa automaticky aktualizuje.")}
             </p>
           )}
         </div>
@@ -276,7 +279,7 @@ const UploadBox = forwardRef<UploadBoxHandle, {
 
       {error && (
         <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-          {error}
+          {t(error)}
         </div>
       )}
     </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useT } from "@/lib/i18n/client";
 
 const STORAGE_KEY = "vytlacto3d:promo-popup-last-seen";
 const SHOW_AFTER_HOURS = 24;
@@ -93,6 +94,7 @@ function shouldShowPopup() {
 }
 
 export default function PromoTipPopup() {
+  const t = useT();
   const [visible,   setVisible]   = useState(false);
   const [closing,   setClosing]   = useState(false);
   const [activeIdx, setActiveIdx] = useState(0);
@@ -180,7 +182,7 @@ export default function PromoTipPopup() {
                   <Icon />
                 </div>
                 <span className="text-[11px] font-bold uppercase tracking-[0.1em] text-black/50">
-                  {badge}
+                  {t(badge)}
                 </span>
               </div>
 
@@ -188,7 +190,7 @@ export default function PromoTipPopup() {
               <button
                 type="button"
                 onClick={doClose}
-                aria-label="Zatvoriť"
+                aria-label={t("Zatvoriť")}
                 className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-black/[0.10] transition hover:bg-black/[0.18] active:scale-95"
               >
                 <svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="black" strokeWidth="2" strokeLinecap="round" strokeOpacity="0.55">
@@ -199,14 +201,14 @@ export default function PromoTipPopup() {
             </div>
 
             <h3 className="mt-5 text-[17px] font-extrabold leading-snug tracking-[-0.01em] text-black">
-              {title}
+              {t(title)}
             </h3>
           </div>
 
           {/* ── White body ── */}
           <div className="px-7 pt-6 pb-7">
             <p className="text-[14px] leading-[1.75] text-neutral-400">
-              {text}
+              {t(text)}
             </p>
 
             {/* actions */}
@@ -216,14 +218,14 @@ export default function PromoTipPopup() {
                 onClick={goToConfigurator}
                 className="rounded-2xl bg-[#FFAE00] px-5 py-3 text-[13px] font-extrabold text-black transition hover:opacity-90 active:scale-[0.98]"
               >
-                Vyskúšať konfigurátor
+                {t("Vyskúšať konfigurátor")}
               </button>
               <button
                 type="button"
                 onClick={doClose}
                 className="text-[13px] font-medium text-neutral-400 transition hover:text-neutral-700"
               >
-                Zavrieť
+                {t("Zavrieť")}
               </button>
             </div>
 

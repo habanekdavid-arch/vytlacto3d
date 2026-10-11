@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "@/lib/i18n/client";
+
 type ColorOption = {
   id: string;
   name: string;
@@ -29,6 +31,7 @@ export default function ColorPalette({
   // Zákazníkovi nezáleží na farbe — farby sú šedé a nedajú sa vybrať.
   disabled?: boolean;
 }) {
+  const t = useT();
   return (
     <div className="flex flex-wrap gap-2" aria-disabled={disabled || undefined}>
       {COLORS.map((c) => {
@@ -46,8 +49,8 @@ export default function ColorPalette({
               active ? "outline outline-2 outline-[#7C3AED]" : "",
               disabled ? "cursor-not-allowed opacity-40 grayscale" : "",
             ].join(" ")}
-            aria-label={c.name}
-            title={disabled ? `${c.name} — nezáleží vám na farbe` : c.name}
+            aria-label={t(c.name)}
+            title={disabled ? `${t(c.name)} — ${t("nezáleží vám na farbe")}` : t(c.name)}
           >
             <span className={`block h-full w-full rounded-xl ${c.swatchClass}`} />
           </button>

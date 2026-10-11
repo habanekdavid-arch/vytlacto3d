@@ -4,8 +4,10 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
+import { useT } from "@/lib/i18n/client";
 
 export default function RegisterPage() {
+  const t = useT();
   const router = useRouter();
   // Rýchla registrácia = len meno, e-mail, telefón a heslo. Adresu a firemné
   // údaje si zákazník doplní neskôr v účte (alebo pri prvej objednávke).
@@ -37,25 +39,25 @@ export default function RegisterPage() {
 
   function validate(data: typeof payload): Record<string, string> {
     const errs: Record<string, string> = {};
-    if (!data.name.trim()) errs.name = "Meno je povinné.";
-    if (!data.email.trim()) errs.email = "E-mail je povinný.";
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) errs.email = "Zadajte platný e-mail.";
-    if (!data.password) errs.password = "Heslo je povinné.";
-    else if (data.password.length < 8) errs.password = "Heslo musí mať aspoň 8 znakov.";
-    if (!data.phone.trim()) errs.phone = "Telefón je povinný.";
+    if (!data.name.trim()) errs.name = t("Meno je povinné.");
+    if (!data.email.trim()) errs.email = t("E-mail je povinný.");
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) errs.email = t("Zadajte platný e-mail.");
+    if (!data.password) errs.password = t("Heslo je povinné.");
+    else if (data.password.length < 8) errs.password = t("Heslo musí mať aspoň 8 znakov.");
+    if (!data.phone.trim()) errs.phone = t("Telefón je povinný.");
     if (quick) return errs;
     if (accountType === "COMPANY") {
-      if (!data.companyName.trim()) errs.companyName = "Názov firmy je povinný.";
-      if (!data.ico.trim()) errs.ico = "IČO je povinné.";
-      if (!data.contactPerson.trim()) errs.contactPerson = "Kontaktná osoba je povinná.";
-      if (vatPayer && !data.icDph.trim()) errs.icDph = "IČ DPH je povinné pre platcu DPH.";
-      if (!data.billingStreet.trim()) errs.billingStreet = "Ulica je povinná.";
-      if (!data.billingCity.trim()) errs.billingCity = "Mesto je povinné.";
-      if (!data.billingZip.trim()) errs.billingZip = "PSČ je povinné.";
+      if (!data.companyName.trim()) errs.companyName = t("Názov firmy je povinný.");
+      if (!data.ico.trim()) errs.ico = t("IČO je povinné.");
+      if (!data.contactPerson.trim()) errs.contactPerson = t("Kontaktná osoba je povinná.");
+      if (vatPayer && !data.icDph.trim()) errs.icDph = t("IČ DPH je povinné pre platcu DPH.");
+      if (!data.billingStreet.trim()) errs.billingStreet = t("Ulica je povinná.");
+      if (!data.billingCity.trim()) errs.billingCity = t("Mesto je povinné.");
+      if (!data.billingZip.trim()) errs.billingZip = t("PSČ je povinné.");
     }
-    if (!data.shippingStreet.trim()) errs.shippingStreet = "Ulica je povinná.";
-    if (!data.shippingCity.trim()) errs.shippingCity = "Mesto je povinné.";
-    if (!data.shippingZip.trim()) errs.shippingZip = "PSČ je povinné.";
+    if (!data.shippingStreet.trim()) errs.shippingStreet = t("Ulica je povinná.");
+    if (!data.shippingCity.trim()) errs.shippingCity = t("Mesto je povinné.");
+    if (!data.shippingZip.trim()) errs.shippingZip = t("PSČ je povinné.");
     return errs;
   }
 
@@ -104,12 +106,12 @@ export default function RegisterPage() {
       const data = await res.json();
       if (!res.ok) {
         if (data.error?.toLowerCase().includes("email")) {
-          setErrors({ email: "Účet s týmto e-mailom už existuje." });
+          setErrors({ email: t("Účet s týmto e-mailom už existuje.") });
           setTimeout(() => {
             document.querySelector("[data-error]")?.scrollIntoView({ behavior: "smooth", block: "center" });
           }, 50);
         } else {
-          setErrors({ _form: data.error || "Registrácia zlyhala." });
+          setErrors({ _form: data.error || t("Registrácia zlyhala.") });
         }
         return;
       }
@@ -127,7 +129,7 @@ export default function RegisterPage() {
       router.push(quick ? "/ucet?vitajte=1" : "/ucet");
       router.refresh();
     } catch {
-      setErrors({ _form: "Sieťová chyba. Skúste znova." });
+      setErrors({ _form: t("Sieťová chyba. Skúste znova.") });
     } finally {
       setLoading(false);
     }
@@ -136,12 +138,12 @@ export default function RegisterPage() {
   return (
     <main className="mx-auto max-w-3xl px-6 py-12">
       <div className="rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm">
-        <div className="text-sm font-semibold text-neutral-500">Registrácia</div>
-        <h1 className="mt-2 text-3xl font-extrabold tracking-tight">Vytvoriť účet</h1>
+        <div className="text-sm font-semibold text-neutral-500">{t("Registrácia")}</div>
+        <h1 className="mt-2 text-3xl font-extrabold tracking-tight">{t("Vytvoriť účet")}</h1>
         <p className="mt-2 text-sm text-neutral-600">
           {quick
-            ? "Stačia štyri údaje — zvyšok doplníte, keď ho budete potrebovať."
-            : "Vyberte, či sa registrujete ako súkromná osoba alebo firma."}
+            ? t("Stačia štyri údaje — zvyšok doplníte, keď ho budete potrebovať.")
+            : t("Vyberte, či sa registrujete ako súkromná osoba alebo firma.")}
         </p>
 
         <div className="mt-6 grid grid-cols-2 gap-1 rounded-2xl bg-neutral-100 p-1" role="tablist">
@@ -164,7 +166,7 @@ export default function RegisterPage() {
                 mode === value ? "bg-white text-neutral-900 shadow-sm" : "text-neutral-500 hover:text-neutral-800",
               ].join(" ")}
             >
-              {label}
+              {t(label)}
             </button>
           ))}
         </div>
@@ -173,7 +175,7 @@ export default function RegisterPage() {
           {/* Typ účtu */}
           {!quick && (
           <section>
-            <label className="text-sm font-semibold text-neutral-800">Typ účtu</label>
+            <label className="text-sm font-semibold text-neutral-800">{t("Typ účtu")}</label>
             <select
               value={accountType}
               onChange={(e) => {
@@ -184,20 +186,20 @@ export default function RegisterPage() {
               }}
               className="mt-2 w-full rounded-2xl border border-neutral-200 px-4 py-3 text-sm outline-none focus:border-[#FFAE00]"
             >
-              <option value="PERSON">Súkromná osoba</option>
-              <option value="COMPANY">Firma</option>
+              <option value="PERSON">{t("Súkromná osoba")}</option>
+              <option value="COMPANY">{t("Firma")}</option>
             </select>
           </section>
           )}
 
           {/* Osobné údaje */}
           <section>
-            <SectionTitle>Osobné údaje</SectionTitle>
+            <SectionTitle>{t("Osobné údaje")}</SectionTitle>
             <div className="mt-4 grid gap-4 md:grid-cols-2">
               <Input label="Meno a priezvisko" value={payload.name} onChange={v => set("name", v)} error={errors.name} required />
-              <Input label="E-mail" type="email" value={payload.email} onChange={v => set("email", v)} error={errors.email} required />
-              <Input label="Telefónne číslo" type="tel" value={payload.phone} onChange={v => set("phone", v)} error={errors.phone} required />
-              <Input label="Heslo" type="password" value={payload.password} onChange={v => set("password", v)} error={errors.password} required />
+              <Input label={t("E-mail")} type="email" value={payload.email} onChange={v => set("email", v)} error={errors.email} required />
+              <Input label={t("Telefónne číslo")} type="tel" value={payload.phone} onChange={v => set("phone", v)} error={errors.phone} required />
+              <Input label={t("Heslo")} type="password" value={payload.password} onChange={v => set("password", v)} error={errors.password} required />
             </div>
           </section>
 
@@ -205,12 +207,11 @@ export default function RegisterPage() {
             <div className="flex gap-3 rounded-2xl border border-[#FFAE00]/40 bg-[#FFAE00]/10 p-4 text-sm text-neutral-700">
               <span className="text-lg leading-none">💡</span>
               <div>
-                <div className="font-bold text-neutral-900">Adresu a fakturačné údaje doplníte neskôr</div>
+                <div className="font-bold text-neutral-900">{t("Adresu a fakturačné údaje doplníte neskôr")}</div>
                 <p className="mt-1 text-xs leading-relaxed">
-                  Po registrácii vás v účte upozorníme, čo ešte chýba na úplnú registráciu. Adresu môžete zadať
-                  aj priamo pri prvej objednávke. Registrujete firmu?{" "}
+                  {t("Po registrácii vás v účte upozorníme, čo ešte chýba na úplnú registráciu. Adresu môžete zadať aj priamo pri prvej objednávke. Registrujete firmu?")}{" "}
                   <button type="button" onClick={() => setMode("FULL")} className="font-semibold underline decoration-[#FFAE00] decoration-2 underline-offset-2">
-                    Prejdite na úplnú registráciu
+                    {t("Prejdite na úplnú registráciu")}
                   </button>
                   .
                 </p>
@@ -232,7 +233,7 @@ export default function RegisterPage() {
               <div>
                 <div className="text-sm font-bold text-neutral-900">Som platca DPH</div>
                 <div className="mt-1 text-xs leading-relaxed text-neutral-600">
-                  Ak ste platca DPH, pri firemnom účte vyplňte aj IČ DPH.
+                  {t("Ak ste platca DPH, pri firemnom účte vyplňte aj IČ DPH.")}
                 </div>
               </div>
             </label>
@@ -249,18 +250,18 @@ export default function RegisterPage() {
                   className="mt-1 h-4 w-4 accent-[#FFAE00]"
                 />
                 <div>
-                  <div className="text-sm font-bold text-neutral-900">Som živnostník / SZČO</div>
+                  <div className="text-sm font-bold text-neutral-900">{t("Som živnostník / SZČO")}</div>
                   <div className="mt-1 text-xs text-neutral-600">
-                    Vyplňte IČO a DIČ ak potrebujete faktúru na živnosť.
+                    {t("Vyplňte IČO a DIČ ak potrebujete faktúru na živnosť.")}
                   </div>
                 </div>
               </label>
               {isSzco && (
                 <div className="mt-4 grid gap-4 md:grid-cols-2">
-                  <Input label="IČO" value={payload.ico} onChange={v => set("ico", v)} />
-                  <Input label="DIČ" value={payload.dic} onChange={v => set("dic", v)} />
+                  <Input label={t("IČO")} value={payload.ico} onChange={v => set("ico", v)} />
+                  <Input label={t("DIČ")} value={payload.dic} onChange={v => set("dic", v)} />
                   {vatPayer && (
-                    <Input label="IČ DPH" value={payload.icDph} onChange={v => set("icDph", v)} />
+                    <Input label={t("IČ DPH")} value={payload.icDph} onChange={v => set("icDph", v)} />
                   )}
                 </div>
               )}
@@ -270,30 +271,30 @@ export default function RegisterPage() {
           {/* Firemné údaje — len pre firmy */}
           {accountType === "COMPANY" && (
             <section>
-              <SectionTitle>Firemné údaje</SectionTitle>
+              <SectionTitle>{t("Firemné údaje")}</SectionTitle>
               <div className="mt-4 grid gap-4 md:grid-cols-2">
-                <Input label="Názov spoločnosti" value={payload.companyName} onChange={v => set("companyName", v)} error={errors.companyName} required />
-                <Input label="Kontaktná osoba" value={payload.contactPerson} onChange={v => set("contactPerson", v)} error={errors.contactPerson} required />
-                <Input label="IČO" value={payload.ico} onChange={v => set("ico", v)} error={errors.ico} required />
-                <Input label="DIČ" value={payload.dic} onChange={v => set("dic", v)} />
-                {vatPayer && <Input label="IČ DPH" value={payload.icDph} onChange={v => set("icDph", v)} error={errors.icDph} required />}
+                <Input label={t("Názov spoločnosti")} value={payload.companyName} onChange={v => set("companyName", v)} error={errors.companyName} required />
+                <Input label={t("Kontaktná osoba")} value={payload.contactPerson} onChange={v => set("contactPerson", v)} error={errors.contactPerson} required />
+                <Input label={t("IČO")} value={payload.ico} onChange={v => set("ico", v)} error={errors.ico} required />
+                <Input label={t("DIČ")} value={payload.dic} onChange={v => set("dic", v)} />
+                {vatPayer && <Input label={t("IČ DPH")} value={payload.icDph} onChange={v => set("icDph", v)} error={errors.icDph} required />}
               </div>
             </section>
           )}
 
           {/* Fakturačná adresa — vždy viditeľná */}
           <section>
-            <SectionTitle>Fakturačná adresa</SectionTitle>
+            <SectionTitle>{t("Fakturačná adresa")}</SectionTitle>
             {accountType === "PERSON" && (
               <p className="mb-3 mt-1 text-xs text-neutral-500">
-                Adresa pre faktúry. Ak je rovnaká ako doručovacia, môžete ju nechať prázdnu — použije sa doručovacia adresa.
+                {t("Adresa pre faktúry. Ak je rovnaká ako doručovacia, môžete ju nechať prázdnu — použije sa doručovacia adresa.")}
               </p>
             )}
             <div className="mt-4 grid gap-4 md:grid-cols-2">
-              <Input label="Ulica a číslo" value={payload.billingStreet} onChange={v => set("billingStreet", v)} error={errors.billingStreet} required={accountType === "COMPANY"} />
-              <Input label="Mesto" value={payload.billingCity} onChange={v => set("billingCity", v)} error={errors.billingCity} required={accountType === "COMPANY"} />
-              <Input label="PSČ" value={payload.billingZip} onChange={v => set("billingZip", v)} error={errors.billingZip} required={accountType === "COMPANY"} />
-              <Input label="Krajina" value={payload.billingCountry} onChange={v => set("billingCountry", v)} />
+              <Input label={t("Ulica a číslo")} value={payload.billingStreet} onChange={v => set("billingStreet", v)} error={errors.billingStreet} required={accountType === "COMPANY"} />
+              <Input label={t("Mesto")} value={payload.billingCity} onChange={v => set("billingCity", v)} error={errors.billingCity} required={accountType === "COMPANY"} />
+              <Input label={t("PSČ")} value={payload.billingZip} onChange={v => set("billingZip", v)} error={errors.billingZip} required={accountType === "COMPANY"} />
+              <Input label={t("Krajina")} value={payload.billingCountry} onChange={v => set("billingCountry", v)} />
             </div>
           </section>
 
@@ -301,7 +302,7 @@ export default function RegisterPage() {
           <section>
             <div className="flex flex-wrap items-center justify-between gap-3">
               <SectionTitle>
-                {accountType === "COMPANY" ? "Dodacia adresa" : "Doručovacia adresa"}
+                {accountType === "COMPANY" ? t("Dodacia adresa") : t("Doručovacia adresa")}
               </SectionTitle>
               <button
                 type="button"
@@ -322,19 +323,19 @@ export default function RegisterPage() {
                     : "border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50",
                 ].join(" ")}
               >
-                {sameAddress ? "✓ Rovnaká ako fakturačná" : "Skopírovať z fakturačnej"}
+                {sameAddress ? t("✓ Rovnaká ako fakturačná") : t("Skopírovať z fakturačnej")}
               </button>
             </div>
 
             <div className="mt-4 grid gap-4 md:grid-cols-2">
               {accountType === "COMPANY" && (
                 <>
-                  <Input label="Názov / firma" value={payload.shippingName} onChange={v => set("shippingName", v)} />
-                  <Input label="Kontaktná osoba" value={payload.shippingContact} onChange={v => set("shippingContact", v)} />
+                  <Input label={t("Názov / firma")} value={payload.shippingName} onChange={v => set("shippingName", v)} />
+                  <Input label={t("Kontaktná osoba")} value={payload.shippingContact} onChange={v => set("shippingContact", v)} />
                 </>
               )}
               <Input
-                label="Ulica a číslo"
+                label={t("Ulica a číslo")}
                 value={payload.shippingStreet}
                 onChange={v => set("shippingStreet", v)}
                 disabled={sameAddress}
@@ -342,7 +343,7 @@ export default function RegisterPage() {
                 required
               />
               <Input
-                label="Mesto"
+                label={t("Mesto")}
                 value={payload.shippingCity}
                 onChange={v => set("shippingCity", v)}
                 disabled={sameAddress}
@@ -350,7 +351,7 @@ export default function RegisterPage() {
                 required
               />
               <Input
-                label="PSČ"
+                label={t("PSČ")}
                 value={payload.shippingZip}
                 onChange={v => set("shippingZip", v)}
                 disabled={sameAddress}
@@ -358,7 +359,7 @@ export default function RegisterPage() {
                 required
               />
               <Input
-                label="Krajina"
+                label={t("Krajina")}
                 value={payload.shippingCountry}
                 onChange={v => set("shippingCountry", v)}
                 disabled={sameAddress}
@@ -381,13 +382,13 @@ export default function RegisterPage() {
             disabled={loading}
             className="w-full rounded-2xl bg-[#FFAE00] px-5 py-3 text-sm font-bold text-black transition hover:opacity-90 disabled:opacity-50"
           >
-            {loading ? "Vytváram účet…" : "Registrovať sa"}
+            {loading ? t("Vytváram účet…") : t("Registrovať sa")}
           </button>
 
           <p className="text-center text-sm text-neutral-600">
-            Už máte účet?{" "}
+            {t("Už máte účet?")}{" "}
             <Link href="/prihlasenie" className="font-semibold underline">
-              Prihláste sa
+              {t("Prihláste sa")}
             </Link>
           </p>
         </form>

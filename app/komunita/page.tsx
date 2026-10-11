@@ -3,20 +3,25 @@ import { prisma } from "@/lib/prisma";
 import { ensureCommunityTables, getCommunityViewer, reactionCounts } from "@/lib/komunita-db";
 import { COMMUNITY_CATEGORIES, isCommunityCategory, publicName } from "@/lib/komunita";
 import PostCard from "@/components/komunita/PostCard";
+import { getT } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = {
-  title: "Komunita – vaše 3D výtlačky v praxi",
+export async function generateMetadata() {
+  const { t } = await getT();
+  return {
+  title: t("Komunita – vaše 3D výtlačky v praxi"),
   description:
-    "Príbehy zákazníkov VytlačTo3D: ako im 3D výtlačky pomohli, ako vyzerajú v praxi a čo by poradili ostatným. Pridajte aj ten svoj.",
-};
+    t("Príbehy zákazníkov VytlačTo3D: ako im 3D výtlačky pomohli, ako vyzerajú v praxi a čo by poradili ostatným. Pridajte aj ten svoj."),
+  };
+}
 
 export default async function KomunitaPage({
   searchParams,
 }: {
   searchParams: Promise<{ kategoria?: string; zoradit?: string }>;
 }) {
+  const { t, locale } = await getT();
   const { kategoria, zoradit } = await searchParams;
   const category = isCommunityCategory(kategoria) ? kategoria : null;
   const sort = zoradit === "oblubene" ? "oblubene" : "najnovsie";
@@ -69,16 +74,15 @@ export default async function KomunitaPage({
       <section className="mb-12 text-center">
         <div className="inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-4 py-2 text-sm font-semibold text-neutral-600 shadow-sm">
           <span className="h-2 w-2 rounded-full bg-[#FFAE00]" />
-          Komunita
+          {t("Komunita")}
         </div>
 
         <h1 className="mx-auto mt-5 max-w-4xl text-4xl font-extrabold tracking-tight text-neutral-900 md:text-6xl">
-          Vaše výtlačky v praxi
+          {t("Vaše výtlačky v praxi")}
         </h1>
 
         <p className="mx-auto mt-5 max-w-3xl text-base leading-relaxed text-neutral-600">
-          Ako vám 3D tlač pomohla? Ukážte, ako váš výtlačok vyzerá po mesiacoch používania, inšpirujte
-          ostatných a pýtajte sa na skúsenosti.
+          {t("Ako vám 3D tlač pomohla? Ukážte, ako váš výtlačok vyzerá po mesiacoch používania, inšpirujte ostatných a pýtajte sa na skúsenosti.")}
         </p>
 
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
@@ -86,45 +90,46 @@ export default async function KomunitaPage({
             href={addHref}
             className="rounded-2xl bg-[#FFAE00] px-6 py-3 text-sm font-bold text-black shadow-sm transition hover:brightness-95"
           >
-            + Pridať môj výtlačok
+            {t("+ Pridať môj výtlačok")}
           </Link>
           <Link
             href="/#kalkulator"
             className="rounded-2xl border border-neutral-200 bg-white px-6 py-3 text-sm font-bold text-neutral-900 shadow-sm transition hover:bg-neutral-50"
           >
-            Vytlačiť vlastný model
+            {t("Vytlačiť vlastný model")}
           </Link>
         </div>
 
         {stats._count._all > 0 && (
-          <p className="mt-4 text-sm text-neutral-500">{stats._count._all} príbehov od zákazníkov</p>
+          <p className="mt-4 text-sm text-neutral-500">{t("{n} príbehov od zákazníkov", { n: stats._count._all })}</p>
         )}
       </section>
 
       {myPending > 0 && (
         <div className="mb-8 rounded-2xl border border-[#FFAE00]/40 bg-[#FFAE00]/10 px-5 py-4 text-sm text-neutral-800">
-          Ďakujeme! {myPending === 1 ? "Tvoj príspevok čaká" : `${myPending} tvoje príspevky čakajú`} na schválenie —
-          zvyčajne to netrvá dlhšie ako deň.
+          {myPending === 1
+            ? t("Ďakujeme! Tvoj príspevok čaká na schválenie — zvyčajne to netrvá dlhšie ako deň.")
+            : t("Ďakujeme! {n} tvoje príspevky čakajú na schválenie — zvyčajne to netrvá dlhšie ako deň.", { n: myPending })}
         </div>
       )}
 
       <div className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex flex-wrap gap-2">
           <Link href={filterHref({ kategoria: null })} className={chip(!category)}>
-            Všetko
+            {t("Všetko")}
           </Link>
           {COMMUNITY_CATEGORIES.map((c) => (
             <Link key={c} href={filterHref({ kategoria: c })} className={chip(category === c)}>
-              {c}
+              {t(c)}
             </Link>
           ))}
         </div>
         <div className="flex gap-2 text-sm">
           <Link href={filterHref({ zoradit: "najnovsie" })} className={chip(sort === "najnovsie")}>
-            Najnovšie
+            {t("Najnovšie")}
           </Link>
           <Link href={filterHref({ zoradit: "oblubene" })} className={chip(sort === "oblubene")}>
-            Najobľúbenejšie
+            {t("Najobľúbenejšie")}
           </Link>
         </div>
       </div>
@@ -155,16 +160,16 @@ export default async function KomunitaPage({
         <div className="rounded-[28px] border border-dashed border-neutral-300 bg-neutral-50 px-6 py-16 text-center">
           <div className="text-4xl">🧩</div>
           <h2 className="mt-4 text-xl font-extrabold text-neutral-900">
-            {category ? "V tejto kategórii zatiaľ nič nie je" : "Buďte prví!"}
+            {category ? t("V tejto kategórii zatiaľ nič nie je") : t("Buďte prví!")}
           </h2>
           <p className="mx-auto mt-2 max-w-md text-sm text-neutral-600">
-            Máte od nás výtlačok, ktorý vám uľahčil život? Odfoťte ho a podeľte sa o svoj príbeh.
+            {t("Máte od nás výtlačok, ktorý vám uľahčil život? Odfoťte ho a podeľte sa o svoj príbeh.")}
           </p>
           <Link
             href={addHref}
             className="mt-6 inline-flex rounded-2xl bg-[#FFAE00] px-6 py-3 text-sm font-bold text-black shadow-sm transition hover:brightness-95"
           >
-            Pridať môj výtlačok
+            {t("Pridať môj výtlačok")}
           </Link>
         </div>
       )}

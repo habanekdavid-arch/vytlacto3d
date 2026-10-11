@@ -7,6 +7,7 @@ import { formatDateSK } from "@/lib/formatDate";
 import ResumeOrderButton from "@/components/ResumeOrderButton";
 
 import { colorLabel, materialLabel, qualityLabel } from "@/lib/print-options";
+import { getT } from "@/lib/i18n/server";
 export const dynamic = "force-dynamic";
 
 export default async function OrderDetailPage({
@@ -14,6 +15,7 @@ export default async function OrderDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const { t } = await getT();
   const session = await getSafeServerSession();
   const sessionUser = session?.user as
     | { id?: string; email?: string | null }
@@ -111,19 +113,19 @@ export default async function OrderDetailPage({
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <div className="text-sm font-semibold text-neutral-500">
-              Detail objednávky
+              {t("Detail objednávky")}
             </div>
             <h2 className="mt-2 text-2xl font-extrabold tracking-tight">
               {order.fileName}
             </h2>
             <div className="mt-2 text-sm text-neutral-600">
-              ID objednávky: <span className="font-mono">{order.id}</span>
+              {t("ID objednávky:")} <span className="font-mono">{order.id}</span>
             </div>
           </div>
 
           <div className="rounded-2xl border border-[#FFAE00]/30 bg-[#FFAE00]/10 px-4 py-3">
             <div className="text-xs font-semibold uppercase tracking-wide text-neutral-600">
-              Stav objednávky
+              {t("Stav objednávky")}
             </div>
             <div className="mt-2">
               <StatusBadge status={order.status} />
@@ -136,14 +138,14 @@ export default async function OrderDetailPage({
 
         <div className="mt-6 grid gap-4 md:grid-cols-4">
           <DetailCard
-            label="Dátum"
+            label={t("Dátum")}
             value={formatDateSK(order.createdAt)}
           />
           <DetailCard
-            label="Celkom zaplatené"
+            label={t("Celkom zaplatené")}
             value={total !== null ? formatPaidTotal(total) : "—"}
           />
-          <DetailCard label="Doprava" value={order.shippingMethod ?? "—"} />
+          <DetailCard label={t("Doprava")} value={order.shippingMethod ?? "—"} />
           <DetailCard
             label="Cena dopravy"
             value={shippingCostEur !== null ? formatPaidTotal(shippingCostEur) : "—"}
@@ -154,24 +156,23 @@ export default async function OrderDetailPage({
       {order.status === "AWAITING_TRANSFER" && (
         <section className="rounded-3xl border border-[#FFAE00]/40 bg-[#FFF8E7] p-6 shadow-sm">
           <div className="text-sm font-bold uppercase tracking-wide text-[#7a5800]">
-            Platobné údaje k úhrade prevodom
+            {t("Platobné údaje k úhrade prevodom")}
           </div>
           <p className="mt-2 text-sm text-[#7a5800]">
-            Uhraďte prosím sumu nižšie prevodom na náš účet. Výrobu spustíme
-            hneď po prijatí platby.
+            {t("Uhraďte prosím sumu nižšie prevodom na náš účet. Výrobu spustíme hneď po prijatí platby.")}
           </p>
           <div className="mt-4 grid gap-4 md:grid-cols-2">
-            <DetailCard label="Príjemca" value={COMPANY_INFO.name} />
+            <DetailCard label={t("Príjemca")} value={COMPANY_INFO.name} />
             <DetailCard label="IBAN" value={COMPANY_INFO.iban} />
             <DetailCard label="SWIFT/BIC" value={COMPANY_INFO.swift} />
-            <DetailCard label="Banka" value={COMPANY_INFO.bankName} />
+            <DetailCard label={t("Banka")} value={COMPANY_INFO.bankName} />
             <DetailCard
-              label="Suma na úhradu"
+              label={t("Suma na úhradu")}
               value={total !== null ? formatEur(total) : "—"}
               highlight
             />
             <DetailCard
-              label="Variabilný symbol"
+              label={t("Variabilný symbol")}
               value={order.variableSymbol ?? "—"}
               highlight
             />
@@ -182,7 +183,7 @@ export default async function OrderDetailPage({
       {/* Multi-model: show individual items */}
       {order.orderItems.length > 1 && (
         <section className="rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm">
-          <div className="text-sm font-semibold text-neutral-500">Modely v objednávke ({order.orderItems.length})</div>
+          <div className="text-sm font-semibold text-neutral-500">{t("Modely v objednávke")} ({order.orderItems.length})</div>
           <div className="mt-4 space-y-4">
             {order.orderItems.map((item, idx) => {
               const ic = (item.config ?? {}) as Record<string, any>;
@@ -197,9 +198,9 @@ export default async function OrderDetailPage({
                     )}
                   </div>
                   <div className="flex flex-wrap gap-2 text-xs text-neutral-600">
-                    {ic.material && <span className="rounded-full bg-neutral-200 px-2 py-0.5 font-semibold">{materialLabel(ic.material)}</span>}
-                    {ic.quality && <span className="rounded-full bg-neutral-200 px-2 py-0.5 font-semibold">{qualityLabel(ic.quality)}</span>}
-                    {ic.color && <span className="rounded-full bg-neutral-200 px-2 py-0.5 font-semibold">{colorLabel(ic.color)}</span>}
+                    {ic.material && <span className="rounded-full bg-neutral-200 px-2 py-0.5 font-semibold">{t(materialLabel(ic.material))}</span>}
+                    {ic.quality && <span className="rounded-full bg-neutral-200 px-2 py-0.5 font-semibold">{t(qualityLabel(ic.quality))}</span>}
+                    {ic.color && <span className="rounded-full bg-neutral-200 px-2 py-0.5 font-semibold">{t(colorLabel(ic.color))}</span>}
                     {ic.quantity && <span className="rounded-full bg-neutral-200 px-2 py-0.5 font-semibold">{ic.quantity} ks</span>}
                     {ic.scalePct && <span className="rounded-full bg-neutral-200 px-2 py-0.5 font-semibold">{ic.scalePct}%</span>}
                   </div>
@@ -211,19 +212,19 @@ export default async function OrderDetailPage({
       )}
 
       <section className="rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm">
-        <div className="text-sm font-semibold text-neutral-500">Konfigurácia</div>
+        <div className="text-sm font-semibold text-neutral-500">{t("Konfigurácia")}</div>
         <div className="mt-4 grid gap-4 md:grid-cols-2">
-          <DetailCard label="Materiál" value={materialLabel(config.material)} />
-          <DetailCard label="Kvalita" value={qualityLabel(config.quality)} />
-          <DetailCard label="Farba" value={colorLabel(config.color)} />
-          <DetailCard label="Počet kusov" value={String(config.quantity ?? "—")} />
-          <DetailCard label="Infill" value={`${String(config.infillPct ?? "—")}%`} />
-          <DetailCard label="Mierka" value={`${String(config.scalePct ?? "100")}%`} />
+          <DetailCard label={t("Materiál")} value={t(materialLabel(config.material))} />
+          <DetailCard label={t("Kvalita")} value={t(qualityLabel(config.quality))} />
+          <DetailCard label={t("Farba")} value={t(colorLabel(config.color))} />
+          <DetailCard label={t("Počet kusov")} value={String(config.quantity ?? "—")} />
+          <DetailCard label={t("Infill")} value={`${String(config.infillPct ?? "—")}%`} />
+          <DetailCard label={t("Mierka")} value={`${String(config.scalePct ?? "100")}%`} />
         </div>
       </section>
 
       <section className="rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm">
-        <div className="text-sm font-semibold text-neutral-500">Analýza modelu</div>
+        <div className="text-sm font-semibold text-neutral-500">{t("Analýza modelu")}</div>
         <div className="mt-4 grid gap-4 md:grid-cols-2">
           <DetailCard
             label="Rozmer X"
@@ -245,10 +246,10 @@ export default async function OrderDetailPage({
       </section>
 
       <section className="rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm">
-        <div className="text-sm font-semibold text-neutral-500">Cenový rozpis</div>
+        <div className="text-sm font-semibold text-neutral-500">{t("Cenový rozpis")}</div>
         <div className="mt-4 grid gap-4 md:grid-cols-2">
           <DetailCard
-            label="Základ bez DPH"
+            label={t("Základ bez DPH")}
             value={productionNet !== null ? formatEur(productionNet) : "—"}
           />
           <DetailCard
@@ -256,7 +257,7 @@ export default async function OrderDetailPage({
             value={productionVat !== null ? formatEur(productionVat) : "—"}
           />
           <DetailCard
-            label="Výroba s DPH"
+            label={t("Výroba s DPH")}
             value={productionGross !== null ? formatEur(productionGross) : "—"}
           />
           <DetailCard
@@ -272,36 +273,37 @@ export default async function OrderDetailPage({
       </section>
 
       <section className="rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm">
-        <div className="text-sm font-semibold text-neutral-500">Dodacie údaje</div>
+        <div className="text-sm font-semibold text-neutral-500">{t("Dodacie údaje")}</div>
         <div className="mt-4 grid gap-4 md:grid-cols-2">
-          <DetailCard label="Email zákazníka" value={order.customerEmail ?? sessionUser?.email ?? "—"} />
-          <DetailCard label="Meno" value={addr.name ?? "—"} />
-          <DetailCard label="Telefón" value={addr.phone ?? (order as any).phone ?? "—"} />
-          <DetailCard label="Ulica" value={addr.street ?? "—"} />
+          <DetailCard label={t("Email zákazníka")} value={order.customerEmail ?? sessionUser?.email ?? "—"} />
+          <DetailCard label={t("Meno")} value={addr.name ?? "—"} />
+          <DetailCard label={t("Telefón")} value={addr.phone ?? (order as any).phone ?? "—"} />
+          <DetailCard label={t("Ulica")} value={addr.street ?? "—"} />
           {addr.line2 && <DetailCard label="Doplnenie adresy" value={addr.line2} />}
-          <DetailCard label="Mesto" value={addr.city ?? "—"} />
-          <DetailCard label="PSČ" value={addr.zip ?? "—"} />
-          <DetailCard label="Krajina" value={addr.country ?? "—"} />
+          <DetailCard label={t("Mesto")} value={addr.city ?? "—"} />
+          <DetailCard label={t("PSČ")} value={addr.zip ?? "—"} />
+          <DetailCard label={t("Krajina")} value={addr.country ?? "—"} />
         </div>
       </section>
     </div>
   );
 }
 
-function StatusBadge({ status }: { status: string }) {
+async function StatusBadge({ status }: { status: string }) {
+  const { t } = await getT();
   const map: Record<string, { label: string; className: string }> = {
-    PENDING:            { label: "Čaká na platbu",  className: "bg-yellow-100 text-yellow-800" },
-    AWAITING_TRANSFER:  { label: "Čaká na prevod",  className: "bg-orange-100 text-orange-800" },
-    PAID:               { label: "Zaplatená",        className: "bg-green-100 text-green-800" },
+    PENDING:            { label: t("Čaká na platbu"),  className: "bg-yellow-100 text-yellow-800" },
+    AWAITING_TRANSFER:  { label: t("Čaká na prevod"),  className: "bg-orange-100 text-orange-800" },
+    PAID:               { label: t("Zaplatená"),        className: "bg-green-100 text-green-800" },
     IN_PRODUCTION:      { label: "V produkcii",      className: "bg-blue-100 text-blue-800" },
-    SHIPPED:            { label: "Odoslaná",         className: "bg-purple-100 text-purple-800" },
-    DELIVERED:          { label: "Doručená",         className: "bg-emerald-100 text-emerald-800" },
-    CANCELLED:          { label: "Zrušená",          className: "bg-red-100 text-red-800" },
+    SHIPPED:            { label: t("Odoslaná"),         className: "bg-purple-100 text-purple-800" },
+    DELIVERED:          { label: t("Doručená"),         className: "bg-emerald-100 text-emerald-800" },
+    CANCELLED:          { label: t("Zrušená"),          className: "bg-red-100 text-red-800" },
   };
   const s = map[status] ?? { label: status, className: "bg-neutral-100 text-neutral-700" };
   return (
     <span className={`inline-block rounded-full px-3 py-1 text-sm font-bold ${s.className}`}>
-      {s.label}
+      {t(s.label)}
     </span>
   );
 }

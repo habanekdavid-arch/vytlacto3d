@@ -4,10 +4,12 @@ import { formatPaidTotal, addVat } from "@/lib/vat";
 import { getSafeServerSession } from "@/lib/session";
 import { formatDateSK } from "@/lib/formatDate";
 import ResumeOrderButton from "@/components/ResumeOrderButton";
+import { getT } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
 
 export default async function OrdersPage() {
+  const { t } = await getT();
   const session = await getSafeServerSession();
   const sessionUser = session?.user as
     | { id?: string; email?: string | null }
@@ -51,21 +53,21 @@ export default async function OrdersPage() {
       <div className="flex items-center justify-between gap-4">
         <div>
           <div className="text-sm font-semibold text-neutral-500">
-            Moje objednávky
+            {t("Moje objednávky")}
           </div>
           <h2 className="mt-2 text-2xl font-extrabold tracking-tight">
-            História objednávok
+            {t("História objednávok")}
           </h2>
         </div>
 
         <div className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-semibold text-neutral-600">
-          {orders.length} objednávok
+          {orders.length} {t("objednávok")}
         </div>
       </div>
 
       {orders.length === 0 ? (
         <div className="mt-6 rounded-2xl border border-dashed border-neutral-300 bg-neutral-50 p-6 text-sm text-neutral-600">
-          Zatiaľ tu nevidíte žiadne objednávky.
+          {t("Zatiaľ tu nevidíte žiadne objednávky.")}
         </div>
       ) : (
         <div className="mt-6 space-y-4">
@@ -139,24 +141,25 @@ function InfoMini({
   );
 }
 
-function StatusBadgeMini({ status }: { status: string }) {
+async function StatusBadgeMini({ status }: { status: string }) {
+  const { t } = await getT();
   const map: Record<string, { label: string; className: string }> = {
-    PENDING:            { label: "Čaká na platbu",  className: "bg-yellow-100 text-yellow-800" },
-    AWAITING_TRANSFER:  { label: "Čaká na prevod",  className: "bg-orange-100 text-orange-800" },
-    PAID:               { label: "Zaplatená",        className: "bg-green-100 text-green-800" },
+    PENDING:            { label: t("Čaká na platbu"),  className: "bg-yellow-100 text-yellow-800" },
+    AWAITING_TRANSFER:  { label: t("Čaká na prevod"),  className: "bg-orange-100 text-orange-800" },
+    PAID:               { label: t("Zaplatená"),        className: "bg-green-100 text-green-800" },
     IN_PRODUCTION:      { label: "V produkcii",      className: "bg-blue-100 text-blue-800" },
-    SHIPPED:            { label: "Odoslaná",         className: "bg-purple-100 text-purple-800" },
-    DELIVERED:          { label: "Doručená",         className: "bg-emerald-100 text-emerald-800" },
-    CANCELLED:          { label: "Zrušená",          className: "bg-red-100 text-red-800" },
+    SHIPPED:            { label: t("Odoslaná"),         className: "bg-purple-100 text-purple-800" },
+    DELIVERED:          { label: t("Doručená"),         className: "bg-emerald-100 text-emerald-800" },
+    CANCELLED:          { label: t("Zrušená"),          className: "bg-red-100 text-red-800" },
   };
   const s = map[status] ?? { label: status, className: "bg-neutral-100 text-neutral-700" };
   return (
     <div className="rounded-2xl bg-neutral-50 p-3">
       <div className="text-xs font-semibold uppercase tracking-wide text-neutral-500 mb-1">
-        Stav
+        {t("Stav")}
       </div>
       <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-bold ${s.className}`}>
-        {s.label}
+        {t(s.label)}
       </span>
     </div>
   );

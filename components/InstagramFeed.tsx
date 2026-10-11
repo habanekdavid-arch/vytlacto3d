@@ -3,6 +3,8 @@
 import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { InstagramFeed as Feed, InstagramPost } from "@/lib/instagram";
+import { useLocale, useT } from "@/lib/i18n/client";
+import { LOCALE_INFO, type Locale } from "@/lib/i18n/config";
 
 const PROFILE_URL = "https://www.instagram.com/vytlacto3d/";
 const GRID_SIZE = 8;
@@ -34,18 +36,19 @@ function AlbumIcon() {
   );
 }
 
-function formatDate(iso: string) {
+function formatDate(iso: string, locale: Locale) {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
-  return d.toLocaleDateString("sk-SK", { day: "numeric", month: "long", year: "numeric" });
+  return d.toLocaleDateString(LOCALE_INFO[locale].intl, { day: "numeric", month: "long", year: "numeric" });
 }
 
-function formatCount(n: number) {
-  return n.toLocaleString("sk-SK");
+function formatCount(n: number, locale: Locale) {
+  return n.toLocaleString(LOCALE_INFO[locale].intl);
 }
 
 /** Obrázok z Instagram CDN; keď odkaz medzičasom expiruje, ukáže sa farebná náhrada. */
 function PostImage({ post, sizes, priority = false }: { post: InstagramPost; sizes: string; priority?: boolean }) {
+  const t = useT();
   const [failed, setFailed] = useState(false);
   if (failed) {
     return (
@@ -57,7 +60,7 @@ function PostImage({ post, sizes, priority = false }: { post: InstagramPost; siz
   return (
     <Image
       src={post.imageUrl}
-      alt={post.caption ? post.caption.slice(0, 120) : "Príspevok z Instagramu @vytlacto3d"}
+      alt={post.caption ? post.caption.slice(0, 120) : t("Príspevok z Instagramu @vytlacto3d")}
       fill
       sizes={sizes}
       priority={priority}
@@ -78,6 +81,8 @@ function PostPreview({
   onClose: () => void;
   onMove: (delta: number) => void;
 }) {
+  const t = useT();
+  const locale = useLocale();
   const post = feed.posts[index];
   const username = feed.profile?.username ?? "vytlacto3d";
   const avatar = feed.profile?.profilePictureUrl;
@@ -104,7 +109,7 @@ function PostPreview({
       onClick={onClose}
       role="dialog"
       aria-modal="true"
-      aria-label="Náhľad príspevku z Instagramu"
+      aria-label={t("Náhľad príspevku z Instagramu")}
     >
       {hasMany && (
         <button
@@ -114,7 +119,7 @@ function PostPreview({
             onMove(-1);
           }}
           className="absolute left-3 top-1/2 z-10 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/15 text-2xl text-white transition hover:bg-white/30 md:flex"
-          aria-label="Predchádzajúci príspevok"
+          aria-label={t("Predchádzajúci príspevok")}
         >
           ‹
         </button>
@@ -157,13 +162,13 @@ function PostPreview({
             </div>
             <div className="min-w-0 flex-1">
               <div className="truncate text-sm font-extrabold text-neutral-900">{username}</div>
-              {post.timestamp && <div className="text-xs text-neutral-500">{formatDate(post.timestamp)}</div>}
+              {post.timestamp && <div className="text-xs text-neutral-500">{formatDate(post.timestamp, locale)}</div>}
             </div>
             <button
               type="button"
               onClick={onClose}
               className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-neutral-100 text-neutral-600 transition hover:bg-neutral-200"
-              aria-label="Zavrieť"
+              aria-label={t("Zavrieť")}
             >
               ×
             </button>
@@ -173,7 +178,7 @@ function PostPreview({
             {post.caption ? (
               <p className="whitespace-pre-line break-words">{post.caption}</p>
             ) : (
-              <p className="text-neutral-400">Tento príspevok je bez popisu — obrázok hovorí za všetko. 😎</p>
+              <p className="text-neutral-400">{t("Tento príspevok je bez popisu — obrázok hovorí za všetko. 😎")}</p>
             )}
           </div>
 
@@ -184,7 +189,7 @@ function PostPreview({
               rel="noopener noreferrer"
               className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-neutral-900 px-4 py-3 text-sm font-bold text-white transition hover:bg-black"
             >
-              <InstagramIcon className="h-4 w-4" /> Otvoriť na Instagrame
+              <InstagramIcon className="h-4 w-4" /> {t("Otvoriť na Instagrame")}
             </a>
             {hasMany && (
               <div className="flex gap-2 md:hidden">
@@ -192,7 +197,7 @@ function PostPreview({
                   type="button"
                   onClick={() => onMove(-1)}
                   className="rounded-2xl border border-neutral-200 px-4 py-3 text-sm font-bold text-neutral-700"
-                  aria-label="Predchádzajúci príspevok"
+                  aria-label={t("Predchádzajúci príspevok")}
                 >
                   ‹
                 </button>
@@ -200,7 +205,7 @@ function PostPreview({
                   type="button"
                   onClick={() => onMove(1)}
                   className="rounded-2xl border border-neutral-200 px-4 py-3 text-sm font-bold text-neutral-700"
-                  aria-label="Ďalší príspevok"
+                  aria-label={t("Ďalší príspevok")}
                 >
                   ›
                 </button>
@@ -218,7 +223,7 @@ function PostPreview({
             onMove(1);
           }}
           className="absolute right-3 top-1/2 z-10 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/15 text-2xl text-white transition hover:bg-white/30 md:flex"
-          aria-label="Ďalší príspevok"
+          aria-label={t("Ďalší príspevok")}
         >
           ›
         </button>
@@ -228,6 +233,8 @@ function PostPreview({
 }
 
 export default function InstagramFeed() {
+  const t = useT();
+  const locale = useLocale();
   const sectionRef = useRef<HTMLElement>(null);
   const [feed, setFeed] = useState<Feed | null>(null);
   const [failed, setFailed] = useState(false);
@@ -289,27 +296,26 @@ export default function InstagramFeed() {
             <span className="text-[#c13584]">
               <InstagramIcon className="h-4 w-4" />
             </span>
-            @{feed?.profile?.username ?? "vytlacto3d"} na Instagrame
+            @{feed?.profile?.username ?? "vytlacto3d"} {t("na Instagrame")}
           </a>
 
           <h2 className="mt-6 text-4xl font-extrabold tracking-tight text-neutral-900 sm:text-5xl">
-            Čerstvo z tlačiarne{" "}
+            {t("Čerstvo z tlačiarne")}{" "}
             <span className="relative inline-block">
-              <span className="relative z-10">vrstva po vrstve</span>
+              <span className="relative z-10">{t("vrstva po vrstve")}</span>
               <span className="absolute inset-x-0 bottom-1 -z-0 h-3 -rotate-1 rounded bg-[#FFAE00]/70 sm:h-4" />
             </span>
           </h2>
 
           <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-neutral-600">
-            Prototypy, náhradné diely aj vecičky, ktoré jednoducho museli existovať. Nakuknite, čo
-            sme vytlačili naposledy — a ak vás niečo inšpiruje, nahrajte svoj model a ideme na to. 🖨️
+            {t("Prototypy, náhradné diely aj vecičky, ktoré jednoducho museli existovať. Nakuknite, čo sme vytlačili naposledy — a ak vás niečo inšpiruje, nahrajte svoj model a ideme na to.")} 🖨️
           </p>
 
           {feed?.profile && (feed.profile.followersCount !== null || feed.profile.mediaCount !== null) && (
             <div className="mt-5 flex items-center justify-center gap-3 text-sm text-neutral-500">
               {feed.profile.followersCount !== null && (
                 <span>
-                  <span className="font-extrabold text-neutral-900">{formatCount(feed.profile.followersCount)}</span> sledujúcich
+                  <span className="font-extrabold text-neutral-900">{formatCount(feed.profile.followersCount, locale)}</span> {t("sledujúcich")}
                 </span>
               )}
               {feed.profile.followersCount !== null && feed.profile.mediaCount !== null && (
@@ -317,7 +323,7 @@ export default function InstagramFeed() {
               )}
               {feed.profile.mediaCount !== null && (
                 <span>
-                  <span className="font-extrabold text-neutral-900">{formatCount(feed.profile.mediaCount)}</span> príspevkov
+                  <span className="font-extrabold text-neutral-900">{formatCount(feed.profile.mediaCount, locale)}</span> {t("príspevkov")}
                 </span>
               )}
             </div>
@@ -341,7 +347,7 @@ export default function InstagramFeed() {
                     className={`group relative aspect-square overflow-hidden rounded-2xl bg-neutral-100 text-left shadow-sm outline-none ring-[#FFAE00] transition duration-300 hover:-translate-y-1 hover:shadow-xl focus-visible:ring-4 ${
                       i >= 6 ? "hidden md:block" : ""
                     }`}
-                    aria-label={`Náhľad príspevku: ${post.caption ? post.caption.slice(0, 80) : "bez popisu"}`}
+                    aria-label={`${t("Náhľad príspevku:")} ${post.caption ? post.caption.slice(0, 80) : t("bez popisu")}`}
                   >
                     <div className="absolute inset-0 transition duration-500 group-hover:scale-105">
                       <PostImage post={post} sizes="(min-width: 768px) 25vw, 50vw" />
@@ -358,7 +364,7 @@ export default function InstagramFeed() {
                         <p className="line-clamp-3 text-xs leading-relaxed text-white/90">{post.caption}</p>
                       )}
                       <span className="mt-2 inline-flex items-center gap-1.5 text-xs font-bold text-[#FFAE00]">
-                        <InstagramIcon className="h-3.5 w-3.5" /> Pozrieť náhľad
+                        <InstagramIcon className="h-3.5 w-3.5" /> {t("Pozrieť náhľad")}
                       </span>
                     </div>
                   </button>
@@ -374,9 +380,9 @@ export default function InstagramFeed() {
             className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-[#FFAE00] via-[#ff5f6d] to-[#c13584] px-6 py-3.5 text-sm font-extrabold text-white shadow-lg shadow-[#c13584]/20 transition hover:-translate-y-0.5 hover:shadow-xl hover:shadow-[#c13584]/30"
           >
             <InstagramIcon className="h-5 w-5" />
-            Sledovať @{feed?.profile?.username ?? "vytlacto3d"}
+            {t("Sledovať")} @{feed?.profile?.username ?? "vytlacto3d"}
           </a>
-          <span className="text-xs text-neutral-400">Nové kúsky pribúdajú rýchlejšie, ako stihne vychladnúť tryska.</span>
+          <span className="text-xs text-neutral-400">{t("Nové kúsky pribúdajú rýchlejšie, ako stihne vychladnúť tryska.")}</span>
         </div>
       </div>
 

@@ -15,6 +15,7 @@ import {
 } from "@/lib/komunita";
 import { safeContactFileName } from "@/lib/contact-attachments";
 import { MATERIAL_OPTIONS } from "@/lib/print-options";
+import { useT } from "@/lib/i18n/client";
 
 type Photo = {
   id: string;
@@ -30,6 +31,7 @@ const inputClass =
   "w-full rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-[#FFAE00] focus:ring-4 focus:ring-[#FFAE00]/20";
 
 export default function NewPostForm({ orders }: { orders: OrderOption[] }) {
+  const t = useT();
   const router = useRouter();
   const [title, setTitle] = useState("");
   const [story, setStory] = useState("");
@@ -69,7 +71,7 @@ export default function NewPostForm({ orders }: { orders: OrderOption[] }) {
     const tooBig = files.filter((f) => f.size > COMMUNITY_MAX_IMAGE_MB * 1024 * 1024);
     const accepted = files.filter((f) => !tooBig.includes(f)).slice(0, Math.max(0, free));
     const problems: string[] = [];
-    if (tooBig.length) problems.push(`Fotka môže mať najviac ${COMMUNITY_MAX_IMAGE_MB} MB.`);
+    if (tooBig.length) problems.push(t("Fotka môže mať najviac {n} MB.", { n: COMMUNITY_MAX_IMAGE_MB }));
     if (files.length - tooBig.length > accepted.length) problems.push(`Najviac ${COMMUNITY_MAX_IMAGES} fotiek.`);
     if (problems.length) setNotice(problems.join(" "));
 
@@ -104,8 +106,8 @@ export default function NewPostForm({ orders }: { orders: OrderOption[] }) {
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    if (!ready.length) return setError("Pridaj aspoň jednu fotku.");
-    if (uploading) return setError("Počkaj, kým sa nahrajú všetky fotky.");
+    if (!ready.length) return setError(t("Pridaj aspoň jednu fotku."));
+    if (uploading) return setError(t("Počkaj, kým sa nahrajú všetky fotky."));
     setSending(true);
     try {
       const res = await fetch("/api/komunita/posts", {
@@ -121,11 +123,11 @@ export default function NewPostForm({ orders }: { orders: OrderOption[] }) {
         }),
       });
       const data = await res.json().catch(() => null);
-      if (!res.ok) throw new Error(data?.error ?? "Príspevok sa nepodarilo uložiť.");
+      if (!res.ok) throw new Error(data?.error ?? t("Príspevok sa nepodarilo uložiť."));
       router.push(`/komunita/${data.id}`);
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Príspevok sa nepodarilo uložiť.");
+      setError(err instanceof Error ? err.message : t("Príspevok sa nepodarilo uložiť."));
       setSending(false);
     }
   }
@@ -133,9 +135,9 @@ export default function NewPostForm({ orders }: { orders: OrderOption[] }) {
   return (
     <form onSubmit={submit} className="space-y-8">
       <div>
-        <label className="text-sm font-bold text-neutral-900">Fotky výtlačku *</label>
+        <label className="text-sm font-bold text-neutral-900">{t("Fotky výtlačku *")}</label>
         <p className="mt-1 text-sm text-neutral-500">
-          Ukáž, ako výtlačok vyzerá v praxi — namontovaný, používaný, v akcii. Prvá fotka bude titulná.
+          {t("Ukáž, ako výtlačok vyzerá v praxi — namontovaný, používaný, v akcii. Prvá fotka bude titulná.")}
         </p>
 
         <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -144,17 +146,17 @@ export default function NewPostForm({ orders }: { orders: OrderOption[] }) {
               <Image src={p.preview} alt="" fill unoptimized className="object-cover" />
               {idx === 0 && (
                 <span className="absolute left-2 top-2 rounded-full bg-[#FFAE00] px-2 py-0.5 text-[11px] font-bold text-black">
-                  Titulná
+                  {t("Titulná")}
                 </span>
               )}
               {p.status === "uploading" && (
                 <div className="absolute inset-x-0 bottom-0 bg-black/60 px-2 py-1 text-xs font-semibold text-white">
-                  Nahrávam… {p.progress} %
+                  {t("Nahrávam…")} {p.progress} %
                 </div>
               )}
               {p.status === "error" && (
                 <div className="absolute inset-0 flex items-center justify-center bg-red-600/70 p-2 text-center text-xs font-bold text-white">
-                  Nahrávanie zlyhalo
+                  {t("Nahrávanie zlyhalo")}
                 </div>
               )}
               <div className="absolute right-2 top-2 flex gap-1">
@@ -164,13 +166,13 @@ export default function NewPostForm({ orders }: { orders: OrderOption[] }) {
                     onClick={() => makeCover(p.id)}
                     className="rounded-full bg-white/90 px-2 py-1 text-[11px] font-bold text-neutral-800 shadow-sm"
                   >
-                    Titulná
+                    {t("Titulná")}
                   </button>
                 )}
                 <button
                   type="button"
                   onClick={() => removePhoto(p.id)}
-                  aria-label="Odstrániť fotku"
+                  aria-label={t("Odstrániť fotku")}
                   className="flex h-7 w-7 items-center justify-center rounded-full bg-white/90 text-sm font-bold text-neutral-800 shadow-sm"
                 >
                   ×
@@ -186,7 +188,7 @@ export default function NewPostForm({ orders }: { orders: OrderOption[] }) {
               className="flex aspect-square flex-col items-center justify-center gap-1 rounded-2xl border-2 border-dashed border-neutral-300 bg-neutral-50 p-3 text-center text-sm text-neutral-600 hover:border-[#FFAE00]"
             >
               <span className="text-2xl">📷</span>
-              <span className="font-semibold">Pridať fotky</span>
+              <span className="font-semibold">{t("Pridať fotky")}</span>
               <span className="text-xs text-neutral-400">
                 {photos.length}/{COMMUNITY_MAX_IMAGES}
               </span>
@@ -198,7 +200,7 @@ export default function NewPostForm({ orders }: { orders: OrderOption[] }) {
 
       <div>
         <label htmlFor="kp-title" className="text-sm font-bold text-neutral-900">
-          Názov *
+          {t("Názov *")}
         </label>
         <input
           id="kp-title"
@@ -206,7 +208,7 @@ export default function NewPostForm({ orders }: { orders: OrderOption[] }) {
           onChange={(e) => setTitle(e.target.value)}
           maxLength={COMMUNITY_TITLE_MAX}
           required
-          placeholder="Napr. Náhradný kryt na robotický vysávač"
+          placeholder={t("Napr. Náhradný kryt na robotický vysávač")}
           className={`mt-2 ${inputClass}`}
         />
       </div>
@@ -214,7 +216,7 @@ export default function NewPostForm({ orders }: { orders: OrderOption[] }) {
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label htmlFor="kp-category" className="text-sm font-bold text-neutral-900">
-            Kategória *
+            {t("Kategória *")}
           </label>
           <select
             id="kp-category"
@@ -223,23 +225,23 @@ export default function NewPostForm({ orders }: { orders: OrderOption[] }) {
             required
             className={`mt-2 ${inputClass}`}
           >
-            <option value="">Vyber…</option>
+            <option value="">{t("Vyber…")}</option>
             {COMMUNITY_CATEGORIES.map((c) => (
               <option key={c} value={c}>
-                {c}
+                {t(c)}
               </option>
             ))}
           </select>
         </div>
         <div>
           <label htmlFor="kp-material" className="text-sm font-bold text-neutral-900">
-            Materiál
+            {t("Materiál")}
           </label>
           <select id="kp-material" value={material} onChange={(e) => setMaterial(e.target.value)} className={`mt-2 ${inputClass}`}>
-            <option value="">Neviem / iný</option>
+            <option value="">{t("Neviem / iný")}</option>
             {MATERIAL_OPTIONS.map((m) => (
               <option key={m.value} value={m.value}>
-                {m.label}
+                {t(m.label)}
               </option>
             ))}
           </select>
@@ -249,13 +251,13 @@ export default function NewPostForm({ orders }: { orders: OrderOption[] }) {
       {orders.length > 0 && (
         <div>
           <label htmlFor="kp-order" className="text-sm font-bold text-neutral-900">
-            Z ktorej objednávky je výtlačok?
+            {t("Z ktorej objednávky je výtlačok?")}
           </label>
           <p className="mt-1 text-sm text-neutral-500">
-            Keď ju priradíš, pri príspevku sa zobrazí odznak „Overený zákazník“. Číslo objednávky sa verejne nezobrazí.
+            {t("Keď ju priradíš, pri príspevku sa zobrazí odznak „Overený zákazník“. Číslo objednávky sa verejne nezobrazí.")}
           </p>
           <select id="kp-order" value={orderId} onChange={(e) => setOrderId(e.target.value)} className={`mt-2 ${inputClass}`}>
-            <option value="">Nepriradiť</option>
+            <option value="">{t("Nepriradiť")}</option>
             {orders.map((o) => (
               <option key={o.id} value={o.id}>
                 {o.label}
@@ -267,10 +269,10 @@ export default function NewPostForm({ orders }: { orders: OrderOption[] }) {
 
       <div>
         <label htmlFor="kp-story" className="text-sm font-bold text-neutral-900">
-          Tvoj príbeh *
+          {t("Tvoj príbeh *")}
         </label>
         <p className="mt-1 text-sm text-neutral-500">
-          Aký problém výtlačok vyriešil? Ako sa osvedčil? Čo by si poradil ostatným?
+          {t("Aký problém výtlačok vyriešil? Ako sa osvedčil? Čo by si poradil ostatným?")}
         </p>
         <textarea
           id="kp-story"
@@ -291,14 +293,14 @@ export default function NewPostForm({ orders }: { orders: OrderOption[] }) {
 
       <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-xs text-neutral-500">
-          Príspevok pred zverejnením skontrolujeme. Verejne sa ukáže len tvoje krstné meno a začiatočné písmeno priezviska.
+          {t("Príspevok pred zverejnením skontrolujeme. Verejne sa ukáže len tvoje krstné meno a začiatočné písmeno priezviska.")}
         </p>
         <button
           type="submit"
           disabled={sending || uploading}
           className="shrink-0 rounded-2xl bg-[#FFAE00] px-6 py-3 text-sm font-bold text-black shadow-sm transition hover:brightness-95 disabled:opacity-50"
         >
-          {sending ? "Odosielam…" : uploading ? "Nahrávam fotky…" : "Odoslať príspevok"}
+          {sending ? "Odosielam…" : uploading ? t("Nahrávam fotky…") : t("Odoslať príspevok")}
         </button>
       </div>
     </form>

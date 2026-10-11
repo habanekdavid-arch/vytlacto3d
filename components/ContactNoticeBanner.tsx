@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useT } from "@/lib/i18n/client";
 
 const STORAGE_KEY = "vytlacto3d:contact-notice-dismissed";
 
 export default function ContactNoticeBanner() {
+  const t = useT();
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -46,20 +48,20 @@ export default function ContactNoticeBanner() {
       </span>
 
       <p className="flex-1 pt-1 text-sm leading-relaxed text-neutral-800">
-        Máte pri modeli akýkoľvek problém alebo špecifickú požiadavku?{" "}
+        {t("Máte pri modeli akýkoľvek problém alebo špecifickú požiadavku?")}{" "}
         <a
           href="#faq"
           className="font-semibold text-neutral-900 underline decoration-[#FFAE00] decoration-2 underline-offset-2 hover:text-black"
         >
-          Napíšte nám cez kontaktný formulár
+          {t("Napíšte nám cez kontaktný formulár")}
         </a>{" "}
-        — radi vám pomôžeme.
+        {t("— radi vám pomôžeme.")}
       </p>
 
       <button
         type="button"
         onClick={dismiss}
-        aria-label="Zavrieť upozornenie"
+        aria-label={t("Zavrieť upozornenie")}
         className="shrink-0 rounded-full p-1 text-neutral-500 transition hover:bg-black/5 hover:text-neutral-900"
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">

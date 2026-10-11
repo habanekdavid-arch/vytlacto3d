@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import { useT } from "@/lib/i18n/client";
 
 export default function RealizaciaGallery({
   images,
@@ -10,6 +11,7 @@ export default function RealizaciaGallery({
   images: string[];
   title: string;
 }) {
+  const t = useT();
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
   useEffect(() => {
@@ -39,7 +41,7 @@ export default function RealizaciaGallery({
             key={idx}
             type="button"
             onClick={() => setOpenIndex(idx)}
-            aria-label={`Zväčšiť fotku ${idx + 1}`}
+            aria-label={`${t("Zväčšiť fotku")} ${idx + 1}`}
             className="group relative aspect-square cursor-zoom-in overflow-hidden rounded-2xl border border-neutral-200"
           >
             <Image
@@ -60,7 +62,7 @@ export default function RealizaciaGallery({
           <button
             type="button"
             onClick={() => setOpenIndex(null)}
-            aria-label="Zavrieť"
+            aria-label={t("Zavrieť")}
             className="absolute right-4 top-4 flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
@@ -76,7 +78,7 @@ export default function RealizaciaGallery({
                   e.stopPropagation();
                   setOpenIndex((i) => (i === null ? i : (i - 1 + images.length) % images.length));
                 }}
-                aria-label="Predchádzajúca fotka"
+                aria-label={t("Predchádzajúca fotka")}
                 className="absolute left-2 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20 sm:left-4"
               >
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -89,7 +91,7 @@ export default function RealizaciaGallery({
                   e.stopPropagation();
                   setOpenIndex((i) => (i === null ? i : (i + 1) % images.length));
                 }}
-                aria-label="Ďalšia fotka"
+                aria-label={t("Ďalšia fotka")}
                 className="absolute right-2 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20 sm:right-4"
               >
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
