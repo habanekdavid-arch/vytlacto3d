@@ -1,6 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { COMMUNITY_REACTIONS, formatCommunityDate } from "@/lib/komunita";
+import { getT } from "@/lib/i18n/server";
+import { LOCALE_INFO } from "@/lib/i18n/config";
 
 export type CommunityPostCard = {
   id: string;
@@ -17,7 +19,8 @@ export type CommunityPostCard = {
   commentCount: number;
 };
 
-export default function PostCard({ post }: { post: CommunityPostCard }) {
+export default async function PostCard({ post }: { post: CommunityPostCard }) {
+  const { t, locale } = await getT();
   const totalReactions = Object.values(post.reactions).reduce((a, b) => a + b, 0);
   const topEmojis = COMMUNITY_REACTIONS.filter((r) => post.reactions[r.key])
     .sort((a, b) => (post.reactions[b.key] ?? 0) - (post.reactions[a.key] ?? 0))
@@ -38,7 +41,7 @@ export default function PostCard({ post }: { post: CommunityPostCard }) {
           className="object-cover transition duration-700 ease-out group-hover:scale-105"
         />
         <div className="absolute left-4 top-4 rounded-full bg-white/90 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide text-neutral-900 shadow-sm backdrop-blur">
-          {post.category}
+          {t(post.category)}
         </div>
         {post.photoCount > 1 && (
           <div className="absolute bottom-3 right-3 rounded-full bg-black/60 px-2.5 py-1 text-xs font-semibold text-white backdrop-blur">
@@ -61,7 +64,7 @@ export default function PostCard({ post }: { post: CommunityPostCard }) {
                 <span className="truncate">{post.author}</span>
                 {post.verified && <VerifiedBadge compact />}
               </div>
-              <div className="text-xs text-neutral-500">{formatCommunityDate(post.createdAt)}</div>
+              <div className="text-xs text-neutral-500">{formatCommunityDate(post.createdAt, LOCALE_INFO[locale].intl)}</div>
             </div>
           </div>
 
@@ -73,7 +76,7 @@ export default function PostCard({ post }: { post: CommunityPostCard }) {
                   {totalReactions}
                 </>
               ) : (
-                "Buď prvý, kto zareaguje"
+                t("Buď prvý, kto zareaguje")
               )}
             </span>
             <span>💬 {post.commentCount}</span>
@@ -84,16 +87,17 @@ export default function PostCard({ post }: { post: CommunityPostCard }) {
   );
 }
 
-export function VerifiedBadge({ compact = false }: { compact?: boolean }) {
+export async function VerifiedBadge({ compact = false }: { compact?: boolean }) {
+  const { t } = await getT();
   return (
     <span
-      title="Výtlačok si objednal(a) u nás"
+      title={t("Výtlačok si objednal(a) u nás")}
       className="inline-flex shrink-0 items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-700 ring-1 ring-emerald-200"
     >
       <svg viewBox="0 0 24 24" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
         <path d="M20 6 9 17l-5-5" />
       </svg>
-      {compact ? "Overený" : "Overený zákazník"}
+      {compact ? t("Overený") : t("Overený zákazník")}
     </span>
   );
 }

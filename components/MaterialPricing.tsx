@@ -1,6 +1,8 @@
 import { VAT_MULTIPLIER } from "@/lib/vat";
+import { useT } from "@/lib/i18n/client";
 
 export default function MaterialPricing() {
+  const t = useT();
   const materials = [
     {
       key: "PLA",
@@ -32,12 +34,11 @@ export default function MaterialPricing() {
     <section id="cennik" className="bg-white px-6 py-20">
       <div className="mx-auto max-w-6xl">
         <h2 className="text-center text-4xl font-extrabold tracking-tight sm:text-5xl">
-          Cenník materiálov
+          {t("Cenník materiálov")}
         </h2>
 
         <p className="mx-auto mt-4 max-w-3xl text-center text-neutral-600">
-          Transparentné ceny pre materiály v konfigurátore. Konečná cena závisí aj od času tlače,
-          kvality a pevnosti.
+          {t("Transparentné ceny pre materiály v konfigurátore. Konečná cena závisí aj od času tlače, kvality a pevnosti.")}
         </p>
 
         <div className="mt-12 overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm">
@@ -45,10 +46,10 @@ export default function MaterialPricing() {
             <table className="w-full min-w-[820px] text-left">
               <thead className="border-b border-neutral-200 bg-neutral-50">
                 <tr className="text-sm font-semibold text-neutral-600">
-                  <th className="px-6 py-4">Materiál</th>
-                  <th className="px-6 py-4">Cena/gram</th>
-                  <th className="px-6 py-4">Hustota</th>
-                  <th className="px-6 py-4">Aplikácie</th>
+                  <th className="px-6 py-4">{t("Materiál")}</th>
+                  <th className="px-6 py-4">{t("Cena/gram")}</th>
+                  <th className="px-6 py-4">{t("Hustota")}</th>
+                  <th className="px-6 py-4">{t("Aplikácie")}</th>
                 </tr>
               </thead>
 
@@ -77,7 +78,7 @@ export default function MaterialPricing() {
                     </td>
 
                     <td className="px-6 py-5 text-neutral-600">
-                      {m.use}
+                      {t(m.use)}
                     </td>
                   </tr>
                 ))}
@@ -88,11 +89,11 @@ export default function MaterialPricing() {
 
         <div className="mt-6 flex flex-col gap-1 text-sm text-neutral-500">
           <div>
-            Poznámka: Cena/gram vychádza z ceny rolky (1 kg) nastavenej v kalkulácii.
+            {t("Poznámka: Cena/gram vychádza z ceny rolky (1 kg) nastavenej v kalkulácii.")}
           </div>
 
           <div>
-            Všetky uvedené ceny sú vrátane DPH.
+            {t("Všetky uvedené ceny sú vrátane DPH.")}
           </div>
         </div>
       </div>

@@ -1,6 +1,8 @@
 import ContactForm from "@/components/ContactForm";
+import { getT } from "@/lib/i18n/server";
 
-export default function FaqPage() {
+export default async function FaqPage() {
+  const { t } = await getT();
   const items = [
     {
       q: "Čo je VytlačTo3D?",
@@ -49,16 +51,15 @@ export default function FaqPage() {
       <div className="mx-auto max-w-5xl">
         <div className="inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-3 py-1 text-sm text-neutral-600 shadow-sm">
           <span className="inline-block h-2 w-2 rounded-full bg-[#FFAE00]" />
-          FAQ
+          {t("FAQ")}
         </div>
 
         <h1 className="mt-4 text-4xl font-extrabold tracking-tight sm:text-5xl">
-          Často kladené otázky
+          {t("Často kladené otázky")}
         </h1>
 
         <p className="mt-4 max-w-3xl text-base leading-relaxed text-neutral-600">
-          Tu nájdeš odpovede na najčastejšie otázky o konfigurátore, objednávke,
-          platbe, doprave a procese 3D tlače.
+          {t("Tu nájdeš odpovede na najčastejšie otázky o konfigurátore, objednávke, platbe, doprave a procese 3D tlače.")}
         </p>
 
         <section className="mt-10 space-y-4">
@@ -74,10 +75,10 @@ export default function FaqPage() {
 
                 <div>
                   <h2 className="text-lg font-bold text-neutral-900">
-                    {item.q}
+                    {t(item.q)}
                   </h2>
                   <p className="mt-3 text-sm leading-relaxed text-neutral-600">
-                    {item.a}
+                    {t(item.a)}
                   </p>
                 </div>
               </div>

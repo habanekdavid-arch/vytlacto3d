@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import ColorPalette, { COLOR_LABELS } from "@/components/ColorPalette";
 import { formatEur, addVat, vatAmount } from "@/lib/vat";
 import { scaledGeometry } from "@/lib/pricing";
+import { useT } from "@/lib/i18n/client";
+import type { TFunction } from "@/lib/i18n/config";
 
 
 type Analysis = {
@@ -49,6 +51,7 @@ export default function Configurator({
   initialConfig?: ConfigState;
   onQuote: (q: Quote, config: ConfigState) => void;
 }) {
+  const t = useT();
   const [config, setConfig] = useState<ConfigState>(
     initialConfig ?? {
       material: "PLA",
@@ -147,26 +150,25 @@ export default function Configurator({
         <div>
           <div className="inline-flex items-center gap-2 rounded-full bg-[#FFAE00]/15 px-3 py-1 text-xs font-bold text-neutral-800">
             <span className="h-2 w-2 rounded-full bg-[#FFAE00]" />
-            Online výpočet ceny
+            {t("Online výpočet ceny")}
           </div>
 
           <h2 className="mt-3 text-2xl font-extrabold tracking-tight text-neutral-900">
-            Nastav parametre tlače
+            {t("Nastav parametre tlače")}
           </h2>
 
           <p className="mt-2 max-w-2xl text-sm leading-6 text-neutral-600">
-            Vyber materiál, kvalitu, veľkosť modelu, výplň, farbu a počet kusov.
-            Cena sa automaticky prepočíta vrátane DPH.
+            {t("Vyber materiál, kvalitu, veľkosť modelu, výplň, farbu a počet kusov. Cena sa automaticky prepočíta vrátane DPH.")}
           </p>
         </div>
 
         <div className="rounded-full border border-neutral-200 bg-neutral-50 px-4 py-2 text-xs font-semibold text-neutral-600">
-          {loading ? "počítam cenu…" : "cena aktuálna"}
+          {loading ? t("počítam cenu…") : t("cena aktuálna")}
         </div>
       </div>
 
       <div className="mt-6 grid gap-4 md:grid-cols-3">
-        <Field label="Materiál" hint="Výber materiálu pre konkrétne použitie.">
+        <Field label={t("Materiál")} hint={t("Výber materiálu pre konkrétne použitie.")}>
           <select
             className="w-full rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 outline-none transition focus:border-[#FFAE00]"
             value={config.material}
@@ -183,7 +185,7 @@ export default function Configurator({
           </select>
 
           <FlexibleCheckbox
-            label="Nezáleží mi na materiáli"
+            label={t("Nezáleží mi na materiáli")}
             checked={!!config.materialFlexible}
             onChange={(checked) =>
               setConfig((c) => ({ ...c, materialFlexible: checked }))
@@ -191,30 +193,30 @@ export default function Configurator({
           />
         </Field>
 
-        <Field label="Kvalita tlače" hint="Vyššia kvalita = krajší povrch.">
+        <Field label={t("Kvalita tlače")} hint={t("Vyššia kvalita = krajší povrch.")}>
           <div className="grid grid-cols-3 gap-2">
             <Seg
               active={config.quality === "DRAFT"}
               onClick={() => setConfig((c) => ({ ...c, quality: "DRAFT" }))}
             >
-              Rýchla
+              {t("Rýchla")}
             </Seg>
             <Seg
               active={config.quality === "STANDARD"}
               onClick={() => setConfig((c) => ({ ...c, quality: "STANDARD" }))}
             >
-              Štandard
+              {t("Štandard")}
             </Seg>
             <Seg
               active={config.quality === "FINE"}
               onClick={() => setConfig((c) => ({ ...c, quality: "FINE" }))}
             >
-              Detailná
+              {t("Detailná")}
             </Seg>
           </div>
         </Field>
 
-        <Field label="Počet kusov" hint="Pri väčšom množstve sa ráta zľava.">
+        <Field label={t("Počet kusov")} hint={t("Pri väčšom množstve sa ráta zľava.")}>
           <input
             className="w-full rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-[#FFAE00]"
             type="number"
@@ -234,7 +236,7 @@ export default function Configurator({
           />
         </Field>
 
-        <Field label="Veľkosť modelu" hint="100 % = pôvodná veľkosť modelu.">
+        <Field label={t("Veľkosť modelu")} hint={t("100 % = pôvodná veľkosť modelu.")}>
           <SliderBox
             value={config.scalePct}
             min={10}
@@ -247,7 +249,7 @@ export default function Configurator({
           />
         </Field>
 
-        <Field label="Výplň modelu" hint="Maximum je 50 %. Vyššia výplň = vyššia pevnosť.">
+        <Field label={t("Výplň modelu")} hint={t("Maximum je 50 %. Vyššia výplň = vyššia pevnosť.")}>
           <SliderBox
             value={config.infillPct}
             min={5}
@@ -260,7 +262,7 @@ export default function Configurator({
           />
         </Field>
 
-        <Field label="Farba" hint="Reálna dostupnosť závisí od skladových zásob.">
+        <Field label={t("Farba")} hint={t("Reálna dostupnosť závisí od skladových zásob.")}>
           <ColorPalette
             value={config.color}
             onChange={(id) => setConfig((c) => ({ ...c, color: id }))}
@@ -269,22 +271,22 @@ export default function Configurator({
 
           {config.colorFlexible ? (
             <div className="mt-3 rounded-2xl bg-neutral-50 px-4 py-3 text-xs text-neutral-600">
-              Farbu vyberieme podľa aktuálnej dostupnosti.{" "}
+              {t("Farbu vyberieme podľa aktuálnej dostupnosti.")}{" "}
               <span className="font-bold text-neutral-900">
-                Farba modelu v 3D náhľade je len ilustračná.
+                {t("Farba modelu v 3D náhľade je len ilustračná.")}
               </span>
             </div>
           ) : (
             <div className="mt-3 rounded-2xl bg-neutral-50 px-4 py-3 text-xs text-neutral-600">
-              Vybraná farba:{" "}
+              {t("Vybraná farba:")}{" "}
               <span className="font-bold text-neutral-900">
-                {COLOR_LABELS[config.color] ?? config.color}
+                {t(COLOR_LABELS[config.color] ?? config.color)}
               </span>
             </div>
           )}
 
           <FlexibleCheckbox
-            label="Nezáleží mi na farbe"
+            label={t("Nezáleží mi na farbe")}
             checked={!!config.colorFlexible}
             onChange={(checked) =>
               setConfig((c) => ({ ...c, colorFlexible: checked }))
@@ -298,17 +300,17 @@ export default function Configurator({
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <div className="text-sm font-semibold text-neutral-500">
-              Cena výroby s DPH
+              {t("Cena výroby s DPH")}
             </div>
             <div className="mt-1 text-4xl font-extrabold tracking-tight text-neutral-900">
               {quote ? formatEur(addVat(quote.total)) : "—"}
             </div>
             <div className="mt-1 text-xs text-neutral-400">
-              Všetky ceny sú uvedené s DPH 23&nbsp;%
+              {t("Všetky ceny sú uvedené s DPH 23 %")}
             </div>
           </div>
           <div className="rounded-2xl bg-[#FFAE00] px-4 py-3 text-sm font-extrabold text-black">
-            {loading ? "Prepočítavam…" : "Aktuálna cena"}
+            {loading ? t("Prepočítavam…") : t("Aktuálna cena")}
           </div>
         </div>
 
@@ -317,69 +319,69 @@ export default function Configurator({
             {/* Rozpis DPH */}
             <div className="mt-5 rounded-[20px] bg-neutral-50 border border-neutral-100 p-4">
               <div className="text-xs font-bold uppercase tracking-wide text-neutral-400 mb-3">
-                Rozpis ceny
+                {t("Rozpis ceny")}
               </div>
               <div className="space-y-2">
                 {quote.flexibleDiscountEur > 0 && (
                   <>
                     <PriceLine
-                      label="Zľava za flexibilitu materiálu/farby"
+                      label={t("Zľava za flexibilitu materiálu/farby")}
                       value={`−${formatEur(addVat(quote.flexibleDiscountEur))}`}
                     />
                     <div className="my-1 border-t border-neutral-200" />
                   </>
                 )}
-                <PriceLine label="Základ bez DPH" value={formatEur(quote.total)} />
-                <PriceLine label="DPH 23 %" value={formatEur(vatAmount(quote.total))} />
+                <PriceLine label={t("Základ bez DPH")} value={formatEur(quote.total)} />
+                <PriceLine label={t("DPH 23 %")} value={formatEur(vatAmount(quote.total))} />
                 <div className="my-1 border-t border-neutral-200" />
-                <PriceLine label="Cena s DPH" value={formatEur(addVat(quote.total))} bold />
+                <PriceLine label={t("Cena s DPH")} value={formatEur(addVat(quote.total))} bold />
               </div>
               <a
                 href="/blog/co-ovplyvnuje-cenu-3d-tlace-manipulacny-poplatok"
                 target="_blank"
                 className="mt-3 inline-block text-xs font-semibold text-neutral-500 underline decoration-[#FFAE00] decoration-2 underline-offset-4 hover:text-neutral-900"
               >
-                Z čoho sa skladá cena?
+                {t("Z čoho sa skladá cena?")}
               </a>
             </div>
 
             {/* Technické detaily */}
             <div className="mt-3 rounded-[20px] bg-neutral-50 border border-neutral-100 p-4">
               <div className="text-xs font-bold uppercase tracking-wide text-neutral-400 mb-3">
-                Technické detaily
+                {t("Technické detaily")}
               </div>
               <div className="grid gap-2 sm:grid-cols-2">
                 <TechLine
-                  label="Cena za 1 model"
+                  label={t("Cena za 1 model")}
                   value={formatEur(addVat(quote.subtotalPerPart))}
                 />
                 <TechLine
-                  label="Hmotnosť / ks"
+                  label={t("Hmotnosť / ks")}
                   value={formatWeight(quote.gramsPerPart)}
                 />
                 <TechLine
-                  label="Hmotnosť celkom"
+                  label={t("Hmotnosť celkom")}
                   value={formatWeight(quote.gramsPerPart * config.quantity)}
                 />
                 <TechLine
-                  label="Čas tlače / ks"
-                  value={formatPrintTime(quote.printTimeMinPerPart)}
+                  label={t("Čas tlače / ks")}
+                  value={formatPrintTime(quote.printTimeMinPerPart, t)}
                 />
                 <TechLine
-                  label="Čas tlače celkom"
-                  value={formatPrintTime(quote.printTimeMinPerPart * config.quantity)}
+                  label={t("Čas tlače celkom")}
+                  value={formatPrintTime(quote.printTimeMinPerPart * config.quantity, t)}
                 />
-                <TechLine label="Mierka" value={`${config.scalePct} %`} />
+                <TechLine label={t("Mierka")} value={`${config.scalePct} %`} />
                 <TechLine
-                  label="Množstevná zľava"
-                  value={quote.quantityDiscountPct > 0 ? `−${quote.quantityDiscountPct} %` : "bez zľavy"}
+                  label={t("Množstevná zľava")}
+                  value={quote.quantityDiscountPct > 0 ? `−${quote.quantityDiscountPct} %` : t("bez zľavy")}
                 />
               </div>
             </div>
           </>
         ) : (
           <div className="mt-5 text-sm text-neutral-400">
-            Nepodarilo sa vypočítať cenu.
+            {t("Nepodarilo sa vypočítať cenu.")}
           </div>
         )}
       </div>
@@ -547,15 +549,15 @@ function formatWeight(grams: number): string {
   return `${Math.round(grams)} g`;
 }
 
-function formatPrintTime(minutes: number): string {
+function formatPrintTime(minutes: number, t: TFunction): string {
   const totalMin = Math.round(minutes);
   if (totalMin < 60) return `${totalMin} min`;
   const days = Math.floor(totalMin / (60 * 24));
   const hours = Math.floor((totalMin % (60 * 24)) / 60);
   const mins = totalMin % 60;
   const parts: string[] = [];
-  if (days > 0) parts.push(`${days} d`);
-  if (hours > 0) parts.push(`${hours} hod`);
+  if (days > 0) parts.push(`${days} ${t("d")}`);
+  if (hours > 0) parts.push(`${hours} ${t("hod")}`);
   if (mins > 0 && days === 0) parts.push(`${mins} min`);
   return parts.join(" ");
 }

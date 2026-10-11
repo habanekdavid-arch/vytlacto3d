@@ -2,6 +2,7 @@ import Image from "next/image";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { syncRepoBlog } from "@/lib/blog-sync";
+import { getT } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
 
@@ -19,7 +20,8 @@ export async function generateMetadata({
   const { slug } = await params;
   const post = await prisma.blogPost.findUnique({ where: { slug } });
 
-  if (!post) return { title: "Článok nenájdený" };
+  const { t } = await getT();
+  if (!post) return { title: t("Článok nenájdený") };
 
   return {
     title: `${post.title} | VytlačTo3D`,

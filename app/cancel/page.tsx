@@ -1,12 +1,14 @@
 import { Suspense } from "react";
 import Link from "next/link";
+import { getT } from "@/lib/i18n/server";
 
-function CancelContent({
+async function CancelContent({
   searchParams,
 }: {
   searchParams?: { orderId?: string };
 }) {
   const orderId = searchParams?.orderId;
+  const { t } = await getT();
 
   return (
     <main className="min-h-screen bg-white px-6 py-16 text-neutral-900">
@@ -36,21 +38,20 @@ function CancelContent({
         </div>
 
         <h1 className="mt-6 text-3xl font-extrabold tracking-tight">
-          Platba bola zrušená
+          {t("Platba bola zrušená")}
         </h1>
 
         <p className="mt-4 text-base leading-relaxed text-neutral-600">
-          Objednávka nebola dokončená. Môžete sa vrátiť späť do konfigurátora,
-          upraviť parametre a skúsiť platbu znova.
+          {t("Objednávka nebola dokončená. Môžete sa vrátiť späť do konfigurátora, upraviť parametre a skúsiť platbu znova.")}
         </p>
 
         <p className="mt-3 text-sm leading-relaxed text-neutral-500">
-          Ak ste platbu prerušili omylom, stačí sa vrátiť späť a pokračovať v objednávke.
+          {t("Ak ste platbu prerušili omylom, stačí sa vrátiť späť a pokračovať v objednávke.")}
         </p>
 
         {orderId ? (
           <div className="mt-6 rounded-2xl border border-neutral-200 bg-neutral-50 p-4 text-sm">
-            <div className="text-neutral-500">ID rozpracovanej objednávky</div>
+            <div className="text-neutral-500">{t("ID rozpracovanej objednávky")}</div>
             <div className="mt-1 break-all font-mono text-neutral-900">
               {orderId}
             </div>
@@ -62,14 +63,14 @@ function CancelContent({
             href="/#kalkulator"
             className="rounded-2xl bg-[#FFAE00] px-5 py-3 text-sm font-semibold text-black shadow-sm hover:opacity-90"
           >
-            Späť do konfigurátora
+            {t("Späť do konfigurátora")}
           </Link>
 
           <Link
             href="/"
             className="rounded-2xl border border-neutral-200 bg-white px-5 py-3 text-sm font-semibold text-neutral-900 hover:bg-neutral-50"
           >
-            Prejsť na hlavnú stránku
+            {t("Prejsť na hlavnú stránku")}
           </Link>
         </div>
       </div>

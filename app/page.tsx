@@ -18,6 +18,7 @@ import { SHIPPING_RATES } from "@/lib/shipping";
 import { useCartUi } from "@/lib/cart-ui-context";
 import { CART_STORAGE_KEY } from "@/lib/cart-storage";
 import ContactNoticeBanner from "@/components/ContactNoticeBanner";
+import { useT } from "@/lib/i18n/client";
 
 type Uploaded = {
   fileKey: string;
@@ -71,6 +72,7 @@ type StoredCart = {
 
 export default function Home() {
   const { setCartCount, isCartOpen: cartOpen, openCart, closeCart } = useCartUi();
+  const t = useT();
   const uploadBoxRef = useRef<UploadBoxHandle>(null);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [activeItemId, setActiveItemId] = useState<string | null>(null);
@@ -159,7 +161,7 @@ export default function Home() {
   function openPacketaWidget() {
     const w = window as any;
     if (!w.Packeta?.Widget?.pick) {
-      alert("Widget sa ešte načítava, skúste o chvíľu.");
+      alert(t("Widget sa ešte načítava, skúste o chvíľu."));
       return;
     }
     w.Packeta.Widget.pick(
@@ -268,7 +270,7 @@ export default function Home() {
       });
       let data: any = null;
       try { data = await res.json(); } catch { data = { error: "Parse error" }; }
-      if (!res.ok) { alert(data.error || "Chyba pri vytváraní objednávky"); return; }
+      if (!res.ok) { alert(data.error || t("Chyba pri vytváraní objednávky")); return; }
       try { window.localStorage.removeItem(CART_STORAGE_KEY); } catch {}
       window.location.href = data.redirectUrl;
     } finally {
@@ -334,7 +336,7 @@ export default function Home() {
                   <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
                   <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
                 </svg>
-                <span className="text-base font-extrabold text-neutral-900">Košík</span>
+                <span className="text-base font-extrabold text-neutral-900">{t("Košík")}</span>
               </div>
               <button
                 type="button"
@@ -365,7 +367,7 @@ export default function Home() {
 
                     {/* Delivery */}
                     <div>
-                      <div className="mb-3 text-sm font-extrabold text-neutral-800">Spôsob doručenia</div>
+                      <div className="mb-3 text-sm font-extrabold text-neutral-800">{t("Spôsob doručenia")}</div>
                       <div className="grid gap-2 grid-cols-2">
                         <button
                           type="button"
@@ -386,7 +388,7 @@ export default function Home() {
                               </div>
                             )}
                           </div>
-                          <div className="text-xs font-bold text-neutral-900">Packeta</div>
+                          <div className="text-xs font-bold text-neutral-900">{t("Packeta")}</div>
                           <div className="text-xs font-extrabold text-neutral-900">{formatEur(SHIPPING_RATES.PACKETA)}</div>
                         </button>
 
@@ -411,7 +413,7 @@ export default function Home() {
                               </div>
                             )}
                           </div>
-                          <div className="text-xs font-bold text-neutral-900">Kuriér</div>
+                          <div className="text-xs font-bold text-neutral-900">{t("Kuriér")}</div>
                           <div className="text-xs font-extrabold text-neutral-900">{formatEur(SHIPPING_RATES.COURIER)}</div>
                         </button>
                       </div>
@@ -428,7 +430,7 @@ export default function Home() {
                                 <div className="truncate text-[11px] text-neutral-600">{packetaPoint.city}</div>
                               </div>
                               <button type="button" onClick={openPacketaWidget} className="shrink-0 rounded-lg border border-neutral-200 bg-white px-2 py-1 text-[11px] font-semibold text-neutral-600 hover:bg-neutral-50">
-                                Zmeniť
+                                {t("Zmeniť")}
                               </button>
                             </div>
                           ) : (
@@ -436,7 +438,7 @@ export default function Home() {
                               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                 <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
                               </svg>
-                              Vybrať výdajné miesto →
+                              {t("Vybrať výdajné miesto →")}
                             </button>
                           )}
                         </div>
@@ -447,9 +449,9 @@ export default function Home() {
                     {sessionStatus === "authenticated" && (
                       <div>
                         <div className="mb-2 flex items-center justify-between">
-                          <div className="text-sm font-extrabold text-neutral-800">Kontaktné údaje</div>
+                          <div className="text-sm font-extrabold text-neutral-800">{t("Kontaktné údaje")}</div>
                           <button type="button" onClick={() => setEditingContact((v) => !v)} className="text-xs font-semibold text-[#FFAE00] hover:text-[#b07a00]">
-                            {editingContact ? "Zatvoriť" : "Upraviť"}
+                            {editingContact ? t("Zatvoriť") : t("Upraviť")}
                           </button>
                         </div>
                         {!editingContact ? (
@@ -462,36 +464,36 @@ export default function Home() {
                                   <div className="text-neutral-600">{contactForm.shippingStreet}, {contactForm.shippingCity}</div>
                                 )}
                                 {deliveryMethod === "courier" && !contactForm.shippingStreet && (
-                                  <div className="font-medium text-orange-600">Dodacia adresa chýba — kliknite Upraviť</div>
+                                  <div className="font-medium text-orange-600">{t("Dodacia adresa chýba — kliknite Upraviť")}</div>
                                 )}
                               </div>
                             ) : (
                               <p className="text-xs text-neutral-400">
-                                Profil sa načítava… alebo{" "}
-                                <button type="button" onClick={() => setEditingContact(true)} className="text-[#FFAE00] underline">Upraviť</button>
+                                {t("Profil sa načítava… alebo")}{" "}
+                                <button type="button" onClick={() => setEditingContact(true)} className="text-[#FFAE00] underline">{t("Upraviť")}</button>
                               </p>
                             )}
                           </div>
                         ) : (
                           <div className="space-y-3 rounded-2xl border border-neutral-200 bg-neutral-50 p-3">
                             <div className="grid gap-2 grid-cols-2">
-                              <CField label="Meno" value={contactForm.name} onChange={(v) => setContactForm((f) => ({ ...f, name: v }))} />
-                              <CField label="Telefón" value={contactForm.phone} onChange={(v) => setContactForm((f) => ({ ...f, phone: v }))} />
+                              <CField label={t("Meno")} value={contactForm.name} onChange={(v) => setContactForm((f) => ({ ...f, name: v }))} />
+                              <CField label={t("Telefón")} value={contactForm.phone} onChange={(v) => setContactForm((f) => ({ ...f, phone: v }))} />
                             </div>
                             {deliveryMethod === "courier" && (
                               <>
                                 <div className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">Dodacia adresa</div>
                                 <div className="grid gap-2 grid-cols-2">
-                                  <CField label="Meno na balíku" value={contactForm.shippingName} onChange={(v) => setContactForm((f) => ({ ...f, shippingName: v }))} />
-                                  <CField label="Ulica" value={contactForm.shippingStreet} onChange={(v) => setContactForm((f) => ({ ...f, shippingStreet: v }))} />
-                                  <CField label="Mesto" value={contactForm.shippingCity} onChange={(v) => setContactForm((f) => ({ ...f, shippingCity: v }))} />
-                                  <CField label="PSČ" value={contactForm.shippingZip} onChange={(v) => setContactForm((f) => ({ ...f, shippingZip: v }))} />
+                                  <CField label={t("Meno na balíku")} value={contactForm.shippingName} onChange={(v) => setContactForm((f) => ({ ...f, shippingName: v }))} />
+                                  <CField label={t("Ulica")} value={contactForm.shippingStreet} onChange={(v) => setContactForm((f) => ({ ...f, shippingStreet: v }))} />
+                                  <CField label={t("Mesto")} value={contactForm.shippingCity} onChange={(v) => setContactForm((f) => ({ ...f, shippingCity: v }))} />
+                                  <CField label={t("PSČ")} value={contactForm.shippingZip} onChange={(v) => setContactForm((f) => ({ ...f, shippingZip: v }))} />
                                 </div>
                               </>
                             )}
                             <p className="text-[10px] text-neutral-400">
-                              Firemné údaje a fakturačnú adresu upravíte v{" "}
-                              <a href="/ucet" className="text-[#FFAE00] underline">nastaveniach účtu</a>.
+                              {t("Firemné údaje a fakturačnú adresu upravíte v")}{" "}
+                              <a href="/ucet" className="text-[#FFAE00] underline">{t("nastaveniach účtu")}</a>.
                             </p>
                           </div>
                         )}
@@ -500,7 +502,7 @@ export default function Home() {
 
                     {/* Payment method */}
                     <div>
-                      <div className="mb-3 text-sm font-extrabold text-neutral-800">Spôsob platby</div>
+                      <div className="mb-3 text-sm font-extrabold text-neutral-800">{t("Spôsob platby")}</div>
                       <div className="grid gap-2 grid-cols-2">
                         <button
                           type="button"
@@ -522,7 +524,7 @@ export default function Home() {
                               </div>
                             )}
                           </div>
-                          <div className="text-xs font-bold text-neutral-900">Platba kartou</div>
+                          <div className="text-xs font-bold text-neutral-900">{t("Platba kartou")}</div>
                           <div className="text-[11px] text-neutral-500">Stripe</div>
                         </button>
 
@@ -549,18 +551,18 @@ export default function Home() {
                               </div>
                             )}
                           </div>
-                          <div className="text-xs font-bold text-neutral-900">Prevod</div>
+                          <div className="text-xs font-bold text-neutral-900">{t("Prevod")}</div>
                           <div className="text-[11px] text-neutral-500">
                             IBAN SK{" "}
                             {sessionStatus !== "authenticated" && (
-                              <span className="rounded-full bg-orange-100 px-1 py-0.5 text-[10px] font-bold text-orange-700">účet</span>
+                              <span className="rounded-full bg-orange-100 px-1 py-0.5 text-[10px] font-bold text-orange-700">{t("účet")}</span>
                             )}
                           </div>
                         </button>
                       </div>
                       {paymentMethod === "TRANSFER" && (
                         <div className="mt-2 rounded-2xl border border-orange-200 bg-orange-50 px-3 py-2 text-xs text-orange-800">
-                          Platobné údaje (IBAN, VS, sumu) dostanete emailom. Výroba začne po prijatí platby.
+                          {t("Platobné údaje (IBAN, VS, sumu) dostanete emailom. Výroba začne po prijatí platby.")}
                         </div>
                       )}
                     </div>
@@ -568,21 +570,21 @@ export default function Home() {
                     {/* Price summary */}
                     <div className="rounded-2xl bg-neutral-50 px-4 py-3 text-sm">
                       <div className="flex justify-between text-neutral-600">
-                        <span>Výroba ({cartItems.length} {cartItems.length === 1 ? "model" : "modely/modelov"})</span>
+                        <span>{t("Výroba")} ({cartItems.length} {cartItems.length === 1 ? t("model") : t("modely/modelov")})</span>
                         <span className="font-semibold">{formatEur(addVat(cartTotalNet))}</span>
                       </div>
                       {cartFlexibleDiscountEur > 0 && (
                         <div className="flex justify-between text-[#b07a00]">
-                          <span>Zľava za flexibilitu materiálu/farby</span>
+                          <span>{t("Zľava za flexibilitu materiálu/farby")}</span>
                           <span className="font-semibold">−{formatEur(cartFlexibleDiscountEur)}</span>
                         </div>
                       )}
                       <div className="flex justify-between text-neutral-600">
-                        <span>Doprava</span>
+                        <span>{t("Doprava")}</span>
                         <span className="font-semibold">{formatEur(shippingCostWithVat)}</span>
                       </div>
                       <div className="mt-2 flex justify-between border-t border-neutral-200 pt-2 text-base font-extrabold text-neutral-900">
-                        <span>Celkom s DPH</span>
+                        <span>{t("Celkom s DPH")}</span>
                         <span>{formatEur(grandTotal)}</span>
                       </div>
                     </div>
@@ -605,8 +607,8 @@ export default function Home() {
                         </div>
                         <input type="checkbox" checked={termsAccepted} onChange={(e) => setTermsAccepted(e.target.checked)} className="sr-only" />
                         <span className="text-xs leading-5 text-neutral-700">
-                          Súhlasím so{" "}
-                          <a href="/podmienky" target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="font-semibold text-neutral-900 underline hover:text-[#b07a00]">VOP</a>
+                          {t("Súhlasím so")}{" "}
+                          <a href="/podmienky" target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="font-semibold text-neutral-900 underline hover:text-[#b07a00]">{t("VOP")}</a>
                         </span>
                       </label>
 
@@ -632,8 +634,8 @@ export default function Home() {
                           className="sr-only"
                         />
                         <span className="text-xs leading-5 text-neutral-700">
-                          <span className="font-semibold text-neutral-900">Nepovinné:</span>{" "}
-                          Model môžete mierne upraviť, ak to zlepší kvalitu tlače.
+                          <span className="font-semibold text-neutral-900">{t("Nepovinné:")}</span>{" "}
+                          {t("Model môžete mierne upraviť, ak to zlepší kvalitu tlače.")}
                         </span>
                       </label>
 
@@ -650,8 +652,8 @@ export default function Home() {
                         ].join(" ")}
                       >
                         {orderLoading
-                          ? (paymentMethod === "TRANSFER" ? "Vytváram objednávku…" : "Presmerúvam…")
-                          : (paymentMethod === "TRANSFER" ? "Objednať — zaplatiť prevodom" : "Objednať a zaplatiť kartou")}
+                          ? (paymentMethod === "TRANSFER" ? t("Vytváram objednávku…") : t("Presmerúvam…"))
+                          : (paymentMethod === "TRANSFER" ? t("Objednať — zaplatiť prevodom") : t("Objednať a zaplatiť kartou"))}
                       </button>
                     </div>
                   </div>
@@ -659,7 +661,7 @@ export default function Home() {
 
                 {cartItems.length === 0 && (
                   <div className="rounded-2xl border-2 border-dashed border-neutral-200 px-5 py-8 text-center text-sm text-neutral-400">
-                    Pridajte modely do košíka nahraním STL súboru.
+                    {t("Pridajte modely do košíka nahraním STL súboru.")}
                   </div>
                 )}
               </div>
@@ -672,29 +674,27 @@ export default function Home() {
         <section className="mb-12 text-center">
           <div className="inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-3 py-1 text-sm text-neutral-700 shadow-sm">
             <span className="inline-block h-2 w-2 rounded-full bg-[#FFAE00]" />
-            Online konfigurátor 3D tlače
+            {t("Online konfigurátor 3D tlače")}
           </div>
 
           <h1 className="mx-auto mt-5 max-w-5xl text-4xl font-extrabold tracking-tight md:text-6xl">
-            Nahrajte váš model, vyberte si parametre a my váš model dostaneme až k vám
+            {t("Nahrajte váš model, vyberte si parametre a my váš model dostaneme až k vám")}
           </h1>
 
           <p className="mx-auto mt-4 max-w-3xl text-base leading-relaxed text-neutral-600 md:text-lg">
-            Nahrajte STL súbor, vyberte materiál, kvalitu, pevnosť, farbu a počet kusov.
-            Systém automaticky vypočíta cenu a po dokončení objednávky vám model vyrobíme
-            a odošleme priamo na adresu.
+            {t("Nahrajte STL súbor, vyberte materiál, kvalitu, pevnosť, farbu a počet kusov. Systém automaticky vypočíta cenu a po dokončení objednávky vám model vyrobíme a odošleme priamo na adresu.")}
           </p>
         </section>
 
         <section id="kalkulator" className="rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <div className="text-sm font-semibold text-neutral-500">Konfigurátor</div>
+              <div className="text-sm font-semibold text-neutral-500">{t("Konfigurátor")}</div>
               <h2 className="mt-1 text-2xl font-extrabold tracking-tight">
-                Nahraj model a nastav parametre tlače
+                {t("Nahraj model a nastav parametre tlače")}
               </h2>
               <p className="mt-2 max-w-2xl text-sm text-neutral-600">
-                Zákazník si vykliká parametre modelu a konfigurátor ich automaticky premietne do ceny.
+                {t("Zákazník si vykliká parametre modelu a konfigurátor ich automaticky premietne do ceny.")}
               </p>
             </div>
           </div>
@@ -746,7 +746,7 @@ export default function Home() {
                   <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
                     <line x1="6" y1="1" x2="6" y2="11"/><line x1="1" y1="6" x2="11" y2="6"/>
                   </svg>
-                  Pridať
+                  {t("Pridať")}
                 </button>
               </div>
             )}
@@ -760,8 +760,8 @@ export default function Home() {
                 <div className="flex items-center gap-3 mb-4">
                   <div className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-black text-sm font-bold text-white">1</div>
                   <div>
-                    <div className="text-sm font-semibold text-neutral-500">Krok 1</div>
-                    <div className="text-lg font-extrabold">Nahraj STL</div>
+                    <div className="text-sm font-semibold text-neutral-500">{t("Krok 1")}</div>
+                    <div className="text-lg font-extrabold">{t("Nahraj STL")}</div>
                   </div>
                 </div>
               )}
@@ -776,8 +776,8 @@ export default function Home() {
                   <div className="flex items-center gap-3">
                     <div className="h-5 w-5 animate-spin rounded-full border-2 border-neutral-300 border-t-[#FFAE00]" />
                     <div>
-                      <div className="text-sm font-bold text-neutral-900">Nahrávam a analyzujem model</div>
-                      <div className="text-xs text-neutral-600">Počkajte chvíľu, pripravujeme 3D náhľad a výpočet parametrov.</div>
+                      <div className="text-sm font-bold text-neutral-900">{t("Nahrávam a analyzujem model")}</div>
+                      <div className="text-xs text-neutral-600">{t("Počkajte chvíľu, pripravujeme 3D náhľad a výpočet parametrov.")}</div>
                     </div>
                   </div>
                 </div>
@@ -799,21 +799,21 @@ export default function Home() {
                   <div className="flex items-center gap-3 mb-4">
                     <div className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-black text-sm font-bold text-white">2</div>
                     <div>
-                      <div className="text-sm font-semibold text-neutral-500">Krok 2</div>
-                      <div className="text-lg font-extrabold">3D náhľad</div>
+                      <div className="text-sm font-semibold text-neutral-500">{t("Krok 2")}</div>
+                      <div className="text-lg font-extrabold">{t("3D náhľad")}</div>
                     </div>
                   </div>
                   <StlViewer
                     key={`${activeItem.fileKey}-${activeItem.config.scalePct}-${activeItem.config.color}`}
                     fileKey={activeItem.fileKey}
-                    title="Model sa dá otáčať a zoomovať"
+                    title={t("Model sa dá otáčať a zoomovať")}
                     colorId={activeItem.config.colorFlexible ? "gray" : activeItem.config.color}
                     height={380}
                     scalePct={activeItem.config.scalePct}
                   />
                   {activeItem.config.colorFlexible && (
                     <p className="mt-3 rounded-2xl bg-neutral-50 px-4 py-2.5 text-xs text-neutral-600">
-                      Farba, ktorú aktuálne vidíte, je <span className="font-bold text-neutral-900">ilustračná</span> — na farbe vám nezáleží, vyberieme ju podľa dostupnosti.
+                      {t("Farba, ktorú aktuálne vidíte, je")} <span className="font-bold text-neutral-900">{t("ilustračná")}</span> {t("— na farbe vám nezáleží, vyberieme ju podľa dostupnosti.")}
                     </p>
                   )}
                 </div>
@@ -823,11 +823,11 @@ export default function Home() {
                     <div className="flex items-center gap-3">
                       <div className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-black text-sm font-bold text-white">3</div>
                       <div>
-                        <div className="text-sm font-semibold text-neutral-500">Krok 3</div>
-                        <div className="text-lg font-extrabold">Nastav parametre tlače</div>
+                        <div className="text-sm font-semibold text-neutral-500">{t("Krok 3")}</div>
+                        <div className="text-lg font-extrabold">{t("Nastav parametre tlače")}</div>
                       </div>
                     </div>
-                    <div className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-semibold text-neutral-600">aktuálne</div>
+                    <div className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-semibold text-neutral-600">{t("aktuálne")}</div>
                   </div>
                   <Configurator
                     key={activeItemId}
@@ -856,7 +856,7 @@ export default function Home() {
                     <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
                       <line x1="8" y1="2" x2="8" y2="14"/><line x1="2" y1="8" x2="14" y2="8"/>
                     </svg>
-                    Pridať model
+                    {t("Pridať model")}
                   </button>
 
                   {cartItems.length > 0 && (
@@ -869,7 +869,7 @@ export default function Home() {
                         <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
                         <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
                       </svg>
-                      Objednať
+                      {t("Objednať")}
                     </button>
                   )}
                 </div>
@@ -897,8 +897,8 @@ export default function Home() {
                     </svg>
                   </div>
                   <div>
-                    <div className="text-[11px] font-bold uppercase tracking-widest text-white/40">Platba prevodom</div>
-                    <div className="text-[15px] font-extrabold leading-snug text-white">Vyžaduje prihlásenie</div>
+                    <div className="text-[11px] font-bold uppercase tracking-widest text-white/40">{t("Platba prevodom")}</div>
+                    <div className="text-[15px] font-extrabold leading-snug text-white">{t("Vyžaduje prihlásenie")}</div>
                   </div>
                 </div>
                 <button type="button" onClick={() => setShowTransferModal(false)} className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/10 transition hover:bg-white/20">
@@ -910,7 +910,7 @@ export default function Home() {
             </div>
             <div className="px-6 pt-5 pb-6">
               <p className="text-[14px] leading-relaxed text-neutral-600">
-                Platbu bankovým prevodom môžu využiť iba registrovaní zákazníci. Účet vám umožní sledovať stav objednávky a variabilný symbol je viazaný na váš profil.
+                {t("Platbu bankovým prevodom môžu využiť iba registrovaní zákazníci. Účet vám umožní sledovať stav objednávky a variabilný symbol je viazaný na váš profil.")}
               </p>
               <ul className="mt-4 space-y-2">
                 {["Variabilný symbol spojený s vašou objednávkou", "Stav platby vidíte v histórii objednávok", "Predvyplnená adresa pri ďalšej objednávke"].map((b) => (
@@ -920,16 +920,16 @@ export default function Home() {
                         <polyline points="2 6 5 9 10 3"/>
                       </svg>
                     </span>
-                    {b}
+                    {t(b)}
                   </li>
                 ))}
               </ul>
               <div className="mt-6 flex gap-3">
-                <a href="/registracia" className="flex-1 rounded-xl bg-[#FFAE00] px-4 py-2.5 text-center text-[13px] font-extrabold text-black transition hover:bg-[#e09d00]">Vytvoriť účet</a>
-                <a href="/prihlasenie" className="flex-1 rounded-xl border border-neutral-200 bg-white px-4 py-2.5 text-center text-[13px] font-semibold text-neutral-700 transition hover:bg-neutral-50">Prihlásiť sa</a>
+                <a href="/registracia" className="flex-1 rounded-xl bg-[#FFAE00] px-4 py-2.5 text-center text-[13px] font-extrabold text-black transition hover:bg-[#e09d00]">{t("Vytvoriť účet")}</a>
+                <a href="/prihlasenie" className="flex-1 rounded-xl border border-neutral-200 bg-white px-4 py-2.5 text-center text-[13px] font-semibold text-neutral-700 transition hover:bg-neutral-50">{t("Prihlásiť sa")}</a>
               </div>
               <button type="button" onClick={() => setShowTransferModal(false)} className="mt-3 w-full text-center text-[12px] text-neutral-400 transition hover:text-neutral-600">
-                Pokračovať s platbou kartou
+                {t("Pokračovať s platbou kartou")}
               </button>
             </div>
           </div>

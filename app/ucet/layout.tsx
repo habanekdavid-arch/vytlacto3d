@@ -4,12 +4,14 @@ import { ReactNode } from "react";
 import { redirect } from "next/navigation";
 import AccountNav from "@/components/AccountNav";
 import { getSafeServerSession } from "@/lib/session";
+import { getT } from "@/lib/i18n/server";
 
 export default async function AccountLayout({
   children,
 }: {
   children: ReactNode;
 }) {
+  const { t } = await getT();
   const session = await getSafeServerSession();
   const user = session?.user as { id?: string } | undefined;
 
@@ -23,15 +25,15 @@ export default async function AccountLayout({
         <div className="mb-8">
           <div className="inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-3 py-1 text-sm text-neutral-700 shadow-sm">
             <span className="inline-block h-2 w-2 rounded-full bg-[#FFAE00]" />
-            Zákaznícka zóna
+            {t("Zákaznícka zóna")}
           </div>
 
           <h1 className="mt-4 text-4xl font-extrabold tracking-tight">
-            Môj účet
+            {t("Môj účet")}
           </h1>
 
           <p className="mt-2 max-w-2xl text-neutral-600">
-            Tu nájdete svoje objednávky, ich stav a históriu.
+            {t("Tu nájdete svoje objednávky, ich stav a históriu.")}
           </p>
         </div>
 

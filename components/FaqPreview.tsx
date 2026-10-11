@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import ContactForm from "@/components/ContactForm";
+import { useT } from "@/lib/i18n/client";
 
 const faqs = [
   {
@@ -33,6 +34,7 @@ const faqs = [
 ];
 
 export default function FaqPreview() {
+  const t = useT();
   const [openIndex, setOpenIndex] = useState<number | null>(0);
 
   return (
@@ -45,16 +47,15 @@ export default function FaqPreview() {
         <div className="mx-auto max-w-3xl text-center">
           <div className="mx-auto inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-4 py-2 text-sm font-semibold text-neutral-600 shadow-sm">
             <span className="h-2 w-2 rounded-full bg-[#FFAE00]" />
-            FAQ a užitočné informácie
+            {t("FAQ a užitočné informácie")}
           </div>
 
           <h2 className="mt-6 text-4xl font-extrabold tracking-tight text-neutral-900 sm:text-5xl">
-            Často kladené otázky
+            {t("Často kladené otázky")}
           </h2>
 
           <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-neutral-600">
-            Odpovede na najčastejšie otázky o 3D tlači, cenách, priebehu
-            objednávky a technických požiadavkách na model.
+            {t("Odpovede na najčastejšie otázky o 3D tlači, cenách, priebehu objednávky a technických požiadavkách na model.")}
           </p>
         </div>
 
@@ -90,7 +91,7 @@ export default function FaqPreview() {
                     </div>
 
                     <h3 className="text-base font-extrabold text-neutral-900 sm:text-lg">
-                      {item.question}
+                      {t(item.question)}
                     </h3>
                   </div>
 
@@ -114,7 +115,7 @@ export default function FaqPreview() {
                 >
                   <div className="overflow-hidden">
                     <p className="px-20 pb-6 text-sm leading-7 text-neutral-600">
-                      {item.answer}
+                      {t(item.answer)}
                     </p>
                   </div>
                 </div>
@@ -130,14 +131,14 @@ export default function FaqPreview() {
             href="/blog"
             className="rounded-2xl bg-[#FFAE00] px-5 py-3 text-sm font-bold text-black shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
           >
-            Prejsť na blog
+            {t("Prejsť na blog")}
           </Link>
 
           <Link
             href="/#kalkulator"
             className="rounded-2xl border border-neutral-200 bg-white px-5 py-3 text-sm font-bold text-neutral-900 shadow-sm transition hover:-translate-y-0.5 hover:bg-neutral-50 hover:shadow-md"
           >
-            Prejsť na kalkulátor
+            {t("Prejsť na kalkulátor")}
           </Link>
         </div>
       </div>

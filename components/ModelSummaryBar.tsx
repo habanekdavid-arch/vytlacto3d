@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useT } from "@/lib/i18n/client";
 
 type Props = {
   dimsX: number;
@@ -17,6 +18,7 @@ export default function ModelSummaryBar({
   volume,
   totalWithVat,
 }: Props) {
+  const t = useT();
   const [compact, setCompact] = useState(false);
 
   useEffect(() => {
@@ -62,7 +64,7 @@ export default function ModelSummaryBar({
                 compact ? "text-sm" : "text-lg",
               ].join(" ")}
             >
-              Analýza modelu
+              {t("Analýza modelu")}
             </div>
 
             {!compact ? (
@@ -111,7 +113,7 @@ export default function ModelSummaryBar({
               ].join(" ")}
             >
               <div className="text-xs font-semibold uppercase tracking-wide text-neutral-600">
-                Aktuálna cena
+                {t("Aktuálna cena")}
               </div>
               <div
                 className={[
@@ -122,7 +124,7 @@ export default function ModelSummaryBar({
                 {totalWithVat}
               </div>
               <div className="mt-1 text-xs text-neutral-500">
-                Cena je uvedená s DPH
+                {t("Cena je uvedená s DPH")}
               </div>
             </div>
           </div>

@@ -8,70 +8,78 @@ import FourFromFloatingButton from "@/components/FourFromFloatingButton";
 import PromoTipPopup from "@/components/PromoTipPopup";
 import RegisterNudgePopup from "@/components/RegisterNudgePopup";
 import CompleteProfilePopup from "@/components/CompleteProfilePopup";
+import { LocaleProvider } from "@/lib/i18n/client";
+import { getLocale, getT } from "@/lib/i18n/server";
+import { dictionaryFor } from "@/lib/i18n/messages";
 
 const baseUrl =
   process.env.NEXT_PUBLIC_BASE_URL || "https://www.vytlacto3d.sk";
 
-export const metadata = {
-  metadataBase: new URL(baseUrl),
+export async function generateMetadata() {
+  const { t, locale } = await getT();
+  const title = t("VytlačTo3D – Online konfigurátor 3D tlače");
+  return {
+    metadataBase: new URL(baseUrl),
 
-  title: {
-    default: "VytlačTo3D – Online konfigurátor 3D tlače",
-    template: "%s | VytlačTo3D",
-  },
+    title: {
+      default: title,
+      template: "%s | VytlačTo3D",
+    },
   
 
-  description:
-    "Nahrajte STL model, vyberte materiál, kvalitu a parametre tlače. Okamžite vypočítame cenu a doručíme hotový 3D výtlačok priamo k vám.",
+    description: t(
+      "Nahrajte STL model, vyberte materiál, kvalitu a parametre tlače. Okamžite vypočítame cenu a doručíme hotový 3D výtlačok priamo k vám."
+    ),
 
-  keywords: [
-    "3D tlač",
-    "3D tlač online",
-    "3D tlač kalkulátor",
-    "STL tlač",
-    "3D printing Slovakia",
-    "3D model tlač",
-  ],
+    keywords: [
+      "3D tlač",
+      "3D tlač online",
+      "3D tlač kalkulátor",
+      "STL tlač",
+      "3D printing Slovakia",
+      "3D model tlač",
+    ],
 
-  verification: {
-    google: "N3KPmt1kWah9CIVFQz1gvt1MnfmYAj6oVVTTtvJ-zzs",
-  },
+    verification: {
+      google: "N3KPmt1kWah9CIVFQz1gvt1MnfmYAj6oVVTTtvJ-zzs",
+    },
 
-  openGraph: {
-    title: "VytlačTo3D – Online konfigurátor 3D tlače",
-    description:
-      "Nahraj STL model, nastav parametre a okamžite zisti cenu 3D tlače.",
-    url: baseUrl,
-    siteName: "VytlačTo3D",
-    locale: "sk_SK",
-    type: "website",
-  },
+    openGraph: {
+      title,
+      description: t("Nahraj STL model, nastav parametre a okamžite zisti cenu 3D tlače."),
+      url: baseUrl,
+      siteName: "VytlačTo3D",
+      locale: { sk: "sk_SK", en: "en_GB", hu: "hu_HU", de: "de_DE" }[locale],
+      type: "website",
+    },
 
-  twitter: {
-    card: "summary_large_image",
-    title: "VytlačTo3D – Online konfigurátor 3D tlače",
-    description:
-      "Nahraj STL model a okamžite zisti cenu 3D tlače.",
-  },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description: t("Nahraj STL model a okamžite zisti cenu 3D tlače."),
+    },
 
-  robots: {
-    index: true,
-    follow: true,
-  },
+    robots: {
+      index: true,
+      follow: true,
+    },
 
-  icons: {
-    icon: "/favicon.ico",
-    apple: "/icon-320.png",
-  },
-};
+    icons: {
+      icon: "/favicon.ico",
+      apple: "/icon-320.png",
+    },
+  };
+}
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const locale = await getLocale();
+
   return (
-    <html lang="sk">
+    <html lang={locale}>
       <body className="min-h-screen flex flex-col bg-white text-neutral-900 antialiased">
         {/* Google Tag Manager (noscript) */}
         <noscript>
@@ -107,6 +115,7 @@ export default function RootLayout({
           `}
         </Script>
 
+        <LocaleProvider locale={locale} dict={dictionaryFor(locale)}>
         <Providers>
           <Navbar />
           <main className="flex-1">{children}</main>
@@ -117,6 +126,7 @@ export default function RootLayout({
           <RegisterNudgePopup />
           <CompleteProfilePopup />
         </Providers>
+        </LocaleProvider>
       </body>
     </html>
   );

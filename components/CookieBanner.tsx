@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useT } from "@/lib/i18n/client";
 
 type Consent = "accepted" | "rejected";
 
@@ -8,6 +9,7 @@ const KEY = "vytlacto3d_cookie_consent";
 const OPEN_EVENT = "vytlacto3d:open-cookie-banner";
 
 export default function CookieBanner() {
+  const t = useT();
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -48,13 +50,12 @@ export default function CookieBanner() {
         <div className="flex flex-col gap-4 p-5 md:flex-row md:items-center md:justify-between">
           <div className="pr-0 md:pr-6">
             <div className="text-sm font-semibold text-neutral-900">
-              Cookies na VytlačTo<span className="text-brand">3D</span>
+              {t("Cookies na")} VytlačTo<span className="text-brand">3D</span>
             </div>
 
             <p className="mt-2 text-sm font-normal text-neutral-600">
-              Používame nevyhnutné cookies na správne fungovanie webu (napr. bezpečnosť a
-              základné nastavenia). Voliteľné analytické cookies momentálne nepoužívame.
-              Viac v{" "}
+              {t("Používame nevyhnutné cookies na správne fungovanie webu (napr. bezpečnosť a základné nastavenia). Voliteľné analytické cookies momentálne nepoužívame.")}{" "}
+              {t("Viac v")}{" "}
               <a href="/gdpr" className="underline">
                 GDPR
               </a>
@@ -68,7 +69,7 @@ export default function CookieBanner() {
               onClick={() => setConsent("rejected")}
               className="btn-outline"
             >
-              Odmietnuť
+              {t("Odmietnuť")}
             </button>
 
             <button
@@ -76,14 +77,14 @@ export default function CookieBanner() {
               onClick={() => setConsent("accepted")}
               className="btn-primary"
             >
-              Prijať
+              {t("Prijať")}
             </button>
           </div>
         </div>
 
         <div className="border-t border-neutral-200 px-5 py-3 text-xs font-normal text-neutral-500">
-          Voľbu môžeš kedykoľvek zmeniť cez{" "}
-          <span className="font-semibold text-neutral-700">Nastavenia cookies</span> v pätičke.
+          {t("Voľbu môžeš kedykoľvek zmeniť cez")}{" "}
+          <span className="font-semibold text-neutral-700">{t("Nastavenia cookies")}</span> {t("v pätičke.")}
         </div>
       </div>
     </div>

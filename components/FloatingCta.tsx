@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useT } from "@/lib/i18n/client";
 
 export default function FloatingCta() {
+  const t = useT();
   const [show, setShow] = useState(false);
 
   useEffect(() => {
@@ -31,7 +33,7 @@ export default function FloatingCta() {
       href="#kalkulator"
       className="fixed bottom-5 right-5 z-50 inline-flex items-center justify-center rounded-2xl bg-[#FFAE00] px-5 py-3 text-sm font-extrabold text-black shadow-lg transition hover:opacity-90"
     >
-      Naceniť 3D tlač
+      {t("Naceniť 3D tlač")}
     </a>
   );
 }

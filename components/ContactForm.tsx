@@ -12,6 +12,7 @@ import {
   safeContactFileName,
   type ContactAttachment,
 } from "@/lib/contact-attachments";
+import { useT } from "@/lib/i18n/client";
 
 type AttachmentItem = {
   id: string;
@@ -35,6 +36,7 @@ const inputClasses =
   "mt-2 w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-900 shadow-sm transition-all duration-200 hover:border-neutral-300 focus:border-[#FFAE00] focus:outline-none focus:ring-4 focus:ring-[#FFAE00]/15";
 
 export default function ContactForm() {
+  const t = useT();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [subject, setSubject] = useState("");
@@ -70,7 +72,7 @@ export default function ContactForm() {
         uploaded: { url: blob.url, name: file.name, size: file.size, contentType },
       });
     } catch {
-      patchAttachment(item.id, { status: "error", error: "Nahrávanie zlyhalo." });
+      patchAttachment(item.id, { status: "error", error: t("Nahrávanie zlyhalo.") });
     }
   }
 
@@ -83,19 +85,19 @@ export default function ContactForm() {
 
     for (const file of files) {
       if (accepted.length >= free) {
-        problems.push(`Najviac ${CONTACT_MAX_FILES} príloh.`);
+        problems.push(t("Najviac {n} príloh.", { n: CONTACT_MAX_FILES }));
         break;
       }
       if (!isAllowedContactFile(file.name)) {
-        problems.push(`${file.name}: tento formát nepodporujeme.`);
+        problems.push(`${file.name}: ${t("tento formát nepodporujeme.")}`);
         continue;
       }
       if (file.size > CONTACT_MAX_FILE_MB * 1024 * 1024) {
-        problems.push(`${file.name}: má viac ako ${CONTACT_MAX_FILE_MB} MB.`);
+        problems.push(`${file.name}: ${t("má viac ako {n} MB.", { n: CONTACT_MAX_FILE_MB })}`);
         continue;
       }
       if (file.size === 0) {
-        problems.push(`${file.name}: súbor je prázdny.`);
+        problems.push(`${file.name}: ${t("súbor je prázdny.")}`);
         continue;
       }
       const item: AttachmentItem = {
@@ -121,12 +123,12 @@ export default function ContactForm() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (uploading) {
-      setError("Počkajte prosím, kým sa nahrajú všetky prílohy.");
+      setError(t("Počkajte prosím, kým sa nahrajú všetky prílohy."));
       setStatus("error");
       return;
     }
     if (attachments.some((a) => a.status === "error")) {
-      setError("Niektorú prílohu sa nepodarilo nahrať — odstráňte ju alebo ju pridajte znova.");
+      setError(t("Niektorú prílohu sa nepodarilo nahrať — odstráňte ju alebo ju pridajte znova."));
       setStatus("error");
       return;
     }
@@ -149,7 +151,7 @@ export default function ContactForm() {
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
-        setError(data.error ?? "Niečo sa pokazilo. Skúste to prosím znova.");
+        setError(data.error ?? t("Niečo sa pokazilo. Skúste to prosím znova."));
         setStatus("error");
         return;
       }
@@ -162,7 +164,7 @@ export default function ContactForm() {
       setAttachments([]);
       setAttachError(null);
     } catch {
-      setError("Sieťová chyba. Skúste to prosím znova.");
+      setError(t("Sieťová chyba. Skúste to prosím znova."));
       setStatus("error");
     }
   }
@@ -177,9 +179,9 @@ export default function ContactForm() {
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-green-500 text-2xl text-white">
             ✓
           </div>
-          <div className="mt-4 text-lg font-bold text-neutral-900">Ďakujeme za správu!</div>
+          <div className="mt-4 text-lg font-bold text-neutral-900">{t("Ďakujeme za správu!")}</div>
           <p className="mt-2 text-sm text-neutral-600">
-            Ozveme sa vám čo najskôr na uvedený email.
+            {t("Ozveme sa vám čo najskôr na uvedený email.")}
           </p>
         </div>
       </div>
@@ -195,14 +197,14 @@ export default function ContactForm() {
       <div className="mx-auto max-w-2xl text-center">
         <div className="mx-auto inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-4 py-2 text-sm font-semibold text-neutral-600 shadow-sm">
           <span className="h-2 w-2 rounded-full bg-[#FFAE00]" />
-          Napíšte nám
+          {t("Napíšte nám")}
         </div>
 
         <h3 className="mt-6 text-2xl font-extrabold tracking-tight text-neutral-900 sm:text-3xl">
-          Nenašli ste odpoveď?
+          {t("Nenašli ste odpoveď?")}
         </h3>
         <p className="mt-3 text-sm leading-relaxed text-neutral-600">
-          Napíšte nám priamo cez formulár nižšie, odpovieme vám čo najskôr.
+          {t("Napíšte nám priamo cez formulár nižšie, odpovieme vám čo najskôr.")}
         </p>
       </div>
 
@@ -218,7 +220,7 @@ export default function ContactForm() {
         />
 
         <div className="sm:col-span-1">
-          <label className="text-sm font-semibold text-neutral-700">Meno *</label>
+          <label className="text-sm font-semibold text-neutral-700">{t("Meno *")}</label>
           <input
             type="text"
             required
@@ -229,7 +231,7 @@ export default function ContactForm() {
         </div>
 
         <div className="sm:col-span-1">
-          <label className="text-sm font-semibold text-neutral-700">Email *</label>
+          <label className="text-sm font-semibold text-neutral-700">{t("Email *")}</label>
           <input
             type="email"
             required
@@ -240,7 +242,7 @@ export default function ContactForm() {
         </div>
 
         <div className="sm:col-span-2">
-          <label className="text-sm font-semibold text-neutral-700">Predmet *</label>
+          <label className="text-sm font-semibold text-neutral-700">{t("Predmet *")}</label>
           <input
             type="text"
             required
@@ -251,7 +253,7 @@ export default function ContactForm() {
         </div>
 
         <div className="sm:col-span-2">
-          <label className="text-sm font-semibold text-neutral-700">Správa *</label>
+          <label className="text-sm font-semibold text-neutral-700">{t("Správa *")}</label>
           <textarea
             required
             rows={5}
@@ -263,13 +265,13 @@ export default function ContactForm() {
 
         <div className="sm:col-span-2">
           <label className="text-sm font-semibold text-neutral-700">
-            Prílohy <span className="font-normal text-neutral-400">(nepovinné)</span>
+            {t("Prílohy")} <span className="font-normal text-neutral-400">{t("(nepovinné)")}</span>
           </label>
 
           <div
             role="button"
             tabIndex={attachments.length >= CONTACT_MAX_FILES ? -1 : 0}
-            aria-label="Pridať prílohy"
+            aria-label={t("Pridať prílohy")}
             onClick={() => {
               if (attachments.length < CONTACT_MAX_FILES) fileInputRef.current?.click();
             }}
@@ -304,13 +306,13 @@ export default function ContactForm() {
               <PaperclipIcon />
             </span>
             <p className="text-sm text-neutral-700">
-              <span className="hidden sm:inline">Presuňte súbory sem alebo </span>
+              <span className="hidden sm:inline">{t("Presuňte súbory sem alebo")} </span>
               <span className="font-bold text-neutral-900 underline decoration-[#FFAE00] decoration-2 underline-offset-4">
-                {attachments.length >= CONTACT_MAX_FILES ? "Maximálny počet príloh" : "vyberte súbory"}
+                {attachments.length >= CONTACT_MAX_FILES ? t("Maximálny počet príloh") : t("vyberte súbory")}
               </span>
             </p>
             <p className="text-xs text-neutral-500">
-              {CONTACT_FORMATS_HINT} · najviac {CONTACT_MAX_FILES} súborov, každý do {CONTACT_MAX_FILE_MB} MB
+              {t(CONTACT_FORMATS_HINT)} · {t("najviac {n} súborov, každý do {mb} MB", { n: CONTACT_MAX_FILES, mb: CONTACT_MAX_FILE_MB })}
             </p>
             <input
               ref={fileInputRef}
@@ -359,7 +361,7 @@ export default function ContactForm() {
                       type="button"
                       onClick={() => removeAttachment(a.id)}
                       className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-neutral-400 transition hover:bg-neutral-100 hover:text-neutral-700"
-                      aria-label={`Odstrániť ${a.name}`}
+                      aria-label={`${t("Odstrániť")} ${a.name}`}
                     >
                       ×
                     </button>
@@ -382,7 +384,7 @@ export default function ContactForm() {
             disabled={status === "sending" || uploading}
             className="rounded-2xl bg-[#FFAE00] px-8 py-3 text-sm font-bold text-black shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-[#FFAE00]/30 disabled:translate-y-0 disabled:opacity-50 disabled:shadow-none"
           >
-            {status === "sending" ? "Odosielam..." : uploading ? "Nahrávam prílohy..." : "Odoslať správu"}
+            {status === "sending" ? "Odosielam..." : uploading ? t("Nahrávam prílohy...") : t("Odoslať správu")}
           </button>
         </div>
       </form>

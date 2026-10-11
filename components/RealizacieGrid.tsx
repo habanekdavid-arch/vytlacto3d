@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { LG_CLASS, MD_CLASS, layoutRealizacie, type Tile } from "@/lib/realizacie-layout";
+import { useT } from "@/lib/i18n/client";
 
 export type RealizaciaCard = {
   slug: string;
@@ -100,6 +101,7 @@ function Card({ tile, priority }: { tile: Tile<RealizaciaCard>; priority: boolea
 }
 
 export default function RealizacieGrid({ projects }: { projects: RealizaciaCard[] }) {
+  const t = useT();
   const [active, setActive] = useState(ALL);
 
   const categories = useMemo(() => {
@@ -124,9 +126,9 @@ export default function RealizacieGrid({ projects }: { projects: RealizaciaCard[
   return (
     <>
       {categories.length > 1 && (
-        <div className="mb-8 flex flex-wrap justify-center gap-2" role="tablist" aria-label="Filtrovať realizácie podľa kategórie">
+        <div className="mb-8 flex flex-wrap justify-center gap-2" role="tablist" aria-label={t("Filtrovať realizácie podľa kategórie")}>
           <button type="button" role="tab" aria-selected={active === ALL} onClick={() => setActive(ALL)} className={chip(active === ALL)}>
-            Všetko <span className="opacity-60">{projects.length}</span>
+            {t("Všetko")} <span className="opacity-60">{projects.length}</span>
           </button>
           {categories.map(([name, count]) => (
             <button

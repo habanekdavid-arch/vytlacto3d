@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useT } from "@/lib/i18n/client";
 
 type UserData = {
   name: string | null;
@@ -31,6 +32,7 @@ export default function AccountEditForm({
   user: UserData;
   defaultEditing?: boolean;
 }) {
+  const t = useT();
   const [editing, setEditing] = useState(defaultEditing);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -66,14 +68,14 @@ export default function AccountEditForm({
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setError(data.error ?? "Chyba pri ukladaní.");
+        setError(data.error ?? t("Chyba pri ukladaní."));
         return;
       }
       setSuccess(true);
       setEditing(false);
       router.refresh();
     } catch {
-      setError("Sieťová chyba.");
+      setError(t("Sieťová chyba."));
     } finally {
       setSaving(false);
     }
@@ -98,10 +100,10 @@ export default function AccountEditForm({
               <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
             </svg>
           </span>
-          Upraviť údaje
+          {t("Upraviť údaje")}
         </button>
         {success && (
-          <p className="mt-2 text-sm font-semibold text-green-600">Údaje boli uložené.</p>
+          <p className="mt-2 text-sm font-semibold text-green-600">{t("Údaje boli uložené.")}</p>
         )}
       </div>
     );
@@ -115,14 +117,14 @@ export default function AccountEditForm({
       {/* Typ účtu */}
       <div>
         <div className="text-xs font-bold uppercase tracking-wide text-neutral-500 mb-2">
-          Typ účtu
+          {t("Typ účtu")}
         </div>
         <div className="flex gap-2">
           <TypeBtn active={!isCompany} onClick={() => update("accountType", "PERSON")}>
-            Fyzická osoba
+            {t("Fyzická osoba")}
           </TypeBtn>
           <TypeBtn active={isCompany} onClick={() => update("accountType", "COMPANY")}>
-            Firma
+            {t("Firma")}
           </TypeBtn>
         </div>
       </div>
@@ -130,13 +132,13 @@ export default function AccountEditForm({
       {/* Základné údaje */}
       <div>
         <div className="text-xs font-bold uppercase tracking-wide text-neutral-500 mb-2">
-          Základné údaje
+          {t("Základné údaje")}
         </div>
         <div className="grid gap-3 md:grid-cols-2">
-          <Field label="Meno a priezvisko" value={form.name} onChange={(v) => update("name", v)} />
-          <Field label="Telefón" value={form.phone} onChange={(v) => update("phone", v)} />
+          <Field label={t("Meno a priezvisko")} value={form.name} onChange={(v) => update("name", v)} />
+          <Field label={t("Telefón")} value={form.phone} onChange={(v) => update("phone", v)} />
           {isCompany && (
-            <Field label="Kontaktná osoba" value={form.contactPerson} onChange={(v) => update("contactPerson", v)} />
+            <Field label={t("Kontaktná osoba")} value={form.contactPerson} onChange={(v) => update("contactPerson", v)} />
           )}
         </div>
       </div>
@@ -145,27 +147,27 @@ export default function AccountEditForm({
       {isCompany ? (
         <div>
           <div className="text-xs font-bold uppercase tracking-wide text-neutral-500 mb-2">
-            Firemné údaje
+            {t("Firemné údaje")}
           </div>
           <div className="grid gap-3 md:grid-cols-2">
-            <Field label="Názov firmy" value={form.companyName} onChange={(v) => update("companyName", v)} />
-            <Field label="IČO" value={form.ico} onChange={(v) => update("ico", v)} />
-            <Field label="DIČ" value={form.dic} onChange={(v) => update("dic", v)} />
-            <Field label="IČ DPH" value={form.icDph} onChange={(v) => update("icDph", v)} />
+            <Field label={t("Názov firmy")} value={form.companyName} onChange={(v) => update("companyName", v)} />
+            <Field label={t("IČO")} value={form.ico} onChange={(v) => update("ico", v)} />
+            <Field label={t("DIČ")} value={form.dic} onChange={(v) => update("dic", v)} />
+            <Field label={t("IČ DPH")} value={form.icDph} onChange={(v) => update("icDph", v)} />
           </div>
         </div>
       ) : (
         <div>
           <div className="text-xs font-bold uppercase tracking-wide text-neutral-500 mb-2">
-            Živnosť / SZČO (voliteľné)
+            {t("Živnosť / SZČO (voliteľné)")}
           </div>
           <p className="mb-3 text-xs text-neutral-400">
-            Vyplňte len ak potrebujete faktúru na IČO.
+            {t("Vyplňte len ak potrebujete faktúru na IČO.")}
           </p>
           <div className="grid gap-3 md:grid-cols-2">
-            <Field label="IČO" value={form.ico} onChange={(v) => update("ico", v)} />
-            <Field label="DIČ" value={form.dic} onChange={(v) => update("dic", v)} />
-            <Field label="IČ DPH" value={form.icDph} onChange={(v) => update("icDph", v)} />
+            <Field label={t("IČO")} value={form.ico} onChange={(v) => update("ico", v)} />
+            <Field label={t("DIČ")} value={form.dic} onChange={(v) => update("dic", v)} />
+            <Field label={t("IČ DPH")} value={form.icDph} onChange={(v) => update("icDph", v)} />
           </div>
         </div>
       )}
@@ -173,18 +175,18 @@ export default function AccountEditForm({
       {/* Fakturačná adresa */}
       <div>
         <div className="text-xs font-bold uppercase tracking-wide text-neutral-500 mb-2">
-          Fakturačná adresa
+          {t("Fakturačná adresa")}
         </div>
         {!isCompany && (
           <p className="mb-3 text-xs text-neutral-400">
-            Ak je rovnaká ako dodacia, môžete ju nechať prázdnu.
+            {t("Ak je rovnaká ako dodacia, môžete ju nechať prázdnu.")}
           </p>
         )}
         <div className="grid gap-3 md:grid-cols-2">
-          <Field label="Ulica a číslo" value={form.billingStreet} onChange={(v) => update("billingStreet", v)} />
-          <Field label="Mesto" value={form.billingCity} onChange={(v) => update("billingCity", v)} />
-          <Field label="PSČ" value={form.billingZip} onChange={(v) => update("billingZip", v)} />
-          <Field label="Krajina" value={form.billingCountry} onChange={(v) => update("billingCountry", v)} />
+          <Field label={t("Ulica a číslo")} value={form.billingStreet} onChange={(v) => update("billingStreet", v)} />
+          <Field label={t("Mesto")} value={form.billingCity} onChange={(v) => update("billingCity", v)} />
+          <Field label={t("PSČ")} value={form.billingZip} onChange={(v) => update("billingZip", v)} />
+          <Field label={t("Krajina")} value={form.billingCountry} onChange={(v) => update("billingCountry", v)} />
         </div>
       </div>
 
@@ -199,20 +201,20 @@ export default function AccountEditForm({
             onClick={copyShippingFromBilling}
             className="text-xs font-semibold text-[#FFAE00] underline hover:text-[#b07a00]"
           >
-            Skopírovať z fakturačnej
+            {t("Skopírovať z fakturačnej")}
           </button>
         </div>
         <div className="grid gap-3 md:grid-cols-2">
           {isCompany && (
             <>
               <Field label="Meno / Firma" value={form.shippingName} onChange={(v) => update("shippingName", v)} />
-              <Field label="Kontaktná osoba" value={form.shippingContact} onChange={(v) => update("shippingContact", v)} />
+              <Field label={t("Kontaktná osoba")} value={form.shippingContact} onChange={(v) => update("shippingContact", v)} />
             </>
           )}
-          <Field label="Ulica a číslo" value={form.shippingStreet} onChange={(v) => update("shippingStreet", v)} />
-          <Field label="Mesto" value={form.shippingCity} onChange={(v) => update("shippingCity", v)} />
-          <Field label="PSČ" value={form.shippingZip} onChange={(v) => update("shippingZip", v)} />
-          <Field label="Krajina" value={form.shippingCountry} onChange={(v) => update("shippingCountry", v)} />
+          <Field label={t("Ulica a číslo")} value={form.shippingStreet} onChange={(v) => update("shippingStreet", v)} />
+          <Field label={t("Mesto")} value={form.shippingCity} onChange={(v) => update("shippingCity", v)} />
+          <Field label={t("PSČ")} value={form.shippingZip} onChange={(v) => update("shippingZip", v)} />
+          <Field label={t("Krajina")} value={form.shippingCountry} onChange={(v) => update("shippingCountry", v)} />
         </div>
       </div>
 
@@ -228,14 +230,14 @@ export default function AccountEditForm({
           disabled={saving}
           className="rounded-xl bg-[#FFAE00] px-5 py-2.5 text-sm font-bold text-black transition hover:bg-[#e09d00] disabled:opacity-60"
         >
-          {saving ? "Ukladám..." : "Uložiť zmeny"}
+          {saving ? t("Ukladám...") : t("Uložiť zmeny")}
         </button>
         <button
           onClick={handleCancel}
           disabled={saving}
           className="rounded-xl border border-neutral-200 bg-white px-5 py-2.5 text-sm font-semibold text-neutral-700 hover:bg-neutral-50 disabled:opacity-60"
         >
-          Zrušiť
+          {t("Zrušiť")}
         </button>
       </div>
     </div>

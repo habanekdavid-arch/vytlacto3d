@@ -3,6 +3,7 @@
 import { CartItem } from "@/lib/types";
 import { addVat, formatEur } from "@/lib/vat";
 import { materialLabel, qualityLabel } from "@/lib/print-options";
+import { useT } from "@/lib/i18n/client";
 
 type Props = {
   items: CartItem[];
@@ -13,6 +14,7 @@ type Props = {
 };
 
 export default function CartSidebar({ items, activeItemId, onSelect, onRemove, onAddNew }: Props) {
+  const t = useT();
   const totalNet = items.reduce((s, i) => s + (i.pricing?.total ?? 0), 0);
   const allPriced = items.length > 0 && items.every((i) => i.pricing !== null);
 
@@ -20,7 +22,7 @@ export default function CartSidebar({ items, activeItemId, onSelect, onRemove, o
     <div className="rounded-3xl border border-neutral-200 bg-white shadow-sm overflow-hidden">
       <div className="px-5 py-4 border-b border-neutral-100 flex items-center justify-between">
         <div className="text-sm font-extrabold text-neutral-800">
-          Košík{" "}
+          {t("Košík")}{" "}
           <span className="ml-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-[#FFAE00] text-xs font-bold text-black">
             {items.length}
           </span>
@@ -34,15 +36,15 @@ export default function CartSidebar({ items, activeItemId, onSelect, onRemove, o
             <line x1="5" y1="1" x2="5" y2="9" />
             <line x1="1" y1="5" x2="9" y2="5" />
           </svg>
-          Pridať model
+          {t("Pridať model")}
         </button>
       </div>
 
       {items.length === 0 ? (
         <div className="px-5 py-8 text-center text-sm text-neutral-400">
-          Žiadne modely v košíku.
+          {t("Žiadne modely v košíku.")}
           <br />
-          Nahrajte STL súbor.
+          {t("Nahrajte STL súbor.")}
         </div>
       ) : (
         <div className="divide-y divide-neutral-100">
@@ -69,7 +71,7 @@ export default function CartSidebar({ items, activeItemId, onSelect, onRemove, o
                 <div className="flex-1 min-w-0">
                   <div className="truncate text-xs font-semibold text-neutral-900">{item.fileName}</div>
                   <div className="text-[11px] text-neutral-500">
-                    {materialLabel(item.config.material)} · {qualityLabel(item.config.quality)} · {item.config.quantity}ks
+                    {t(materialLabel(item.config.material))} · {t(qualityLabel(item.config.quality))} · {item.config.quantity} {t("ks")}
                   </div>
                 </div>
                 <div className="shrink-0 text-right">
@@ -88,7 +90,7 @@ export default function CartSidebar({ items, activeItemId, onSelect, onRemove, o
                     onRemove(item.id);
                   }}
                   className="ml-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-neutral-400 transition hover:bg-red-50 hover:text-red-500"
-                  title="Odstrániť"
+                  title={t("Odstrániť")}
                 >
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="3 6 5 6 21 6" />
@@ -107,7 +109,7 @@ export default function CartSidebar({ items, activeItemId, onSelect, onRemove, o
       {allPriced && (
         <div className="border-t border-neutral-100 px-5 py-4">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-neutral-500">Výroba celkom (s DPH)</span>
+            <span className="text-neutral-500">{t("Výroba celkom (s DPH)")}</span>
             <span className="font-extrabold text-neutral-900">{formatEur(addVat(totalNet))}</span>
           </div>
         </div>

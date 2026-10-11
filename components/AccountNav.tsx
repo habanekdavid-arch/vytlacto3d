@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
+import { useT } from "@/lib/i18n/client";
 
 const links = [
   { href: "/ucet", label: "Môj účet" },
@@ -10,12 +11,13 @@ const links = [
 ];
 
 export default function AccountNav() {
+  const t = useT();
   const pathname = usePathname();
 
   return (
     <aside className="rounded-3xl border border-neutral-200 bg-white p-4 shadow-sm">
       <div className="mb-3 text-sm font-semibold text-neutral-500">
-        Zákaznícka zóna
+        {t("Zákaznícka zóna")}
       </div>
 
       <nav className="flex flex-col gap-2">
@@ -34,7 +36,7 @@ export default function AccountNav() {
                   : "border border-transparent text-neutral-700 hover:bg-neutral-50",
               ].join(" ")}
             >
-              {link.label}
+              {t(link.label)}
             </Link>
           );
         })}
@@ -44,7 +46,7 @@ export default function AccountNav() {
           onClick={() => signOut({ callbackUrl: "/" })}
           className="mt-2 rounded-2xl border border-neutral-200 px-4 py-3 text-left text-sm text-neutral-700 transition hover:bg-neutral-50"
         >
-          Odhlásiť sa
+          {t("Odhlásiť sa")}
         </button>
       </nav>
     </aside>

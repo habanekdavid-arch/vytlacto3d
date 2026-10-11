@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { getSafeServerSession } from "@/lib/session";
 import AccountEditForm from "@/components/AccountEditForm";
 import { missingProfileFields } from "@/lib/profile";
+import { getT } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
 
@@ -10,6 +11,7 @@ export default async function AccountPage({
 }: {
   searchParams: Promise<{ dokoncit?: string; vitajte?: string }>;
 }) {
+  const { t } = await getT();
   const { dokoncit, vitajte } = await searchParams;
   const session = await getSafeServerSession();
   const sessionUser = session?.user as { id?: string } | undefined;
@@ -58,47 +60,46 @@ export default async function AccountPage({
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="min-w-0">
               <div className="text-base font-extrabold text-neutral-900">
-                {vitajte === "1" ? "Vitajte! Účet je vytvorený — ešte dokončite registráciu" : "Dokončite registráciu"}
+                {vitajte === "1" ? t("Vitajte! Účet je vytvorený — ešte dokončite registráciu") : t("Dokončite registráciu")}
               </div>
               <p className="mt-1 max-w-xl text-sm text-neutral-700">
-                Účet už funguje. Keď doplníte zvyšné údaje, pri objednávke ich nebudete musieť vypisovať
-                a faktúru vystavíme bez otázok.
+                {t("Účet už funguje. Keď doplníte zvyšné údaje, pri objednávke ich nebudete musieť vypisovať a faktúru vystavíme bez otázok.")}
               </p>
             </div>
             <a
               href="?dokoncit=1#upravit-udaje"
               className="shrink-0 rounded-2xl bg-[#FFAE00] px-5 py-2.5 text-sm font-bold text-black transition hover:brightness-95"
             >
-              Doplniť údaje
+              {t("Doplniť údaje")}
             </a>
           </div>
           <ul className="mt-3 flex flex-wrap gap-2">
             {missingFields.map(f => (
-              <li key={f} className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-neutral-700 ring-1 ring-[#FFAE00]/40">{f}</li>
+              <li key={f} className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-neutral-700 ring-1 ring-[#FFAE00]/40">{t(f)}</li>
             ))}
           </ul>
         </div>
       )}
 
       {/* Osobné údaje */}
-      <Section title="Osobné údaje">
+      <Section title={t("Osobné údaje")}>
         <Grid>
           <InfoCard label="Meno a priezvisko" value={user.name} />
-          <InfoCard label="E-mail" value={user.email} />
-          <InfoCard label="Telefón" value={user.phone} />
+          <InfoCard label={t("E-mail")} value={user.email} />
+          <InfoCard label={t("Telefón")} value={user.phone} />
           <InfoCard
-            label="Typ účtu"
-            value={isCompany ? "Firma" : "Súkromná osoba"}
+            label={t("Typ účtu")}
+            value={isCompany ? t("Firma") : t("Súkromná osoba")}
             badge={isCompany ? "company" : "person"}
           />
           <InfoCard
-            label="Počet objednávok"
+            label={t("Počet objednávok")}
             value={String(user._count.orders)}
           />
           {isCompany && (
             <InfoCard
               label="Platca DPH"
-              value={user.vatPayer ? "Áno" : "Nie"}
+              value={user.vatPayer ? t("Áno") : t("Nie")}
             />
           )}
         </Grid>
@@ -106,20 +107,20 @@ export default async function AccountPage({
 
       {/* Firemné údaje */}
       {isCompany && (
-        <Section title="Firemné údaje">
+        <Section title={t("Firemné údaje")}>
           <Grid>
-            <InfoCard label="Názov spoločnosti" value={user.companyName} />
-            <InfoCard label="Kontaktná osoba" value={user.contactPerson} />
-            <InfoCard label="IČO" value={user.ico} />
-            <InfoCard label="DIČ" value={user.dic} />
-            {user.vatPayer && <InfoCard label="IČ DPH" value={user.icDph} />}
+            <InfoCard label={t("Názov spoločnosti")} value={user.companyName} />
+            <InfoCard label={t("Kontaktná osoba")} value={user.contactPerson} />
+            <InfoCard label={t("IČO")} value={user.ico} />
+            <InfoCard label={t("DIČ")} value={user.dic} />
+            {user.vatPayer && <InfoCard label={t("IČ DPH")} value={user.icDph} />}
           </Grid>
         </Section>
       )}
 
       {/* Fakturačná adresa — len pre firmy */}
       {isCompany && (
-        <Section title="Fakturačná adresa">
+        <Section title={t("Fakturačná adresa")}>
           <AddressBlock
             street={user.billingStreet}
             city={user.billingCity}
@@ -130,11 +131,11 @@ export default async function AccountPage({
       )}
 
       {/* Doručovacia / dodacia adresa */}
-      <Section title={isCompany ? "Dodacia adresa" : "Doručovacia adresa"}>
+      <Section title={isCompany ? t("Dodacia adresa") : t("Doručovacia adresa")}>
         {isCompany && (user.shippingName || user.shippingContact) && (
           <Grid>
-            <InfoCard label="Názov / firma" value={user.shippingName} />
-            <InfoCard label="Kontaktná osoba" value={user.shippingContact} />
+            <InfoCard label={t("Názov / firma")} value={user.shippingName} />
+            <InfoCard label={t("Kontaktná osoba")} value={user.shippingContact} />
           </Grid>
         )}
         <AddressBlock
@@ -149,10 +150,10 @@ export default async function AccountPage({
       {/* Editácia údajov */}
       <section id="upravit-udaje" className="scroll-mt-28 rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm">
         <h2 className="text-lg font-extrabold tracking-tight text-neutral-900">
-          Upraviť moje údaje
+          {t("Upraviť moje údaje")}
         </h2>
         <p className="mt-1 text-sm text-neutral-500">
-          Fakturačná a dodacia adresa sa predvyplní pri ďalšej objednávke.
+          {t("Fakturačná a dodacia adresa sa predvyplní pri ďalšej objednávke.")}
         </p>
         <AccountEditForm
           defaultEditing={dokoncit === "1" && missingFields.length > 0}
@@ -197,25 +198,26 @@ function Grid({ children }: { children: React.ReactNode }) {
   return <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">{children}</div>;
 }
 
-function AddressBlock({
+async function AddressBlock({
   street, city, zip, country, className = "",
 }: {
   street?: string | null; city?: string | null; zip?: string | null; country?: string | null; className?: string;
 }) {
+  const { t } = await getT();
   const empty = !street && !city && !zip && !country;
   if (empty) {
     return (
       <div className="rounded-2xl border border-dashed border-neutral-200 bg-neutral-50 p-4 text-sm text-neutral-400">
-        Adresa nie je vyplnená
+        {t("Adresa nie je vyplnená")}
       </div>
     );
   }
   return (
     <div className={`grid gap-3 sm:grid-cols-2 md:grid-cols-4 ${className}`}>
-      <InfoCard label="Ulica a číslo" value={street} />
-      <InfoCard label="Mesto" value={city} />
-      <InfoCard label="PSČ" value={zip} />
-      <InfoCard label="Krajina" value={country} />
+      <InfoCard label={t("Ulica a číslo")} value={street} />
+      <InfoCard label={t("Mesto")} value={city} />
+      <InfoCard label={t("PSČ")} value={zip} />
+      <InfoCard label={t("Krajina")} value={country} />
     </div>
   );
 }

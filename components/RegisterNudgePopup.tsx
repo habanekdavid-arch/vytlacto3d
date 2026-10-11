@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
+import { useT } from "@/lib/i18n/client";
 
 const STORAGE_KEY = "vytlacto3d:register-nudge-last-seen";
 const SHOW_AFTER_MS = 60_000;
@@ -43,6 +44,7 @@ const BENEFITS = [
 
 export default function RegisterNudgePopup() {
   const { status } = useSession();
+  const t = useT();
   const [visible, setVisible] = useState(false);
   const [closing, setClosing] = useState(false);
 
@@ -95,14 +97,14 @@ export default function RegisterNudgePopup() {
                     VytlačTo3D
                   </div>
                   <div className="text-[15px] font-extrabold leading-snug text-white">
-                    Zrýchlite si objednávanie
+                    {t("Zrýchlite si objednávanie")}
                   </div>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={doClose}
-                aria-label="Zatvoriť"
+                aria-label={t("Zatvoriť")}
                 className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/10 transition hover:bg-white/20"
               >
                 <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeOpacity="0.7">
@@ -116,7 +118,7 @@ export default function RegisterNudgePopup() {
           {/* Body */}
           <div className="px-6 pt-5 pb-6">
             <p className="text-[13px] leading-relaxed text-neutral-500">
-              Registrovaní zákazníci majú objednávanie výrazne jednoduchšie:
+              {t("Registrovaní zákazníci majú objednávanie výrazne jednoduchšie:")}
             </p>
 
             <ul className="mt-3 space-y-2">
@@ -125,7 +127,7 @@ export default function RegisterNudgePopup() {
                   <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-[#FFAE00] text-black">
                     <IconCheck />
                   </span>
-                  {b}
+                  {t(b)}
                 </li>
               ))}
             </ul>
@@ -136,14 +138,14 @@ export default function RegisterNudgePopup() {
                 onClick={doClose}
                 className="flex-1 rounded-xl bg-[#FFAE00] px-4 py-2.5 text-center text-[13px] font-extrabold text-black transition hover:bg-[#e09d00]"
               >
-                Vytvoriť účet
+                {t("Vytvoriť účet")}
               </Link>
               <Link
                 href="/prihlasenie"
                 onClick={doClose}
                 className="flex-1 rounded-xl border border-neutral-200 bg-white px-4 py-2.5 text-center text-[13px] font-semibold text-neutral-700 transition hover:bg-neutral-50"
               >
-                Prihlásiť sa
+                {t("Prihlásiť sa")}
               </Link>
             </div>
 
@@ -152,7 +154,7 @@ export default function RegisterNudgePopup() {
               onClick={doClose}
               className="mt-3 w-full text-center text-[12px] text-neutral-400 transition hover:text-neutral-600"
             >
-              Pokračovať bez registrácie
+              {t("Pokračovať bez registrácie")}
             </button>
           </div>
 

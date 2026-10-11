@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { COMMUNITY_REACTIONS, type ReactionKey } from "@/lib/komunita";
+import { useT } from "@/lib/i18n/client";
 
 export default function ReactionBar({
   postId,
@@ -18,6 +19,7 @@ export default function ReactionBar({
   loggedIn: boolean;
   loginHref: string;
 }) {
+  const t = useT();
   const router = useRouter();
   const [counts, setCounts] = useState(initialCounts);
   const [mine, setMine] = useState(initialMine);
@@ -44,12 +46,12 @@ export default function ReactionBar({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ type: next }),
       });
-      if (!res.ok) throw new Error((await res.json().catch(() => null))?.error ?? "Reakciu sa nepodarilo uložiť.");
+      if (!res.ok) throw new Error((await res.json().catch(() => null))?.error ?? t("Reakciu sa nepodarilo uložiť."));
       router.refresh();
     } catch (e) {
       setCounts(prev.counts);
       setMine(prev.mine);
-      setError(e instanceof Error ? e.message : "Reakciu sa nepodarilo uložiť.");
+      setError(e instanceof Error ? e.message : t("Reakciu sa nepodarilo uložiť."));
     } finally {
       setBusy(false);
     }
@@ -70,7 +72,7 @@ export default function ReactionBar({
           const inner = (
             <>
               <span className="text-base leading-none">{r.emoji}</span>
-              <span>{r.label}</span>
+              <span>{t(r.label)}</span>
               {count > 0 && <span className="text-neutral-500">{count}</span>}
             </>
           );
@@ -80,7 +82,7 @@ export default function ReactionBar({
               {inner}
             </button>
           ) : (
-            <Link key={r.key} href={loginHref} className={className} title="Na reagovanie sa prihlás">
+            <Link key={r.key} href={loginHref} className={className} title={t("Na reagovanie sa prihlás")}>
               {inner}
             </Link>
           );

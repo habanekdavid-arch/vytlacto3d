@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useSession } from "next-auth/react";
+import { useT } from "@/lib/i18n/client";
 
 function UserIcon() {
   return (
@@ -23,12 +24,13 @@ function UserIcon() {
 
 export default function AccountButton() {
   const { data: session, status } = useSession();
+  const t = useT();
 
   if (status === "loading") {
     return (
       <div className="inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-4 py-2 text-sm font-medium text-neutral-500">
         <span className="inline-flex h-8 w-8 animate-pulse items-center justify-center rounded-full bg-neutral-100" />
-        <span className="hidden sm:inline">Načítavam...</span>
+        <span className="hidden sm:inline">{t("Načítavam...")}</span>
       </div>
     );
   }
@@ -47,7 +49,7 @@ export default function AccountButton() {
         <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[#FFAE00] text-sm font-bold text-black">
           {initial}
         </span>
-        <span className="hidden sm:inline">Môj účet</span>
+        <span className="hidden sm:inline">{t("Môj účet")}</span>
       </Link>
     );
   }
@@ -60,7 +62,7 @@ export default function AccountButton() {
       <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[#FFAE00]/15 text-[#FFAE00]">
         <UserIcon />
       </span>
-      <span className="hidden sm:inline">Prihlásiť sa</span>
+      <span className="hidden sm:inline">{t("Prihlásiť sa")}</span>
     </Link>
   );
 }

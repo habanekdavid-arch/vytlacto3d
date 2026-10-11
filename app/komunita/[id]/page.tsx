@@ -16,6 +16,8 @@ import ReactionBar from "@/components/komunita/ReactionBar";
 import CommentSection from "@/components/komunita/CommentSection";
 import PostActions from "@/components/komunita/PostActions";
 import { VerifiedBadge } from "@/components/komunita/PostCard";
+import { getT } from "@/lib/i18n/server";
+import { LOCALE_INFO } from "@/lib/i18n/config";
 
 export const dynamic = "force-dynamic";
 
@@ -25,16 +27,18 @@ export async function generateMetadata({ params }: Params) {
   const { id } = await params;
   await ensureCommunityTables();
   const post = await prisma.communityPost.findFirst({ where: { id, status: "PUBLISHED" } });
-  if (!post) return { title: "Príspevok nenájdený" };
+  const { t } = await getT();
+  if (!post) return { title: t("Príspevok nenájdený") };
   const description = post.story.slice(0, 160);
   return {
-    title: `${post.title} – Komunita`,
+    title: `${post.title} – ${t("Komunita")}`,
     description,
     openGraph: { title: post.title, description, images: post.images.slice(0, 1) },
   };
 }
 
 export default async function KomunitaPostPage({ params }: Params) {
+  const { t, locale } = await getT();
   const { id } = await params;
   await ensureCommunityTables();
   const viewer = await getCommunityViewer();
@@ -82,16 +86,16 @@ export default async function KomunitaPostPage({ params }: Params) {
         href="/komunita"
         className="mb-8 inline-flex rounded-full border border-neutral-200 bg-white px-4 py-2 text-sm font-semibold text-neutral-700 shadow-sm transition hover:bg-neutral-50"
       >
-        ← Späť do komunity
+        {t("← Späť do komunity")}
       </Link>
 
       {!published && (
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#FFAE00]/40 bg-[#FFAE00]/10 px-5 py-4 text-sm text-neutral-800">
           <span>
-            <strong>{STATUS_LABELS[status] ?? status}.</strong>{" "}
+            <strong>{t(STATUS_LABELS[status] ?? status)}.</strong>{" "}
             {status === "PENDING"
-              ? "Príspevok uvidia ostatní, keď ho skontrolujeme."
-              : "Príspevok je skrytý a ostatní ho nevidia."}
+              ? t("Príspevok uvidia ostatní, keď ho skontrolujeme.")
+              : t("Príspevok je skrytý a ostatní ho nevidia.")}
           </span>
         </div>
       )}
@@ -100,7 +104,7 @@ export default async function KomunitaPostPage({ params }: Params) {
         <div className="relative aspect-[16/10] bg-neutral-100">
           <Image src={post.images[0]} alt={post.title} fill priority sizes="(min-width: 1024px) 1000px, 100vw" className="object-cover" />
           <div className="absolute left-5 top-5 rounded-full bg-white/90 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide text-neutral-900 shadow-sm backdrop-blur">
-            {post.category}
+            {t(post.category)}
           </div>
         </div>
 
@@ -114,7 +118,7 @@ export default async function KomunitaPostPage({ params }: Params) {
                 {author}
                 {post.orderId && <VerifiedBadge />}
               </div>
-              <div className="text-sm text-neutral-500">{formatCommunityDate(post.createdAt)}</div>
+              <div className="text-sm text-neutral-500">{formatCommunityDate(post.createdAt, LOCALE_INFO[locale].intl)}</div>
             </div>
             {(isOwner || viewer?.isAdmin) && (
               <div className="ml-auto">
@@ -127,8 +131,8 @@ export default async function KomunitaPostPage({ params }: Params) {
 
           {post.material && (
             <div className="mt-4 inline-flex rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-2 text-sm">
-              <span className="font-bold text-neutral-500">Materiál:&nbsp;</span>
-              <span className="font-semibold text-neutral-900">{materialLabel(post.material, post.material)}</span>
+              <span className="font-bold text-neutral-500">{t("Materiál:")}&nbsp;</span>
+              <span className="font-semibold text-neutral-900">{t(materialLabel(post.material, post.material))}</span>
             </div>
           )}
 
@@ -163,7 +167,7 @@ export default async function KomunitaPostPage({ params }: Params) {
               id: c.id,
               text: c.text,
               author: publicName(c.user.name),
-              date: formatCommunityDate(c.createdAt),
+              date: formatCommunityDate(c.createdAt, LOCALE_INFO[locale].intl),
               isAuthorOfPost: c.userId === post.userId,
               isTeam: adminEmails.includes(c.user.email.toLowerCase()),
               canDelete: Boolean(viewer && (viewer.id === c.userId || viewer.isAdmin)),
@@ -173,15 +177,15 @@ export default async function KomunitaPostPage({ params }: Params) {
       </article>
 
       <section className="mt-12 rounded-[28px] bg-neutral-900 px-6 py-10 text-center text-white md:px-12">
-        <h2 className="text-2xl font-extrabold tracking-tight md:text-3xl">Aj ty máš nápad na výtlačok?</h2>
+        <h2 className="text-2xl font-extrabold tracking-tight md:text-3xl">{t("Aj ty máš nápad na výtlačok?")}</h2>
         <p className="mx-auto mt-3 max-w-xl text-sm text-white/70">
-          Nahraj STL model, vyber materiál a hneď uvidíš cenu. Potom sa môžeš pochváliť tu v komunite.
+          {t("Nahraj STL model, vyber materiál a hneď uvidíš cenu. Potom sa môžeš pochváliť tu v komunite.")}
         </p>
         <Link
           href="/#kalkulator"
           className="mt-6 inline-flex rounded-2xl bg-[#FFAE00] px-6 py-3 text-sm font-bold text-black transition hover:brightness-95"
         >
-          Spočítať cenu tlače
+          {t("Spočítať cenu tlače")}
         </Link>
       </section>
     </main>
