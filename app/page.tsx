@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import UploadBox, { UploadBoxHandle } from "@/components/UploadBox";
-import ModelBuildAnimation, { type BuildPhase } from "@/components/ModelBuildAnimation";
 import Configurator, { ConfigState } from "@/components/Configurator";
 import StlViewer from "@/components/StlViewer";
 import CartSidebar from "@/components/CartSidebar";
@@ -79,8 +78,6 @@ export default function Home() {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [activeItemId, setActiveItemId] = useState<string | null>(null);
   const [uploadLoading, setUploadLoading] = useState(false);
-  const [buildFile, setBuildFile] = useState<File | null>(null);
-  const [build, setBuild] = useState<{ phase: BuildPhase; progress: number }>({ phase: "upload", progress: 0 });
   const [orderLoading, setOrderLoading] = useState(false);
   const [deliveryMethod, setDeliveryMethod] = useState<"packeta" | "courier">("packeta");
   const [packetaPoint, setPacketaPoint] = useState<PacketaPoint | null>(null);
@@ -774,12 +771,16 @@ export default function Home() {
                 onUploadingChange={setUploadLoading}
                 onUploaded={(u) => addToCart(u)}
                 hideDropzone={!!activeItem}
-                onPreviewFile={setBuildFile}
-                onProgress={(phase, progress) => setBuild({ phase, progress })}
               />
-              {uploadLoading && (
-                <div className="mt-4">
-                  <ModelBuildAnimation file={buildFile} phase={build.phase} progress={build.progress} />
+              {uploadLoading && !activeItem && (
+                <div className="mt-4 rounded-2xl border border-[#FFAE00]/40 bg-[#FFAE00]/10 p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="h-5 w-5 animate-spin rounded-full border-2 border-neutral-300 border-t-[#FFAE00]" />
+                    <div>
+                      <div className="text-sm font-bold text-neutral-900">{t("Nahrávam a analyzujem model")}</div>
+                      <div className="text-xs text-neutral-600">{t("Počkajte chvíľu, pripravujeme 3D náhľad a výpočet parametrov.")}</div>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
