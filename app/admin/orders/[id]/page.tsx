@@ -13,6 +13,9 @@ import { buildOrderCopyText } from "@/lib/order-copy-text";
 import { buildFlowiiZakazka, type FlowiiZakazkaDraft } from "@/lib/flowii/zakazka";
 import { getFlowiiSyncStatus, isFlowiiAutoEnabled, isFlowiiConfigured, type FlowiiSyncRow } from "@/lib/flowii/sync";
 import FlowiiActions from "@/components/FlowiiActions";
+import PacketaLabelPanel from "@/components/admin/PacketaLabelPanel";
+import { isPacketaConfigured } from "@/lib/packeta/client";
+import { DEFAULT_PARCEL_CM, buildPacketDraft, getPacketaShipment, type PacketDraft } from "@/lib/packeta/shipment";
 import {
   COLOR_OPTIONS,
   MATERIAL_OPTIONS,
@@ -91,6 +94,9 @@ export default async function AdminOrderDetailPage({
     include: { creditNotes: { select: { id: true, invoiceNumber: true } } },
     orderBy: { createdAt: "asc" },
   });
+
+  const packetDraft = buildPacketDraft(order);
+  const packetaShipment = packetDraft.isPacketa ? await getPacketaShipment(order.id) : null;
 
   const copyText = buildOrderCopyText(order);
   const flowiiSync = await getFlowiiSyncStatus(order.id);
@@ -448,6 +454,13 @@ export default async function AdminOrderDetailPage({
           </Panel>
         </section>
 
+        <PacketaSection
+          orderId={order.id}
+          draft={packetDraft}
+          shipment={packetaShipment}
+          configured={isPacketaConfigured()}
+        />
+
         <FlowiiPreview
           draft={flowiiDraft}
           sync={flowiiSync}
@@ -687,6 +700,68 @@ function FlowiiPreview({
           {draft.description}
         </pre>
       </details>
+    </section>
+  );
+}
+
+function PacketaSection({
+  orderId,
+  draft,
+  shipment,
+  configured,
+}: {
+  orderId: string;
+  draft: PacketDraft;
+  shipment: { barcode: string; barcodeText: string; createdAt: Date; weightKg: number } | null;
+  configured: boolean;
+}) {
+  if (!draft.isPacketa) return null;
+  return (
+    <section className="mt-6 rounded-3xl border border-[#BA1B02]/20 bg-white p-6 shadow-[0_12px_40px_rgba(0,0,0,0.06)]">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="text-lg font-extrabold text-neutral-900">Packeta — štítok na balík</h2>
+          <p className="mt-1 text-sm text-neutral-500">
+            {shipment
+              ? "Zásielka je zaregistrovaná v Packete. Štítok si stiahnite a nalepte na balík."
+              : "Tlačidlo zaregistruje zásielku v Packete a otvorí štítok na tlač."}
+          </p>
+        </div>
+        <span
+          className={`rounded-full border px-3 py-1 text-xs font-bold ${
+            shipment ? "border-green-300 bg-green-50 text-green-800" : "border-neutral-200 bg-neutral-50 text-neutral-500"
+          }`}
+        >
+          {shipment ? `✓ ${shipment.barcodeText}` : configured ? "Zásielka ešte nevytvorená" : "Napojenie neaktívne"}
+        </span>
+      </div>
+
+      <div className="mt-4 grid gap-3 text-sm sm:grid-cols-3">
+        <InfoCard label="Výdajné miesto" value={draft.pointName ? `${draft.pointName} (ID ${draft.pointId})` : "—"} />
+        <InfoCard label="Príjemca" value={[draft.recipient, draft.phone, draft.email].filter(Boolean).join(" · ") || "—"} />
+        <InfoCard label="Hodnota zásielky" value={`${draft.valueEur.toFixed(2)} €`} />
+      </div>
+
+      {!shipment && draft.warnings.length > 0 && (
+        <div className="mt-4 rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          {draft.warnings.map((w) => (
+            <div key={w}>⚠ {w}</div>
+          ))}
+        </div>
+      )}
+
+      <PacketaLabelPanel
+        orderId={orderId}
+        configured={configured}
+        ready={draft.ready && draft.warnings.length === 0}
+        shipment={
+          shipment
+            ? { barcode: shipment.barcode, barcodeText: shipment.barcodeText, createdAt: shipment.createdAt.toISOString(), weightKg: shipment.weightKg }
+            : null
+        }
+        defaultWeightKg={draft.weightKg}
+        defaultSize={DEFAULT_PARCEL_CM}
+      />
     </section>
   );
 }
