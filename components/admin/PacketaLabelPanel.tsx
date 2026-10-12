@@ -10,6 +10,11 @@ const FORMATS = [
   { value: "A7 on A7", label: "A7 (tlačiareň štítkov)" },
 ];
 
+type CheckResult = {
+  password: { set: boolean; length?: number; hint?: string; matchesWidgetKey?: boolean; problems: string[] };
+  connection: { ok: boolean; message: string };
+};
+
 type Shipment = { barcode: string; barcodeText: string; createdAt: string; weightKg: number };
 
 /**
@@ -41,6 +46,19 @@ export default function PacketaLabelPanel({
   });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [check, setCheck] = useState<CheckResult | "loading" | null>(null);
+
+  async function runCheck() {
+    setCheck("loading");
+    try {
+      const res = await fetch("/api/admin/packeta/check", { cache: "no-store" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Kontrola zlyhala.");
+      setCheck(data as CheckResult);
+    } catch (e) {
+      setCheck({ password: { set: false, problems: [] }, connection: { ok: false, message: e instanceof Error ? e.message : "Kontrola zlyhala." } });
+    }
+  }
 
   const labelUrl = (f: string) => `/api/admin/orders/${orderId}/packeta/label?format=${encodeURIComponent(f)}`;
 
@@ -147,6 +165,35 @@ export default function PacketaLabelPanel({
       {error && (
         <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{error}</div>
       )}
+
+      <div className="border-t border-neutral-100 pt-4">
+        <button
+          type="button"
+          onClick={runCheck}
+          disabled={check === "loading"}
+          className="rounded-2xl border border-neutral-200 bg-white px-4 py-2 text-sm font-semibold text-neutral-700 transition hover:bg-neutral-50 disabled:opacity-50"
+        >
+          {check === "loading" ? "Overujem…" : "Overiť pripojenie k Packete"}
+        </button>
+        {check && check !== "loading" && (
+          <div
+            className={`mt-3 rounded-2xl border px-4 py-3 text-sm ${
+              check.connection.ok ? "border-green-200 bg-green-50 text-green-900" : "border-red-200 bg-red-50 text-red-900"
+            }`}
+          >
+            <div className="font-bold">{check.connection.ok ? "✓ " : "✗ "}{check.connection.message}</div>
+            {check.password.set && (
+              <div className="mt-1 text-xs opacity-80">
+                PACKETA_API_PASSWORD: {check.password.length} znakov ({check.password.hint}) ·{" "}
+                {check.password.matchesWidgetKey ? "sedí s API kľúčom widgetu" : "nesedí s API kľúčom widgetu"}
+              </div>
+            )}
+            {check.password.problems.map((p) => (
+              <div key={p} className="mt-1 text-xs">⚠ {p}</div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
