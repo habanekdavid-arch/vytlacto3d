@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getSafeServerSession } from "@/lib/session";
 import { formatDateSK } from "@/lib/formatDate";
 import AdminOrdersClient from "@/components/AdminOrdersClient";
+import { ensurePacketaTable } from "@/lib/packeta/shipment";
 import { colorLabel, materialLabel, qualityLabel } from "@/lib/print-options";
 
 export const dynamic = "force-dynamic";
@@ -89,6 +90,14 @@ export default async function AdminOrdersPage() {
     },
   });
 
+  // Zásielky Packeta k objednávkam v zozname — pre ikonku so stavom štítku.
+  await ensurePacketaTable();
+  const packetaShipments = await prisma.packetaShipment.findMany({
+    where: { orderId: { in: ordersRaw.map((o) => o.id) } },
+    select: { orderId: true, barcodeText: true },
+  });
+  const packetaByOrder = new Map(packetaShipments.map((p) => [p.orderId, p.barcodeText]));
+
   const orders = ordersRaw.map((order) => ({
     id: order.id,
     orderNumber: order.orderNumber ?? null,
@@ -104,6 +113,8 @@ export default async function AdminOrdersPage() {
     allowModelAdjustments: Boolean((order.config as Record<string, unknown> | null)?.allowModelAdjustments),
     modelCount: order._count.orderItems,
     models: getModels(order),
+    isPacketa: (order.deliveryAddress as Record<string, unknown> | null)?.type === "packeta",
+    packetaBarcodeText: packetaByOrder.get(order.id) ?? null,
   }));
 
   // paidTotalEur je zo Stripe — už obsahuje DPH, sčítame priamo

@@ -14,6 +14,7 @@ import { buildFlowiiZakazka, type FlowiiZakazkaDraft } from "@/lib/flowii/zakazk
 import { getFlowiiSyncStatus, isFlowiiAutoEnabled, isFlowiiConfigured, type FlowiiSyncRow } from "@/lib/flowii/sync";
 import FlowiiActions from "@/components/FlowiiActions";
 import PacketaLabelPanel from "@/components/admin/PacketaLabelPanel";
+import { PacketaLogo } from "@/components/admin/PacketaIcon";
 import { isPacketaConfigured } from "@/lib/packeta/client";
 import { DEFAULT_PARCEL_CM, buildPacketDraft, getPacketaShipment, type PacketDraft } from "@/lib/packeta/shipment";
 import {
@@ -717,10 +718,13 @@ function PacketaSection({
 }) {
   if (!draft.isPacketa) return null;
   return (
-    <section className="mt-6 rounded-3xl border border-[#BA1B02]/20 bg-white p-6 shadow-[0_12px_40px_rgba(0,0,0,0.06)]">
+    <section id="packeta" className="mt-6 scroll-mt-28 rounded-3xl border border-[#BA1B02]/20 bg-white p-6 shadow-[0_12px_40px_rgba(0,0,0,0.06)]">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-lg font-extrabold text-neutral-900">Packeta — štítok na balík</h2>
+          <h2 className="flex items-center gap-3 text-lg font-extrabold text-neutral-900">
+            <PacketaLogo className="h-7 w-auto" />
+            Štítok na balík
+          </h2>
           <p className="mt-1 text-sm text-neutral-500">
             {shipment
               ? "Zásielka je zaregistrovaná v Packete. Štítok si stiahnite a nalepte na balík."
