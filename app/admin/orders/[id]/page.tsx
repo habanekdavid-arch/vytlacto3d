@@ -97,7 +97,7 @@ export default async function AdminOrderDetailPage({
   });
 
   const packetDraft = buildPacketDraft(order);
-  const packetaShipment = packetDraft.isPacketa ? await getPacketaShipment(order.id) : null;
+  const packetaShipment = await getPacketaShipment(order.id);
 
   const copyText = buildOrderCopyText(order);
   const flowiiSync = await getFlowiiSyncStatus(order.id);
@@ -716,7 +716,6 @@ function PacketaSection({
   shipment: { barcode: string; barcodeText: string; createdAt: Date; weightKg: number } | null;
   configured: boolean;
 }) {
-  if (!draft.isPacketa) return null;
   return (
     <section id="packeta" className="mt-6 scroll-mt-28 rounded-3xl border border-[#BA1B02]/20 bg-white p-6 shadow-[0_12px_40px_rgba(0,0,0,0.06)]">
       <div className="flex flex-wrap items-start justify-between gap-3">

@@ -113,7 +113,10 @@ export default async function AdminOrdersPage() {
     allowModelAdjustments: Boolean((order.config as Record<string, unknown> | null)?.allowModelAdjustments),
     modelCount: order._count.orderItems,
     models: getModels(order),
-    isPacketa: (order.deliveryAddress as Record<string, unknown> | null)?.type === "packeta",
+    isPacketa: Boolean(
+      (order.deliveryAddress as Record<string, unknown> | null)?.type === "packeta" ||
+        (order.deliveryAddress as Record<string, unknown> | null)?.packetaPointId
+    ),
     packetaBarcodeText: packetaByOrder.get(order.id) ?? null,
   }));
 

@@ -103,8 +103,8 @@ function estimateWeightKg(order: OrderForPacket): number {
 export function buildPacketDraft(order: OrderForPacket): PacketDraft {
   const delivery = rec(order.deliveryAddress);
   const shipping = rec(order.shippingAddress);
-  const isPacketa = delivery.type === "packeta";
   const pointId = str(delivery.packetaPointId);
+  const isPacketa = delivery.type === "packeta" || pointId !== null;
   const recipient =
     str(shipping.name) ?? str(order.user?.name) ?? str(order.contactPerson) ?? str(delivery.contact) ?? "";
   const email = str(order.customerEmail);
@@ -113,7 +113,7 @@ export function buildPacketDraft(order: OrderForPacket): PacketDraft {
   const valueEur = num(order.paidTotalEur) ?? (num(pricing.total) !== null ? Math.round(num(pricing.total)! * 1.23 * 100) / 100 : 0);
 
   const warnings: string[] = [];
-  if (!isPacketa) warnings.push("Objednávka nie je na výdajné miesto Packeta (doprava kuriérom).");
+  if (!isPacketa) warnings.push("Objednávka nemá vybrané výdajné miesto Packeta (napr. doprava kuriérom) — štítok sa nedá vytvoriť.");
   else if (!pointId) warnings.push("Pri objednávke chýba ID výdajného miesta Packeta.");
   if (!recipient) warnings.push("Chýba meno príjemcu.");
   if (!email && !phone) warnings.push("Chýba e-mail aj telefón príjemcu — Packeta ho nebude vedieť upozorniť.");
