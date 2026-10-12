@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import UploadBox, { UploadBoxHandle } from "@/components/UploadBox";
+import ModelBuildAnimation, { type BuildPhase } from "@/components/ModelBuildAnimation";
 import Configurator, { ConfigState } from "@/components/Configurator";
 import StlViewer from "@/components/StlViewer";
 import CartSidebar from "@/components/CartSidebar";
@@ -77,7 +78,16 @@ export default function Home() {
   const uploadBoxRef = useRef<UploadBoxHandle>(null);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [activeItemId, setActiveItemId] = useState<string | null>(null);
-  const [uploadLoading, setUploadLoading] = useState(false);
+  // Animácia „tlače“ počas nahrávania. Hotový model sa do kalkulátora
+  // pridá až keď animácia dobehne (onFinished), aby prechod bol plynulý.
+  const [build, setBuild] = useState<{
+    file: File | null;
+    phase: BuildPhase;
+    progress: number;
+    result: Uploaded | null;
+  } | null>(null);
+  const handedOffRef = useRef<Uploaded | null>(null);
+  const buildResult = build?.result ?? null;
   const [orderLoading, setOrderLoading] = useState(false);
   const [deliveryMethod, setDeliveryMethod] = useState<"packeta" | "courier">("packeta");
   const [packetaPoint, setPacketaPoint] = useState<PacketaPoint | null>(null);
@@ -192,6 +202,23 @@ export default function Home() {
     },
     [activeItemId, updateItemPricing, updateItemConfig]
   );
+
+  // Model z animácie sa do kalkulátora pridá práve raz — keď animácia
+  // dobehne, alebo poistkou nižšie, keby sa zasekla.
+  function finishBuild(result: Uploaded | null) {
+    if (result && handedOffRef.current !== result) {
+      handedOffRef.current = result;
+      addToCart(result);
+    }
+    setBuild(null);
+  }
+
+  useEffect(() => {
+    if (!buildResult) return;
+    const id = setTimeout(() => finishBuild(buildResult), 5000);
+    return () => clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [buildResult]);
 
   function addToCart(uploaded: Uploaded) {
     const id = String(Date.now());
@@ -768,19 +795,25 @@ export default function Home() {
               )}
               <UploadBox
                 ref={uploadBoxRef}
-                onUploadingChange={setUploadLoading}
-                onUploaded={(u) => addToCart(u)}
-                hideDropzone={!!activeItem}
+                onUploadingChange={(value) => {
+                  if (value) setBuild({ file: null, phase: "upload", progress: 0, result: null });
+                  // Pri chybe animáciu zavrieme hneď (úspech dobehne cez onFinished).
+                  else setBuild((b) => (b?.result ? b : null));
+                }}
+                onUploaded={(u) => setBuild((b) => (b ? { ...b, result: u } : b))}
+                hideDropzone={!!activeItem || !!build}
+                onPreviewFile={(file) => setBuild((b) => (b ? { ...b, file } : b))}
+                onProgress={(phase, progress) => setBuild((b) => (b ? { ...b, phase, progress } : b))}
               />
-              {uploadLoading && !activeItem && (
-                <div className="mt-4 rounded-2xl border border-[#FFAE00]/40 bg-[#FFAE00]/10 p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="h-5 w-5 animate-spin rounded-full border-2 border-neutral-300 border-t-[#FFAE00]" />
-                    <div>
-                      <div className="text-sm font-bold text-neutral-900">{t("Nahrávam a analyzujem model")}</div>
-                      <div className="text-xs text-neutral-600">{t("Počkajte chvíľu, pripravujeme 3D náhľad a výpočet parametrov.")}</div>
-                    </div>
-                  </div>
+              {build && (
+                <div className={activeItem ? "" : "mt-4"}>
+                  <ModelBuildAnimation
+                    file={build.file}
+                    phase={build.phase}
+                    progress={build.progress}
+                    done={!!build.result}
+                    onFinished={() => finishBuild(build.result)}
+                  />
                 </div>
               )}
             </div>
