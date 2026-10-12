@@ -277,3 +277,15 @@ model CommunityReaction {
 
   @@id([postId, userId])
 }
+
+// Zásielka Packeta vytvorená z administrácie (štítok na balík). Samostatná
+// tabuľka bez väzby na Order — ako FlowiiSync. Jedna zásielka na objednávku.
+model PacketaShipment {
+  orderId     String   @id
+  packetId    String
+  barcode     String
+  barcodeText String
+  pointId     String
+  weightKg    Float
+  createdAt   DateTime @default(now())
+}
