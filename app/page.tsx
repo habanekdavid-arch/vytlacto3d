@@ -78,14 +78,9 @@ export default function Home() {
   const uploadBoxRef = useRef<UploadBoxHandle>(null);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [activeItemId, setActiveItemId] = useState<string | null>(null);
-  // Animácia „tlače“ počas nahrávania. Hotový model sa do kalkulátora
-  // pridá až keď animácia dobehne (onFinished), aby prechod bol plynulý.
-  const [build, setBuild] = useState<{
-    file: File | null;
-    phase: BuildPhase;
-    progress: number;
-    result: Uploaded | null;
-  } | null>(null);
+  const [uploadLoading, setUploadLoading] = useState(false);
+  const [buildFile, setBuildFile] = useState<File | null>(null);
+  const [build, setBuild] = useState<{ phase: BuildPhase; progress: number }>({ phase: "upload", progress: 0 });
   const [orderLoading, setOrderLoading] = useState(false);
   const [deliveryMethod, setDeliveryMethod] = useState<"packeta" | "courier">("packeta");
   const [packetaPoint, setPacketaPoint] = useState<PacketaPoint | null>(null);
@@ -776,28 +771,15 @@ export default function Home() {
               )}
               <UploadBox
                 ref={uploadBoxRef}
-                onUploadingChange={(value) => {
-                  if (value) setBuild({ file: null, phase: "upload", progress: 0, result: null });
-                  // Pri chybe animáciu zavrieme hneď (úspech dobehne cez onFinished).
-                  else setBuild((b) => (b?.result ? b : null));
-                }}
-                onUploaded={(u) => setBuild((b) => (b ? { ...b, result: u } : b))}
-                hideDropzone={!!activeItem || !!build}
-                onPreviewFile={(file) => setBuild((b) => (b ? { ...b, file } : b))}
-                onProgress={(phase, progress) => setBuild((b) => (b ? { ...b, phase, progress } : b))}
+                onUploadingChange={setUploadLoading}
+                onUploaded={(u) => addToCart(u)}
+                hideDropzone={!!activeItem}
+                onPreviewFile={setBuildFile}
+                onProgress={(phase, progress) => setBuild({ phase, progress })}
               />
-              {build && (
-                <div className={activeItem ? "" : "mt-4"}>
-                  <ModelBuildAnimation
-                    file={build.file}
-                    phase={build.phase}
-                    progress={build.progress}
-                    done={!!build.result}
-                    onFinished={() => {
-                      if (build.result) addToCart(build.result);
-                      setBuild(null);
-                    }}
-                  />
+              {uploadLoading && (
+                <div className="mt-4">
+                  <ModelBuildAnimation file={buildFile} phase={build.phase} progress={build.progress} />
                 </div>
               )}
             </div>
