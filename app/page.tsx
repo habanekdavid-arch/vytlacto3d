@@ -86,6 +86,8 @@ export default function Home() {
     progress: number;
     result: Uploaded | null;
   } | null>(null);
+  const handedOffRef = useRef<Uploaded | null>(null);
+  const buildResult = build?.result ?? null;
   const [orderLoading, setOrderLoading] = useState(false);
   const [deliveryMethod, setDeliveryMethod] = useState<"packeta" | "courier">("packeta");
   const [packetaPoint, setPacketaPoint] = useState<PacketaPoint | null>(null);
@@ -200,6 +202,23 @@ export default function Home() {
     },
     [activeItemId, updateItemPricing, updateItemConfig]
   );
+
+  // Model z animácie sa do kalkulátora pridá práve raz — keď animácia
+  // dobehne, alebo poistkou nižšie, keby sa zasekla.
+  function finishBuild(result: Uploaded | null) {
+    if (result && handedOffRef.current !== result) {
+      handedOffRef.current = result;
+      addToCart(result);
+    }
+    setBuild(null);
+  }
+
+  useEffect(() => {
+    if (!buildResult) return;
+    const id = setTimeout(() => finishBuild(buildResult), 5000);
+    return () => clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [buildResult]);
 
   function addToCart(uploaded: Uploaded) {
     const id = String(Date.now());
@@ -793,10 +812,7 @@ export default function Home() {
                     phase={build.phase}
                     progress={build.progress}
                     done={!!build.result}
-                    onFinished={() => {
-                      if (build.result) addToCart(build.result);
-                      setBuild(null);
-                    }}
+                    onFinished={() => finishBuild(build.result)}
                   />
                 </div>
               )}

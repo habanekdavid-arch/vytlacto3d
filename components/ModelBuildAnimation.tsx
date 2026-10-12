@@ -332,12 +332,18 @@ export default function ModelBuildAnimation({
       }
       if (disposed) return;
       if (renderer) {
-        build(geometries ?? [fallbackGeometry()]);
-        // Plátno až s hotovým modelom — dovtedy je vidieť indikátor načítania.
-        mount.appendChild(renderer.domElement);
-        requestAnimationFrame(() => {
-          if (renderer) renderer.domElement.style.opacity = "1";
-        });
+        try {
+          build(geometries ?? [fallbackGeometry()]);
+          // Plátno až s hotovým modelom — dovtedy je vidieť indikátor načítania.
+          mount.appendChild(renderer.domElement);
+          requestAnimationFrame(() => {
+            if (renderer) renderer.domElement.style.opacity = "1";
+          });
+        } catch (e) {
+          // Chyba 3D scény nesmie zastaviť priebeh — ostane indikátor a pruh.
+          console.error("BUILD ANIMATION ERROR:", e);
+          renderer = null;
+        }
       }
       last = performance.now();
       frame = requestAnimationFrame(animate);
