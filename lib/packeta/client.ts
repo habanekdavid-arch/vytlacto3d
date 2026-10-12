@@ -1,4 +1,5 @@
 import { DOMParser } from "xmldom";
+import { PACKETA_WIDGET_API_KEY } from "@/lib/packeta/constants";
 
 /**
  * Klient pre Packeta REST API (XML). Dokumentácia:
@@ -23,7 +24,39 @@ export class PacketaError extends Error {
 }
 
 export function getPacketaApiPassword(): string | null {
-  return process.env.PACKETA_API_PASSWORD?.trim() || null;
+  // Pri vkladaní do Vercelu sa ľahko pribalia úvodzovky alebo medzery.
+  const raw = process.env.PACKETA_API_PASSWORD?.trim().replace(/^["']+|["']+$/g, "").trim();
+  return raw || null;
+}
+
+
+const INCORRECT_PASSWORD_HINT =
+  "API heslo bolo odmietnuté. V klientskej sekcii Packety (client.packeta.com → Klientská podpora) skopírujte " +
+  "„API heslo“ (32 znakov), nie „API kľúč“ (16 znakov), vložte ho do PACKETA_API_PASSWORD vo Verceli a nasaďte " +
+  "web znova (Redeploy) — zmena premennej sa prejaví až po novom nasadení.";
+
+/**
+ * Bezpečný popis nastaveného hesla (bez jeho prezradenia) — na odhalenie
+ * zámeny s API kľúčom, úvodzoviek alebo hesla z iného účtu.
+ */
+export function describePacketaPassword() {
+  const pw = getPacketaApiPassword();
+  if (!pw) return { set: false as const, problems: ["PACKETA_API_PASSWORD nie je nastavené."] };
+  const problems: string[] = [];
+  if (pw.length === 16) problems.push("Hodnota má 16 znakov — to je API kľúč, nie API heslo (32 znakov).");
+  else if (pw.length !== 32) problems.push(`Hodnota má ${pw.length} znakov — API heslo Packety má 32 znakov.`);
+  if (!/^[0-9a-f]+$/i.test(pw)) problems.push("Hodnota obsahuje iné znaky ako 0–9 a a–f — API heslo je hexadecimálny reťazec.");
+  const matchesWidgetKey = pw.slice(0, 16).toLowerCase() === PACKETA_WIDGET_API_KEY;
+  if (pw.length === 32 && !matchesWidgetKey) {
+    problems.push("Začiatok hesla nesedí s API kľúčom widgetu na webe — heslo je pravdepodobne z iného účtu Packety.");
+  }
+  return {
+    set: true as const,
+    length: pw.length,
+    hint: `${pw.slice(0, 4)}…${pw.slice(-2)}`,
+    matchesWidgetKey,
+    problems,
+  };
 }
 
 export function isPacketaConfigured(): boolean {
@@ -98,6 +131,7 @@ async function call(method: string, payload: XmlObject): Promise<Document> {
         details.push(inner ? `${name}: ${inner}` : name);
       }
     }
+    if (fault === "IncorrectApiPasswordFault") throw new PacketaError(INCORRECT_PASSWORD_HINT, fault);
     throw new PacketaError(
       details.length ? `${message} (${details.join("; ")})` : message,
       fault,
@@ -162,6 +196,21 @@ export async function packetLabelPdf(packetId: string, format: LabelFormat = "A6
   const base64 = childText(doc, "result");
   if (!base64) throw new PacketaError("Packeta nevrátila PDF štítku.");
   return Buffer.from(base64, "base64");
+}
+
+/**
+ * Overenie hesla bez vytvárania zásielky: dotaz na stav neexistujúcej
+ * zásielky. Zlé heslo vráti IncorrectApiPasswordFault, správne heslo inú chybu.
+ */
+export async function checkPacketaConnection(): Promise<{ ok: boolean; message: string }> {
+  try {
+    await call("packetStatus", { packetId: "1" });
+    return { ok: true, message: "Pripojenie k Packete funguje." };
+  } catch (e) {
+    if (e instanceof PacketaError && e.fault === "IncorrectApiPasswordFault") return { ok: false, message: e.message };
+    if (e instanceof PacketaError && e.fault) return { ok: true, message: "Pripojenie k Packete funguje — heslo je správne." };
+    return { ok: false, message: e instanceof Error ? e.message : String(e) };
+  }
 }
 
 export function packetaTrackingUrl(barcode: string): string {

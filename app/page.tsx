@@ -19,6 +19,7 @@ import { useCartUi } from "@/lib/cart-ui-context";
 import { CART_STORAGE_KEY } from "@/lib/cart-storage";
 import ContactNoticeBanner from "@/components/ContactNoticeBanner";
 import { useT } from "@/lib/i18n/client";
+import { PACKETA_WIDGET_API_KEY } from "@/lib/packeta/constants";
 
 type Uploaded = {
   fileKey: string;
@@ -165,7 +166,7 @@ export default function Home() {
       return;
     }
     w.Packeta.Widget.pick(
-      "7953395f61a129cf",
+      PACKETA_WIDGET_API_KEY,
       (point: PacketaPoint | null) => { if (point) setPacketaPoint(point); },
       { country: "sk", language: "sk" }
     );
