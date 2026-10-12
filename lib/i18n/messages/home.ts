@@ -736,51 +736,6 @@ const messages: Messages = {
     hu: "Vásárló",
     de: "Kunde",
   },
-  "Tlačíme váš model": {
-    en: "Printing your model",
-    hu: "Nyomtatjuk a modelljét",
-    de: "Wir drucken Ihr Modell",
-  },
-  "Prevádzam SVG na 3D model…": {
-    en: "Converting SVG to a 3D model…",
-    hu: "SVG átalakítása 3D modellé…",
-    de: "SVG wird in ein 3D-Modell umgewandelt…",
-  },
-  "Nahrávam model… {n} %": {
-    en: "Uploading model… {n} %",
-    hu: "Modell feltöltése… {n} %",
-    de: "Modell wird hochgeladen… {n} %",
-  },
-  "Analyzujem model a počítam cenu…": {
-    en: "Analysing the model and calculating the price…",
-    hu: "A modell elemzése és az ár kiszámítása…",
-    de: "Modell wird analysiert und Preis berechnet…",
-  },
-  "Nahrávam model…": {
-    en: "Uploading model…",
-    hu: "Modell feltöltése…",
-    de: "Modell wird hochgeladen…",
-  },
-  "Hotovo! Otváram 3D náhľad…": {
-    en: "Done! Opening the 3D preview…",
-    hu: "Kész! Megnyitjuk a 3D előnézetet…",
-    de: "Fertig! 3D-Vorschau wird geöffnet…",
-  },
-  "Nahrávanie": {
-    en: "Upload",
-    hu: "Feltöltés",
-    de: "Upload",
-  },
-  "Prevod SVG": {
-    en: "SVG conversion",
-    hu: "SVG átalakítás",
-    de: "SVG-Umwandlung",
-  },
-  "Analýza a cena": {
-    en: "Analysis & price",
-    hu: "Elemzés és ár",
-    de: "Analyse & Preis",
-  },
 };
 
 export default messages;
