@@ -736,6 +736,26 @@ const messages: Messages = {
     hu: "Vásárló",
     de: "Kunde",
   },
+  "Tlačíme váš model": {
+    en: "Printing your model",
+    hu: "Nyomtatjuk a modelljét",
+    de: "Wir drucken Ihr Modell",
+  },
+  "Prevádzam SVG na 3D model…": {
+    en: "Converting SVG to a 3D model…",
+    hu: "SVG átalakítása 3D modellé…",
+    de: "SVG wird in ein 3D-Modell umgewandelt…",
+  },
+  "Nahrávam model… {n} %": {
+    en: "Uploading model… {n} %",
+    hu: "Modell feltöltése… {n} %",
+    de: "Modell wird hochgeladen… {n} %",
+  },
+  "Analyzujem model a počítam cenu…": {
+    en: "Analysing the model and calculating the price…",
+    hu: "A modell elemzése és az ár kiszámítása…",
+    de: "Modell wird analysiert und Preis berechnet…",
+  },
 };
 
 export default messages;

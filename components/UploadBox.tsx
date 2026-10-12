@@ -3,6 +3,7 @@
 import { forwardRef, useImperativeHandle, useRef, useState } from "react";
 import { upload } from "@vercel/blob/client";
 import { useT } from "@/lib/i18n/client";
+import type { BuildPhase } from "@/components/ModelBuildAnimation";
 
 type Uploaded = {
   fileKey: string;
@@ -31,7 +32,11 @@ const UploadBox = forwardRef<UploadBoxHandle, {
   // keeping the SVG thickness/reconvert panel visible and interactive —
   // this component must stay mounted so that state isn't lost.
   hideDropzone?: boolean;
-}>(function UploadBox({ onUploaded, onUploadingChange, hideDropzone }, ref) {
+  // Pre animáciu nahrávania: súbor na náhľad (null = ešte nie je k dispozícii)
+  // a aktuálna fáza s priebehom 0–1.
+  onPreviewFile?: (file: File | null) => void;
+  onProgress?: (phase: BuildPhase, progress: number) => void;
+}>(function UploadBox({ onUploaded, onUploadingChange, hideDropzone, onPreviewFile, onProgress }, ref) {
   const t = useT();
   const inputRef = useRef<HTMLInputElement | null>(null);
 
@@ -60,6 +65,8 @@ const UploadBox = forwardRef<UploadBoxHandle, {
   }
 
   async function convertSvgToStl(file: File) {
+    onPreviewFile?.(null);
+    onProgress?.("convert", 0);
     const formData = new FormData();
     formData.append("file", file);
     formData.append("thicknessMm", String(svgThicknessMm));
@@ -78,7 +85,9 @@ const UploadBox = forwardRef<UploadBoxHandle, {
 
     const blob = await res.blob();
     const stlFileName = sanitizeFileName(file.name.replace(/\.svg$/i, ".stl"));
-    return new File([blob], stlFileName, { type: "model/stl" });
+    const stlFile = new File([blob], stlFileName, { type: "model/stl" });
+    onPreviewFile?.(stlFile);
+    return stlFile;
   }
 
   async function uploadAndAnalyze(file: File): Promise<void> {
@@ -92,6 +101,7 @@ const UploadBox = forwardRef<UploadBoxHandle, {
     }
 
     const safeName = sanitizeFileName(file.name);
+    onProgress?.("upload", 0);
 
     const blob = await upload(safeName, file, {
       access: "public",
@@ -99,10 +109,11 @@ const UploadBox = forwardRef<UploadBoxHandle, {
       multipart: true,
       contentType: file.type || "application/octet-stream",
       onUploadProgress: ({ percentage }) => {
-        console.log(`Upload progress: ${percentage}%`);
+        onProgress?.("upload", percentage / 100);
       },
     });
 
+    onProgress?.("analyze", 0);
     const analyzeRes = await fetch("/api/analyze", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -150,6 +161,7 @@ const UploadBox = forwardRef<UploadBoxHandle, {
         await uploadAndAnalyze(stlFile);
       } else {
         setOriginalSvgFile(null);
+        onPreviewFile?.(originalFile);
         await uploadAndAnalyze(originalFile);
       }
     } catch (e: any) {
