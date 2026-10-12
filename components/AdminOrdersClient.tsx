@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import ModelPreviewAllButton from "@/components/ModelPreviewAllButton";
 import FlowiiCheckButton from "@/components/FlowiiCheckButton";
 import FlowiiTestOrderButton from "@/components/FlowiiTestOrderButton";
+import PacketaIcon from "@/components/admin/PacketaIcon";
 
 type Order = {
   id: string;
@@ -22,6 +23,8 @@ type Order = {
   allowModelAdjustments: boolean;
   modelCount: number;
   models: { fileKey: string; fileName: string; scalePct?: number; colorId?: string }[];
+  isPacketa: boolean;
+  packetaBarcodeText: string | null;
 };
 
 type Stats = {
@@ -441,6 +444,21 @@ export default function AdminOrdersClient({
 
                     {/* Stĺpec 4: Akcie */}
                     <div className="flex flex-col gap-2 xl:min-w-[160px]">
+                      {order.isPacketa && (
+                        <Link
+                          href={`/admin/orders/${order.id}#packeta`}
+                          title={order.packetaBarcodeText ? `Zásielka ${order.packetaBarcodeText} — stiahnuť štítok` : "Vytvoriť štítok Packeta"}
+                          className={[
+                            "flex items-center justify-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-bold transition",
+                            order.packetaBarcodeText
+                              ? "border-green-300 bg-green-50 text-green-800 hover:bg-green-100"
+                              : "border-[#BA1B02]/30 bg-[#BA1B02]/5 text-[#BA1B02] hover:bg-[#BA1B02]/10",
+                          ].join(" ")}
+                        >
+                          <PacketaIcon />
+                          {order.packetaBarcodeText ? `Štítok ✓ ${order.packetaBarcodeText}` : "Štítok Packeta"}
+                        </Link>
+                      )}
                       {/* Nakukne do modelu bez otvárania objednávky. Pri viacerých
                           modeloch sa medzi nimi preklikáva šípkami v prehliadači. */}
                       <ModelPreviewAllButton
