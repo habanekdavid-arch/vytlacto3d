@@ -289,3 +289,11 @@ model PacketaShipment {
   weightKg    Float
   createdAt   DateTime @default(now())
 }
+
+// Administrátor z ADMIN_EMAILS, ktorému bol prístup odobratý v /admin/ucty.
+// Platí hneď bez úpravy premenných vo Verceli; vrátenie prístupu = zmazanie riadku.
+model AdminRevoked {
+  email     String   @id
+  revokedAt DateTime @default(now())
+  revokedBy String?
+}

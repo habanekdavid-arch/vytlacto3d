@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { activeAdminEmails } from "@/lib/admin-auth";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getSafeServerSession } from "@/lib/session";
@@ -12,10 +13,7 @@ export const dynamic = "force-dynamic";
 async function requireAdmin() {
   const session = await getSafeServerSession();
   const email = String((session?.user as { email?: string | null })?.email ?? "").toLowerCase();
-  const admins = (process.env.ADMIN_EMAILS ?? "")
-    .split(",")
-    .map((e) => e.trim().toLowerCase())
-    .filter(Boolean);
+  const admins = await activeAdminEmails();
   if (!email || !admins.includes(email)) redirect("/");
 }
 

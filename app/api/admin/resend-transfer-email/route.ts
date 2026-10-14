@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { activeAdminEmails } from "@/lib/admin-auth";
 import { getSafeServerSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { sendTransferPaymentEmail } from "@/lib/email-transfer";
@@ -7,10 +8,7 @@ import { generateVariableSymbol } from "@/lib/company-info";
 export async function POST(req: NextRequest) {
   const session = await getSafeServerSession();
   const userEmail = String((session?.user as any)?.email ?? "").toLowerCase();
-  const adminEmails = (process.env.ADMIN_EMAILS ?? "")
-    .split(",")
-    .map((e) => e.trim().toLowerCase())
-    .filter(Boolean);
+  const adminEmails = await activeAdminEmails();
 
   if (!userEmail || !adminEmails.includes(userEmail)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

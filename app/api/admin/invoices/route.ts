@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { activeAdminEmails } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 import { getSafeServerSession } from "@/lib/session";
 import { addVat, vatAmount } from "@/lib/vat";
@@ -22,11 +23,8 @@ function describeItem(fileName: string, config: Record<string, unknown> | null |
   return `3D tlač: ${fileName}${specs.length > 0 ? ` (${specs.join(", ")})` : ""}`;
 }
 
-function isAdmin(email: string | null | undefined) {
-  const admins = (process.env.ADMIN_EMAILS ?? "")
-    .split(",")
-    .map((e) => e.trim().toLowerCase())
-    .filter(Boolean);
+async function isAdmin(email: string | null | undefined) {
+  const admins = await activeAdminEmails();
   return !!email && admins.includes(email.toLowerCase());
 }
 
@@ -47,7 +45,7 @@ async function generateInvoiceNumber(isTest: boolean): Promise<string> {
 export async function POST(req: NextRequest) {
   const session = await getSafeServerSession();
   const email = (session?.user as any)?.email;
-  if (!isAdmin(email)) {
+  if (!(await isAdmin(email))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

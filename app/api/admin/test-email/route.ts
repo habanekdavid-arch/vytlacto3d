@@ -1,14 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
+import { activeAdminEmails } from "@/lib/admin-auth";
 import { getSafeServerSession } from "@/lib/session";
 import { sendMail, FROM, ADMIN_INBOX, mailConfigSummary } from "@/lib/mailer";
 
 async function requireAdmin() {
   const session = await getSafeServerSession();
   const userEmail = String((session?.user as any)?.email ?? "").toLowerCase();
-  const adminEmails = (process.env.ADMIN_EMAILS ?? "")
-    .split(",")
-    .map((e) => e.trim().toLowerCase())
-    .filter(Boolean);
+  const adminEmails = await activeAdminEmails();
 
   return userEmail && adminEmails.includes(userEmail) ? userEmail : null;
 }

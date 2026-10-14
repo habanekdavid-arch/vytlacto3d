@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { isAdminSession } from "@/lib/admin-auth";
+import { activeAdminEmails, isAdminSession } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
+import { deleteUserAccount } from "@/lib/admin-accounts";
 
 /**
  * Odstráni účet klienta. Objednávky a faktúry zostanú (účtovníctvo) — len sa
  * odpoja od účtu a ostanú pod e-mailom zákazníka. Príspevky, komentáre a
- * reakcie v komunite sa zmažú spolu s účtom. Účet administrátora sa tu
- * odstrániť nedá.
+ * reakcie v komunite sa zmažú spolu s účtom. Administrátora treba odstrániť
+ * cez /api/admin/ucty/admin (najprv sa mu odoberie prístup).
  */
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   if (!(await isAdminSession())) {
@@ -19,17 +20,12 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
     return NextResponse.json({ error: "Účet neexistuje." }, { status: 404 });
   }
 
-  const adminEmails = (process.env.ADMIN_EMAILS ?? "").split(",").map((e) => e.trim().toLowerCase()).filter(Boolean);
+  const adminEmails = await activeAdminEmails();
   if (adminEmails.includes(user.email.toLowerCase())) {
-    return NextResponse.json({ error: "Účet administrátora sa nedá odstrániť." }, { status: 400 });
+    return NextResponse.json({ error: "Toto je administrátor — použite „Odstrániť administrátora“." }, { status: 400 });
   }
 
-  await prisma.$transaction([
-    // Objednávka bez e-mailu by po odpojení z prehľadu zmizla.
-    prisma.order.updateMany({ where: { userId: id, customerEmail: null }, data: { customerEmail: user.email } }),
-    prisma.order.updateMany({ where: { userId: id }, data: { userId: null } }),
-    prisma.user.delete({ where: { id } }),
-  ]);
+  await deleteUserAccount(user.id, user.email);
 
   return NextResponse.json({ ok: true });
 }

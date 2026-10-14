@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { activeAdminEmails } from "@/lib/admin-auth";
 import { getSafeServerSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { formatEur, addVat, vatAmount, formatPaidTotal } from "@/lib/vat";
@@ -46,10 +47,7 @@ export default async function AdminOrderDetailPage({
   const session = await getSafeServerSession();
   const sessionUser = session?.user as { email?: string | null } | undefined;
 
-  const adminEmails = (process.env.ADMIN_EMAILS ?? "")
-    .split(",")
-    .map((email) => email.trim().toLowerCase())
-    .filter(Boolean);
+  const adminEmails = await activeAdminEmails();
 
   const userEmail = String(sessionUser?.email ?? "").toLowerCase();
 

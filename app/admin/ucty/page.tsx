@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { isAdminSession } from "@/lib/admin-auth";
+import { isAdminSession, revokedAdmins, sessionEmail, type RevokedAdmin } from "@/lib/admin-auth";
 import { formatEur } from "@/lib/vat";
 import { ACCOUNT_TABS as TABS, formatAccountDate as formatDate, loadAccounts, parseAccountTab, type AccountTab as Tab } from "@/lib/admin-accounts";
 import DeleteAccountButton from "@/components/admin/DeleteAccountButton";
+import AdminAccessButton from "@/components/admin/AdminAccessButton";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +17,11 @@ export default async function AdminUctyPage({
   const { zoznam, q } = await searchParams;
   const tab: Tab = parseAccountTab(zoznam);
   const query = (q ?? "").trim();
-  const { clients, lists, visible } = await loadAccounts(tab, q);
+  const [{ clients, lists, visible }, me, revoked] = await Promise.all([
+    loadAccounts(tab, q),
+    sessionEmail(),
+    tab === "admini" ? revokedAdmins().catch((): RevokedAdmin[] => []) : Promise.resolve([] as RevokedAdmin[]),
+  ]);
 
   const totalSpent = clients.reduce((s, r) => s + r.spentEur, 0);
   const withOrder = lists["s-objednavkou"].length;
@@ -158,7 +163,15 @@ export default async function AdminUctyPage({
                         )}
                       </td>
                       <td className="px-4 py-3 text-right">
-                        {r.userId && !r.isAdmin && <DeleteAccountButton userId={r.userId} name={r.name} email={r.email} />}
+                        {r.isAdmin ? (
+                          r.key === me ? (
+                            <span className="text-xs text-neutral-400">to ste vy</span>
+                          ) : (
+                            <AdminAccessButton email={r.email} mode="remove" hasAccount={r.hasAccount} />
+                          )
+                        ) : (
+                          r.userId && <DeleteAccountButton userId={r.userId} name={r.name} email={r.email} />
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -170,6 +183,29 @@ export default async function AdminUctyPage({
           <div className="rounded-3xl border-2 border-dashed border-neutral-200 bg-white px-6 py-12 text-center text-sm text-neutral-500">
             V tomto zozname nikto nie je.
           </div>
+        )}
+
+        {tab === "admini" && revoked.length > 0 && (
+          <section className="mt-8">
+            <h2 className="text-lg font-extrabold text-neutral-900">Odstránení administrátori</h2>
+            <p className="mt-1 text-sm text-neutral-500">
+              Nemajú prístup do administrácie, hoci sú stále v nastaveniach Vercelu (ADMIN_EMAILS). Prístup im môžete vrátiť.
+            </p>
+            <ul className="mt-3 divide-y divide-neutral-100 overflow-hidden rounded-3xl border border-neutral-200 bg-white shadow-sm">
+              {revoked.map((a) => (
+                <li key={a.email} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-sm">
+                  <div>
+                    <div className="font-semibold text-neutral-900">{a.email}</div>
+                    <div className="text-xs text-neutral-500">
+                      odstránený {formatDate(new Date(a.revokedAt))}
+                      {a.revokedBy ? ` · ${a.revokedBy}` : ""}
+                    </div>
+                  </div>
+                  <AdminAccessButton email={a.email} mode="restore" />
+                </li>
+              ))}
+            </ul>
+          </section>
         )}
       </div>
     </main>

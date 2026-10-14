@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { activeAdminEmails } from "@/lib/admin-auth";
 import { getSafeServerSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import PrintButton from "@/components/PrintButton";
@@ -24,7 +25,7 @@ const S = {
 export default async function InvoicePrintPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await getSafeServerSession();
   const email = (session?.user as any)?.email ?? "";
-  const admins = (process.env.ADMIN_EMAILS ?? "").split(",").map((e) => e.trim().toLowerCase());
+  const admins = await activeAdminEmails();
   if (!admins.includes(email.toLowerCase())) redirect("/");
 
   const { id } = await params;

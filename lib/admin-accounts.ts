@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { activeAdminEmails } from "@/lib/admin-auth";
 
 /**
  * Prehľad účtov pre administráciu: administrátori (ADMIN_EMAILS), registrovaní
@@ -70,9 +71,7 @@ function address(street: string | null, city: string | null, zip: string | null,
 
 export async function loadAccounts(tab: AccountTab, rawQuery: string | undefined) {
   const query = (rawQuery ?? "").trim().toLowerCase();
-  const adminEmails = new Set(
-    (process.env.ADMIN_EMAILS ?? "").split(",").map((e) => e.trim().toLowerCase()).filter(Boolean)
-  );
+  const adminEmails = new Set(await activeAdminEmails());
 
   const [users, orders] = await Promise.all([
     prisma.user.findMany({
@@ -196,4 +195,17 @@ export async function loadAccounts(tab: AccountTab, rawQuery: string | undefined
 
 export function formatAccountDate(d: Date) {
   return new Intl.DateTimeFormat("sk-SK", { day: "numeric", month: "numeric", year: "numeric", timeZone: "Europe/Bratislava" }).format(d);
+}
+
+/**
+ * Odstráni účet. Objednávky a faktúry zostanú (účtovníctvo) — odpoja sa od
+ * účtu a ostanú pod e-mailom zákazníka. Komunita sa zmaže spolu s účtom.
+ */
+export async function deleteUserAccount(id: string, email: string) {
+  await prisma.$transaction([
+    // Objednávka bez e-mailu by po odpojení z prehľadu zmizla.
+    prisma.order.updateMany({ where: { userId: id, customerEmail: null }, data: { customerEmail: email } }),
+    prisma.order.updateMany({ where: { userId: id }, data: { userId: null } }),
+    prisma.user.delete({ where: { id } }),
+  ]);
 }

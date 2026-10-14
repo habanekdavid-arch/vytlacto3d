@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { activeAdminEmails } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 import { getSafeServerSession } from "@/lib/session";
 import { syncRepoRealizacie } from "@/lib/realizacie-sync";
@@ -6,10 +7,7 @@ import { syncRepoRealizacie } from "@/lib/realizacie-sync";
 async function isAdmin(): Promise<boolean> {
   const session = await getSafeServerSession();
   const email = String((session?.user as { email?: string | null })?.email ?? "").toLowerCase();
-  const admins = (process.env.ADMIN_EMAILS ?? "")
-    .split(",")
-    .map((e) => e.trim().toLowerCase())
-    .filter(Boolean);
+  const admins = await activeAdminEmails();
   return Boolean(email) && admins.includes(email);
 }
 

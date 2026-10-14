@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { activeAdminEmails } from "@/lib/admin-auth";
 import { getSafeServerSession } from "@/lib/session";
 import { checkFlowiiConnection, createFlowiiTestZakazka, syncOrderToFlowii } from "@/lib/flowii/sync";
 
@@ -8,10 +9,7 @@ export const maxDuration = 60;
 async function isAdmin() {
   const session = await getSafeServerSession();
   const email = String((session?.user as { email?: string | null } | undefined)?.email ?? "").toLowerCase();
-  const adminEmails = (process.env.ADMIN_EMAILS ?? "")
-    .split(",")
-    .map((e) => e.trim().toLowerCase())
-    .filter(Boolean);
+  const adminEmails = await activeAdminEmails();
   return Boolean(email) && adminEmails.includes(email);
 }
 

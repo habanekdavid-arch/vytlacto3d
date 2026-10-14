@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { activeAdminEmails } from "@/lib/admin-auth";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
@@ -72,10 +73,7 @@ export default async function KomunitaPostPage({ params }: Params) {
       : null,
   ]);
 
-  const adminEmails = (process.env.ADMIN_EMAILS ?? "")
-    .split(",")
-    .map((e) => e.trim().toLowerCase())
-    .filter(Boolean);
+  const adminEmails = await activeAdminEmails();
 
   const loginHref = `/prihlasenie?callbackUrl=/komunita/${post.id}`;
   const author = publicName(post.user.name);
