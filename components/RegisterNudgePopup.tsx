@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { useT } from "@/lib/i18n/client";
+import { useCartUi } from "@/lib/cart-ui-context";
 
 const STORAGE_KEY = "vytlacto3d:register-nudge-last-seen";
 const SHOW_AFTER_MS = 60_000;
@@ -45,6 +46,8 @@ const BENEFITS = [
 export default function RegisterNudgePopup() {
   const { status } = useSession();
   const t = useT();
+  const { cartCount, isCartOpen } = useCartUi();
+  const cartBusy = cartCount > 0 || isCartOpen;
   const [visible, setVisible] = useState(false);
   const [closing, setClosing] = useState(false);
 
@@ -71,6 +74,8 @@ export default function RegisterNudgePopup() {
     window.setTimeout(() => { setVisible(false); setClosing(false); }, 350);
   }
 
+  // Kým má zákazník model v košíku, nič mu nesmie zakryť objednávku.
+  if (cartBusy) return null;
   if (!visible) return null;
 
   return (

@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { useT } from "@/lib/i18n/client";
+import { useCartUi } from "@/lib/cart-ui-context";
 
 const STORAGE_KEY = "vytlacto3d:complete-profile-last-seen";
 const SHOW_AFTER_MS = 20_000;
@@ -36,6 +37,8 @@ function IconCheck() {
 export default function CompleteProfilePopup() {
   const { status } = useSession();
   const t = useT();
+  const { cartCount, isCartOpen } = useCartUi();
+  const cartBusy = cartCount > 0 || isCartOpen;
   const pathname = usePathname() ?? "/";
   const [missing, setMissing] = useState<string[]>([]);
   const [visible, setVisible] = useState(false);
@@ -79,6 +82,8 @@ export default function CompleteProfilePopup() {
     return () => window.removeEventListener("keydown", fn);
   });
 
+  // Kým má zákazník model v košíku, nič mu nesmie zakryť objednávku.
+  if (cartBusy) return null;
   if (!visible || hiddenHere) return null;
 
   return (

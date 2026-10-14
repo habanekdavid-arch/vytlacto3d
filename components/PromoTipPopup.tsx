@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useT } from "@/lib/i18n/client";
+import { useCartUi } from "@/lib/cart-ui-context";
 
 const STORAGE_KEY = "vytlacto3d:promo-popup-last-seen";
 const SHOW_AFTER_HOURS = 24;
@@ -95,6 +96,8 @@ function shouldShowPopup() {
 
 export default function PromoTipPopup() {
   const t = useT();
+  const { cartCount, isCartOpen } = useCartUi();
+  const cartBusy = cartCount > 0 || isCartOpen;
   const [visible,   setVisible]   = useState(false);
   const [closing,   setClosing]   = useState(false);
   const [activeIdx, setActiveIdx] = useState(0);
@@ -156,6 +159,8 @@ export default function PromoTipPopup() {
     setActiveIdx(idx);
   }
 
+  // Kým má zákazník model v košíku, nič mu nesmie zakryť objednávku.
+  if (cartBusy) return null;
   if (!visible) return null;
 
   const { Icon, badge, title, text } = tips[activeIdx];

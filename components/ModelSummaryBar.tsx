@@ -23,13 +23,18 @@ export default function ModelSummaryBar({
 
   useEffect(() => {
     function onScroll() {
-      setCompact(window.scrollY > 320);
+      // Na mobile by prilepený panel zakryl štvrtinu obrazovky aj tlačidlo Objednať.
+      setCompact(window.scrollY > 320 && window.innerWidth >= 768);
     }
 
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
 
-    return () => window.removeEventListener("scroll", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+    };
   }, []);
 
   return (

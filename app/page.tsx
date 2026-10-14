@@ -356,7 +356,7 @@ export default function Home() {
             onClick={closeCart}
           />
           {/* Panel */}
-          <div className="fixed right-0 top-0 z-[70] flex h-full w-full max-w-[440px] flex-col bg-white shadow-2xl">
+          <div className="fixed right-0 top-0 z-[105] flex h-full w-full max-w-[440px] flex-col bg-white shadow-2xl">
             {/* Drawer header */}
             <div className="flex items-center justify-between border-b border-neutral-100 px-6 py-4">
               <div className="flex items-center gap-2">
