@@ -1,58 +1,11 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { prisma } from "@/lib/prisma";
 import { isAdminSession } from "@/lib/admin-auth";
 import { formatEur } from "@/lib/vat";
+import { ACCOUNT_TABS as TABS, formatAccountDate as formatDate, loadAccounts, parseAccountTab, type AccountTab as Tab } from "@/lib/admin-accounts";
+import DeleteAccountButton from "@/components/admin/DeleteAccountButton";
 
 export const dynamic = "force-dynamic";
-
-/**
- * Prehľad účtov: administrátori (ADMIN_EMAILS), registrovaní klienti a
- * klienti bez účtu (len e-mail z objednávky). Objednávka sa ku klientovi
- * priradí cez userId alebo cez rovnaký e-mail.
- */
-
-// Objednávka, ktorú zákazník naozaj odoslal (nie len otvorená a nezaplatená platba kartou).
-const PLACED = new Set(["AWAITING_TRANSFER", "PAID", "IN_PRODUCTION", "SHIPPED", "DELIVERED"]);
-const PAID = new Set(["PAID", "IN_PRODUCTION", "SHIPPED", "DELIVERED"]);
-
-type Tab = "vsetci" | "admini" | "s-uctom" | "bez-uctu" | "s-objednavkou" | "bez-objednavky";
-
-const TABS: { id: Tab; label: string; hint: string }[] = [
-  { id: "vsetci", label: "Všetci klienti", hint: "S účtom aj bez účtu" },
-  { id: "s-uctom", label: "S účtom", hint: "Registrovaní klienti" },
-  { id: "bez-uctu", label: "Bez účtu", hint: "Objednali bez registrácie" },
-  { id: "s-objednavkou", label: "S objednávkou", hint: "Aspoň 1 odoslaná objednávka" },
-  { id: "bez-objednavky", label: "Účet bez objednávky", hint: "Registrovaní, zatiaľ nič neobjednali" },
-  { id: "admini", label: "Administrátori", hint: "Prístup do administrácie" },
-];
-
-type Row = {
-  key: string;
-  name: string;
-  email: string;
-  phone: string | null;
-  company: string | null;
-  hasAccount: boolean;
-  isAdmin: boolean;
-  registeredAt: Date | null;
-  placedCount: number;
-  unfinishedCount: number;
-  spentEur: number;
-  lastOrder: { id: string; label: string; at: Date } | null;
-};
-
-function nameFromJson(value: unknown): string | null {
-  if (value && typeof value === "object" && "name" in value) {
-    const n = (value as { name?: unknown }).name;
-    if (typeof n === "string" && n.trim()) return n.trim();
-  }
-  return null;
-}
-
-function formatDate(d: Date) {
-  return new Intl.DateTimeFormat("sk-SK", { day: "numeric", month: "numeric", year: "numeric", timeZone: "Europe/Bratislava" }).format(d);
-}
 
 export default async function AdminUctyPage({
   searchParams,
@@ -61,120 +14,9 @@ export default async function AdminUctyPage({
 }) {
   if (!(await isAdminSession())) redirect("/");
   const { zoznam, q } = await searchParams;
-  const tab: Tab = TABS.some((t) => t.id === zoznam) ? (zoznam as Tab) : "vsetci";
-  const query = (q ?? "").trim().toLowerCase();
-
-  const adminEmails = new Set(
-    (process.env.ADMIN_EMAILS ?? "").split(",").map((e) => e.trim().toLowerCase()).filter(Boolean)
-  );
-
-  const [users, orders] = await Promise.all([
-    prisma.user.findMany({
-      select: { id: true, name: true, email: true, phone: true, accountType: true, companyName: true, createdAt: true },
-      orderBy: { createdAt: "desc" },
-    }),
-    prisma.order.findMany({
-      select: {
-        id: true, orderNumber: true, status: true, createdAt: true, customerEmail: true, userId: true,
-        paidTotalEur: true, phone: true, companyName: true, contactPerson: true,
-        shippingAddress: true, billingAddress: true, deliveryAddress: true,
-      },
-      orderBy: { createdAt: "desc" },
-    }),
-  ]);
-
-  const rows = new Map<string, Row>();
-  const userIdToKey = new Map<string, string>();
-
-  for (const u of users) {
-    const email = u.email.toLowerCase();
-    rows.set(email, {
-      key: email,
-      name: u.name,
-      email: u.email,
-      phone: u.phone,
-      company: u.accountType === "COMPANY" ? u.companyName : null,
-      hasAccount: true,
-      isAdmin: adminEmails.has(email),
-      registeredAt: u.createdAt,
-      placedCount: 0,
-      unfinishedCount: 0,
-      spentEur: 0,
-      lastOrder: null,
-    });
-    userIdToKey.set(u.id, email);
-  }
-
-  // Administrátor, ktorý sa ešte nikdy nezaregistroval, je tiež v zozname.
-  for (const email of adminEmails) {
-    if (!rows.has(email)) {
-      rows.set(email, {
-        key: email, name: "—", email, phone: null, company: null, hasAccount: false, isAdmin: true,
-        registeredAt: null, placedCount: 0, unfinishedCount: 0, spentEur: 0, lastOrder: null,
-      });
-    }
-  }
-
-  for (const o of orders) {
-    const email = o.customerEmail?.trim().toLowerCase() ?? "";
-    const key = (o.userId && userIdToKey.get(o.userId)) || email;
-    if (!key) continue;
-
-    let row = rows.get(key);
-    if (!row) {
-      row = {
-        key,
-        name:
-          o.contactPerson ||
-          nameFromJson(o.billingAddress) ||
-          nameFromJson(o.shippingAddress) ||
-          nameFromJson(o.deliveryAddress) ||
-          "—",
-        email: o.customerEmail ?? key,
-        phone: o.phone,
-        company: o.companyName,
-        hasAccount: false,
-        isAdmin: adminEmails.has(key),
-        registeredAt: null,
-        placedCount: 0,
-        unfinishedCount: 0,
-        spentEur: 0,
-        lastOrder: null,
-      };
-      rows.set(key, row);
-    }
-
-    if (PLACED.has(o.status)) {
-      row.placedCount += 1;
-      if (PAID.has(o.status)) row.spentEur += o.paidTotalEur ?? 0;
-      // Objednávky idú od najnovšej, takže prvá odoslaná je posledná.
-      if (!row.lastOrder) {
-        row.lastOrder = { id: o.id, label: o.orderNumber ?? o.id.slice(0, 8), at: o.createdAt };
-      }
-      if (!row.phone && o.phone) row.phone = o.phone;
-    } else if (o.status === "PENDING") {
-      row.unfinishedCount += 1;
-    }
-  }
-
-  const all = [...rows.values()];
-  const clients = all.filter((r) => !r.isAdmin);
-  const lists: Record<Tab, Row[]> = {
-    vsetci: clients,
-    admini: all.filter((r) => r.isAdmin),
-    "s-uctom": clients.filter((r) => r.hasAccount),
-    "bez-uctu": clients.filter((r) => !r.hasAccount),
-    "s-objednavkou": clients.filter((r) => r.placedCount > 0),
-    "bez-objednavky": clients.filter((r) => r.hasAccount && r.placedCount === 0),
-  };
-
-  const sortTime = (r: Row) => Math.max(r.lastOrder?.at.getTime() ?? 0, r.registeredAt?.getTime() ?? 0);
-  const visible = lists[tab]
-    .filter((r) =>
-      !query ||
-      [r.name, r.email, r.phone ?? "", r.company ?? ""].some((v) => v.toLowerCase().includes(query))
-    )
-    .sort((a, b) => sortTime(b) - sortTime(a));
+  const tab: Tab = parseAccountTab(zoznam);
+  const query = (q ?? "").trim();
+  const { clients, lists, visible } = await loadAccounts(tab, q);
 
   const totalSpent = clients.reduce((s, r) => s + r.spentEur, 0);
   const withOrder = lists["s-objednavkou"].length;
@@ -237,7 +79,7 @@ export default async function AdminUctyPage({
           ))}
         </div>
 
-        <form action="/admin/ucty" className="mb-6 flex gap-2">
+        <form action="/admin/ucty" className="mb-6 flex flex-wrap gap-2">
           <input type="hidden" name="zoznam" value={tab} />
           <input
             name="q"
@@ -246,6 +88,13 @@ export default async function AdminUctyPage({
             className="w-full max-w-md rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm outline-none focus:border-[#FFAE00]"
           />
           <button className="rounded-2xl bg-neutral-900 px-5 py-3 text-sm font-semibold text-white hover:bg-neutral-800">Hľadať</button>
+          <a
+            href={`/api/admin/ucty/export?zoznam=${tab}${query ? `&q=${encodeURIComponent(query)}` : ""}`}
+            className="ml-auto inline-flex items-center gap-2 rounded-2xl bg-[#FFAE00] px-5 py-3 text-sm font-extrabold text-black shadow-sm hover:opacity-90"
+            title="Stiahne práve zobrazený zoznam ako tabuľku (otvorí sa v Exceli)"
+          >
+            Export do Excelu ({visible.length})
+          </a>
         </form>
 
         <p className="mb-3 text-sm text-neutral-500">{TABS.find((t) => t.id === tab)?.hint} · {visible.length}</p>
@@ -253,7 +102,7 @@ export default async function AdminUctyPage({
         {visible.length ? (
           <div className="overflow-hidden rounded-3xl border border-neutral-200 bg-white shadow-sm">
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[820px] text-left text-sm">
+              <table className="w-full min-w-[940px] text-left text-sm">
                 <thead className="border-b border-neutral-100 bg-neutral-50 text-xs font-semibold uppercase tracking-wide text-neutral-500">
                   <tr>
                     <th className="px-4 py-3">Klient</th>
@@ -263,6 +112,7 @@ export default async function AdminUctyPage({
                     <th className="px-4 py-3 text-right">Objednávky</th>
                     <th className="px-4 py-3 text-right">Zaplatené</th>
                     <th className="px-4 py-3">Posledná objednávka</th>
+                    <th className="px-4 py-3" />
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-100">
@@ -306,6 +156,9 @@ export default async function AdminUctyPage({
                         ) : (
                           <span className="text-neutral-400">—</span>
                         )}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        {r.userId && !r.isAdmin && <DeleteAccountButton userId={r.userId} name={r.name} email={r.email} />}
                       </td>
                     </tr>
                   ))}
