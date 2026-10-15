@@ -52,38 +52,69 @@ const OVERHANG_COS = Math.cos(Math.PI / 4);
 // Plochy tesne pri podložke ležia na nej, podperu nepotrebujú.
 const BED_CONTACT_MM = 0.3;
 
+// Výška tlače, ktorú zvládne tlačiareň (Bambu H2S: 340 × 320 × 340 mm).
+const MAX_PRINT_HEIGHT_MM = 340;
+
 /**
- * Povrch a "stĺpec" pod prevismi pre jeden trojuholník. Smer normály závisí
- * od poradia vrcholov, ktoré nie každý exportér dodrží — preto sa previsy
- * zbierajú pre obe orientácie a správnu vyberie až znamienko objemu.
+ * Povrch a "stĺpec" pod prevismi pre 6 možných polôh modelu (na každú
+ * stranu kvádra). Model sa na tlač vždy otočí tak, aby potreboval čo najmenej
+ * podpier — v polohe zo súboru môže byť napr. doska vysoko nad podložkou, pod
+ * ktorou by podpery zbytočne zaberali litre. Smer normály závisí od poradia
+ * vrcholov, ktoré nie každý exportér dodrží — preto sa previsy zbierajú pre
+ * oba smery a správny vyberie až znamienko objemu.
  */
 class SurfaceStats {
   areaMm2 = 0;
-  supportDownMm3 = 0;
-  supportUpMm3 = 0;
+  // [os][normála v kladnom smere osi ? 1 : 0] — stĺpec k minimu / k maximu osi
+  private toMin = [[0, 0], [0, 0], [0, 0]];
+  private toMax = [[0, 0], [0, 0], [0, 0]];
 
-  constructor(private readonly minZ: number) {}
+  constructor(private readonly min: number[], private readonly max: number[]) {}
 
   add(coords: ArrayLike<number>, a: number, b: number, c: number) {
     const ux = coords[b] - coords[a], uy = coords[b + 1] - coords[a + 1], uz = coords[b + 2] - coords[a + 2];
     const vx = coords[c] - coords[a], vy = coords[c + 1] - coords[a + 1], vz = coords[c + 2] - coords[a + 2];
-    const nx = uy * vz - uz * vy;
-    const ny = uz * vx - ux * vz;
-    const nz = ux * vy - uy * vx;
-    const len = Math.sqrt(nx * nx + ny * ny + nz * nz);
+    const n = [uy * vz - uz * vy, uz * vx - ux * vz, ux * vy - uy * vx];
+    const len = Math.sqrt(n[0] * n[0] + n[1] * n[1] + n[2] * n[2]);
     if (!(len > 0)) return;
 
     this.areaMm2 += len / 2;
 
-    const cosZ = nz / len;
-    if (Math.abs(cosZ) <= OVERHANG_COS) return;
-    const height = (coords[a + 2] + coords[b + 2] + coords[c + 2]) / 3 - this.minZ;
-    if (height <= BED_CONTACT_MM) return;
+    for (let axis = 0; axis < 3; axis++) {
+      const cos = n[axis] / len;
+      // Previs strmší ako 45° od zvislice potrebuje podperu (ako v sliceri).
+      if (Math.abs(cos) <= OVERHANG_COS) continue;
+      const centroid = (coords[a + axis] + coords[b + axis] + coords[c + axis]) / 3;
+      const projected = Math.abs(n[axis]) / 2;
+      const side = cos > 0 ? 1 : 0;
+      const fromMin = centroid - this.min[axis];
+      const fromMax = this.max[axis] - centroid;
+      // Plochy tesne pri podložke ležia na nej, podperu nepotrebujú.
+      if (fromMin > BED_CONTACT_MM) this.toMin[axis][side] += projected * fromMin;
+      if (fromMax > BED_CONTACT_MM) this.toMax[axis][side] += projected * fromMax;
+    }
+  }
 
-    // Priemet plochy do pôdorysu × výška nad podložkou.
-    const column = (Math.abs(nz) / 2) * height;
-    if (cosZ < 0) this.supportDownMm3 += column;
-    else this.supportUpMm3 += column;
+  /**
+   * Najvýhodnejšia poloha: najkratší odhadovaný čas tlače (vrstvy + podpery,
+   * koeficienty pre Štandard) spomedzi polôh, ktoré sa zmestia na výšku.
+   * outward = normály smerujú von (kladný objem).
+   */
+  bestOrientation(outward: boolean) {
+    const candidates: { heightMm: number; supportMm3: number; up: string }[] = [];
+    // Poloha zo súboru (+z) ide prvá, aby pri zhode zostala.
+    for (const axis of [2, 0, 1]) {
+      const heightMm = this.max[axis] - this.min[axis];
+      // Os smeruje hore: previsy sú plochy s normálou proti osi, stĺpec k minimu.
+      candidates.push({ heightMm, supportMm3: this.toMin[axis][outward ? 0 : 1], up: "+" + "xyz"[axis] });
+      // Model prevrátený: previsy majú normálu v smere osi, stĺpec k maximu.
+      candidates.push({ heightMm, supportMm3: this.toMax[axis][outward ? 1 : 0], up: "-" + "xyz"[axis] });
+    }
+    const fitting = candidates.filter((c) => c.heightMm <= MAX_PRINT_HEIGHT_MM);
+    const pool = fitting.length ? fitting : candidates;
+    // Štandard: 0,0405 min na vrstvu 0,2 mm; podpery 5,88 min/cm³ × 0,104 objemu stĺpca.
+    const cost = (c: { heightMm: number; supportMm3: number }) => (0.0405 / 0.2) * c.heightMm + 5.882 * 0.104 * (c.supportMm3 / 1000);
+    return pool.reduce((best, c) => (cost(c) < cost(best) - 1e-9 ? c : best), pool[0]);
   }
 }
 
@@ -147,7 +178,7 @@ function buildAnalysis(
   }
 
   let signedVolume = 0;
-  const surface = new SurfaceStats(minZ);
+  const surface = new SurfaceStats([minX, minY, minZ], [maxX, maxY, maxZ]);
 
   if (faces?.length) {
     for (const face of faces) {
@@ -181,8 +212,8 @@ function buildAnalysis(
   const volumeMm3 = Math.abs(signedVolume);
   const volumeCm3 = Number((volumeMm3 / 1000).toFixed(2));
 
-  // Kladný objem = normály smerujú von, previsy sú plochy otočené nadol.
-  const supportMm3 = signedVolume >= 0 ? surface.supportDownMm3 : surface.supportUpMm3;
+  // Kladný objem = normály smerujú von.
+  const print = surface.bestOrientation(signedVolume >= 0);
 
   return {
     dimsXmm,
@@ -190,7 +221,9 @@ function buildAnalysis(
     dimsZmm,
     volumeCm3,
     surfaceAreaCm2: Number((surface.areaMm2 / 100).toFixed(2)),
-    supportCm3: Number((supportMm3 / 1000).toFixed(2)),
+    supportCm3: Number((print.supportMm3 / 1000).toFixed(2)),
+    // Výška v polohe, v ktorej sa model bude tlačiť (rozmery vyššie sú zo súboru).
+    printHeightMm: Number(print.heightMm.toFixed(2)),
   };
 }
 

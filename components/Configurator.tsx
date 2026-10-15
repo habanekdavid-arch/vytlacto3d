@@ -15,6 +15,7 @@ type Analysis = {
   dimsZmm?: number;
   surfaceAreaCm2?: number;
   supportCm3?: number;
+  printHeightMm?: number;
 };
 
 type Quote = {
@@ -72,10 +73,10 @@ export default function Configurator({
 
   // Závislosti sú čísla, nie objekt `analysis` — ten rodič pri každom
   // vykreslení vytvára nanovo a prepočet ceny by sa točil dookola.
-  const { volumeCm3, surfaceAreaCm2, supportCm3, dimsZmm } = analysis;
+  const { volumeCm3, surfaceAreaCm2, supportCm3, dimsZmm, printHeightMm } = analysis;
   const geometry = useMemo(
-    () => scaledGeometry({ volumeCm3, surfaceAreaCm2, supportCm3, dimsZmm }, config.scalePct),
-    [volumeCm3, surfaceAreaCm2, supportCm3, dimsZmm, config.scalePct]
+    () => scaledGeometry({ volumeCm3, surfaceAreaCm2, supportCm3, dimsZmm, printHeightMm }, config.scalePct),
+    [volumeCm3, surfaceAreaCm2, supportCm3, dimsZmm, printHeightMm, config.scalePct]
   );
 
   const scaledDims = useMemo(() => ({

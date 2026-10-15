@@ -22,6 +22,8 @@ export type ModelGeometry = {
   surfaceAreaCm2?: number;
   supportCm3?: number;
   dimsZmm?: number;
+  /** Výška v polohe, v ktorej sa model bude tlačiť (staršie analýzy ju nemajú). */
+  printHeightMm?: number;
 };
 
 /** Geometria po zmene mierky: objem ×s³, povrch ×s², výška ×s. */
@@ -30,7 +32,7 @@ export function scaledGeometry(analysis: ModelGeometry, scalePct: number) {
   const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) && v >= 0 ? v : undefined);
   const area = num(analysis.surfaceAreaCm2);
   const support = num(analysis.supportCm3);
-  const height = num(analysis.dimsZmm);
+  const height = num(analysis.printHeightMm) ?? num(analysis.dimsZmm);
   return {
     volumeCm3: Number(analysis.volumeCm3) * s ** 3,
     surfaceAreaCm2: area === undefined ? undefined : area * s ** 2,

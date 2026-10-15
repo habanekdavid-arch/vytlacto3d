@@ -31,7 +31,7 @@ type RawItem = {
   fileKey: string;
   fileName: string;
   fileSize?: number;
-  analysis: { volumeCm3: number; dimsXmm?: number; dimsYmm?: number; dimsZmm?: number; surfaceAreaCm2?: number; supportCm3?: number };
+  analysis: { volumeCm3: number; dimsXmm?: number; dimsYmm?: number; dimsZmm?: number; surfaceAreaCm2?: number; supportCm3?: number; printHeightMm?: number };
   config: { material: string; quality: string; infillPct?: number; quantity?: number; scalePct?: number; color?: string; materialFlexible?: boolean; colorFlexible?: boolean };
 };
 
