@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
 import { isMaterial, isQuality, quote, scaledGeometry } from "@/lib/pricing";
 import { createOrderWithNumber } from "@/lib/order-number";
 import { addVat } from "@/lib/vat";
+import { applyCouponToPricing, checkCoupon, claimCoupon, normalizeCouponCode, type CouponCheck } from "@/lib/coupons";
 import { getSafeServerSession } from "@/lib/session";
 import { generateVariableSymbol, COMPANY_INFO } from "@/lib/company-info";
 import { SHIPPING_RATES } from "@/lib/shipping";
@@ -120,6 +122,34 @@ export async function POST(req: NextRequest) {
       pricedItems.push({ item, serverPricing, scaledVol, infill, scale, rawVol, materialFlexible, colorFlexible });
     }
 
+    // Zľavový kupón: overí sa tu na serveri a zľava sa zapíše do ceny položiek.
+    const couponCode = normalizeCouponCode(body?.couponCode);
+    let coupon: Extract<CouponCheck, { ok: true }> | null = null;
+    if (couponCode) {
+      const check = await checkCoupon(couponCode);
+      if (!check.ok) return NextResponse.json({ error: check.error }, { status: 400 });
+      // Kupón drží nedokončená platba kartou — zrušíme ju, aby sa kupón
+      // nedal použiť dvakrát.
+      if (check.heldBy?.status === "PENDING" && check.heldBy.stripeSessionId) {
+        const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "");
+        const old = await stripe.checkout.sessions.retrieve(check.heldBy.stripeSessionId).catch(() => null);
+        if (old?.status === "complete") {
+          return NextResponse.json({ error: "Tento kupón už bol použitý." }, { status: 400 });
+        }
+        if (old?.status === "open") {
+          try {
+            await stripe.checkout.sessions.expire(old.id);
+          } catch {
+            return NextResponse.json({ error: "Kupón sa práve používa v inej platbe. Skúste to o chvíľu." }, { status: 409 });
+          }
+        }
+      }
+      coupon = check;
+      for (const pi of pricedItems) {
+        pi.serverPricing = applyCouponToPricing(pi.serverPricing, check.code, check.percent);
+      }
+    }
+
     const totalNet = pricedItems.reduce((s, pi) => s + pi.serverPricing.total, 0);
     const shippingCostWithVat = deliveryMethod === "courier" ? SHIPPING_RATES.COURIER : SHIPPING_RATES.PACKETA;
     const productionWithVat = addVat(totalNet);
@@ -198,6 +228,12 @@ export async function POST(req: NextRequest) {
       },
       select: { id: true, orderNumber: true, fileName: true, customerEmail: true, billingAddress: true, status: true },
     }));
+
+    // Objednávka prevodom kupón použije hneď.
+    if (coupon && !(await claimCoupon(coupon.code, order.id, coupon.holderOrderId, true))) {
+      await prisma.order.delete({ where: { id: order.id } }).catch(() => {});
+      return NextResponse.json({ error: "Kupón sa práve použil v inej objednávke." }, { status: 409 });
+    }
 
     // Create one OrderItem per model
     await prisma.orderItem.createMany({

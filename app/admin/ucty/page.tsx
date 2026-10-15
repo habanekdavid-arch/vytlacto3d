@@ -5,6 +5,7 @@ import { formatEur } from "@/lib/vat";
 import { ACCOUNT_TABS as TABS, formatAccountDate as formatDate, loadAccounts, parseAccountTab, type AccountTab as Tab } from "@/lib/admin-accounts";
 import DeleteAccountButton from "@/components/admin/DeleteAccountButton";
 import AdminAccessButton from "@/components/admin/AdminAccessButton";
+import SendCouponButton from "@/components/admin/SendCouponButton";
 
 export const dynamic = "force-dynamic";
 
@@ -52,6 +53,9 @@ export default async function AdminUctyPage({
           <div className="flex flex-wrap gap-2">
             <Link href="/admin/orders" className="rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50">
               ← Objednávky
+            </Link>
+            <Link href="/admin/kupony" className="rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50">
+              Kupóny
             </Link>
             <Link href="/admin/cms" className="rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50">
               CMS
@@ -107,7 +111,7 @@ export default async function AdminUctyPage({
         {visible.length ? (
           <div className="overflow-hidden rounded-3xl border border-neutral-200 bg-white shadow-sm">
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[940px] text-left text-sm">
+              <table className="w-full min-w-[1080px] text-left text-sm">
                 <thead className="border-b border-neutral-100 bg-neutral-50 text-xs font-semibold uppercase tracking-wide text-neutral-500">
                   <tr>
                     <th className="px-4 py-3">Klient</th>
@@ -170,7 +174,10 @@ export default async function AdminUctyPage({
                             <AdminAccessButton email={r.email} mode="remove" hasAccount={r.hasAccount} />
                           )
                         ) : (
-                          r.userId && <DeleteAccountButton userId={r.userId} name={r.name} email={r.email} />
+                          <div className="flex flex-wrap items-center justify-end gap-2">
+                            <SendCouponButton email={r.email} name={r.name} />
+                            {r.userId && <DeleteAccountButton userId={r.userId} name={r.name} email={r.email} />}
+                          </div>
                         )}
                       </td>
                     </tr>

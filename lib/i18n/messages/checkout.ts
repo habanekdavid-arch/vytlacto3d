@@ -96,6 +96,13 @@ const messages: Messages = {
     hu: "rétegről rétegre",
     de: "Schicht für Schicht",
   },
+  "Zľavový kupón": { en: "Discount coupon", hu: "Kedvezménykupon", de: "Rabattgutschein" },
+  "Zadajte kód kupónu": { en: "Enter coupon code", hu: "Adja meg a kupon kódját", de: "Gutscheincode eingeben" },
+  "Použiť": { en: "Apply", hu: "Beváltás", de: "Einlösen" },
+  "Zadajte kód kupónu.": { en: "Enter the coupon code.", hu: "Adja meg a kupon kódját.", de: "Geben Sie den Gutscheincode ein." },
+  "Tento kupón neexistuje.": { en: "This coupon does not exist.", hu: "Ez a kupon nem létezik.", de: "Dieser Gutschein existiert nicht." },
+  "Tento kupón už bol použitý.": { en: "This coupon has already been used.", hu: "Ezt a kupont már felhasználták.", de: "Dieser Gutschein wurde bereits eingelöst." },
+  "Kupón sa nepodarilo overiť. Skúste to znova.": { en: "The coupon could not be verified. Please try again.", hu: "A kupont nem sikerült ellenőrizni. Próbálja újra.", de: "Der Gutschein konnte nicht geprüft werden. Bitte erneut versuchen." },
 };
 
 export default messages;

@@ -1,6 +1,7 @@
 import Stripe from "stripe";
 
 import { prisma } from "@/lib/prisma";
+import { markCouponUsedForOrder } from "@/lib/coupons";
 import { sendOrderPaidEmail } from "@/lib/email";
 import { sendAdminOrderNotificationEmail } from "@/lib/email-admin";
 import { scheduleFlowiiSync } from "@/lib/flowii/sync";
@@ -212,6 +213,9 @@ export async function markOrderPaidFromCheckoutSession(
       status: true,
     },
   });
+
+  // Zľavový kupón tejto objednávky je teraz definitívne použitý.
+  await markCouponUsedForOrder(orderId);
 
   const shippingCostEur =
     typeof (updatedOrder.shippingCost as any)?.amount === "number"

@@ -297,3 +297,19 @@ model AdminRevoked {
   revokedAt DateTime @default(now())
   revokedBy String?
 }
+
+// Jednorazový zľavový kupón. orderId = objednávka, ktorá ho rezervovala
+// (platba kartou) alebo použila; usedAt = definitívne použitý (zaplatené /
+// objednané prevodom). Zľava sa zapíše do Order.pricing (couponCode ...).
+model Coupon {
+  code      String    @id
+  percent   Int
+  email     String?
+  createdAt DateTime  @default(now())
+  createdBy String?
+  sentAt    DateTime?
+  orderId   String?
+  usedAt    DateTime?
+
+  @@index([email])
+}

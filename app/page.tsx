@@ -94,6 +94,11 @@ export default function Home() {
   const [packetaPoint, setPacketaPoint] = useState<PacketaPoint | null>(null);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [allowModelAdjustments, setAllowModelAdjustments] = useState(false);
+  // Jednorazový zľavový kupón (overený na serveri; zľava sa aj tak počíta až pri objednávke).
+  const [couponInput, setCouponInput] = useState("");
+  const [coupon, setCoupon] = useState<{ code: string; percent: number } | null>(null);
+  const [couponError, setCouponError] = useState<string | null>(null);
+  const [couponLoading, setCouponLoading] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<"CARD" | "TRANSFER">("CARD");
   const [showTransferModal, setShowTransferModal] = useState(false);
   const { status: sessionStatus } = useSession();
@@ -273,7 +278,40 @@ export default function Home() {
   // Len na zobrazenie — už je zarátaná v `cartTotalNet`, nič sa neodčítava druhýkrát.
   const cartFlexibleDiscountEur = cartItems.reduce((s, i) => s + (i.pricing?.flexibleDiscountEur ?? 0), 0);
   const shippingCostWithVat = deliveryMethod === "courier" ? SHIPPING_RATES.COURIER : SHIPPING_RATES.PACKETA;
-  const grandTotal = addVat(cartTotalNet) + shippingCostWithVat;
+  // Rovnaký výpočet ako na serveri (lib/coupons applyCouponToPricing): zľava z každej položky zvlášť.
+  const productionWithVat = coupon
+    ? cartItems.reduce((s, i) => {
+        const total = i.pricing?.total ?? 0;
+        const discount = Math.round(total * coupon.percent) / 100;
+        return s + addVat(Math.round((total - discount) * 100) / 100);
+      }, 0)
+    : addVat(cartTotalNet);
+  const couponDiscountWithVat = coupon ? Math.max(0, addVat(cartTotalNet) - productionWithVat) : 0;
+  const grandTotal = productionWithVat + shippingCostWithVat;
+
+  async function applyCoupon() {
+    const code = couponInput.trim();
+    if (!code) return;
+    setCouponLoading(true);
+    setCouponError(null);
+    try {
+      const res = await fetch("/api/coupon/check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setCoupon(null);
+        setCouponError(t(data.error || "Kupón sa nepodarilo overiť. Skúste to znova."));
+        return;
+      }
+      setCoupon({ code: data.code, percent: data.percent });
+      setCouponInput(data.code);
+    } finally {
+      setCouponLoading(false);
+    }
+  }
 
   async function payByTransfer() {
     if (!allItemsPriced) return;
@@ -295,6 +333,7 @@ export default function Home() {
           packetaPoint: deliveryMethod === "packeta" ? packetaPoint : null,
           contactOverride: profileLoaded ? contactForm : null,
           allowModelAdjustments,
+          couponCode: coupon?.code ?? null,
         }),
       });
       let data: any = null;
@@ -327,6 +366,7 @@ export default function Home() {
           packetaPoint: deliveryMethod === "packeta" ? packetaPoint : null,
           contactOverride: profileLoaded ? contactForm : null,
           allowModelAdjustments,
+          couponCode: coupon?.code ?? null,
         }),
       });
       const text = await res.text();
@@ -596,6 +636,47 @@ export default function Home() {
                       )}
                     </div>
 
+                    {/* Zľavový kupón */}
+                    <div>
+                      <div className="mb-2 text-sm font-extrabold text-neutral-800">{t("Zľavový kupón")}</div>
+                      {coupon ? (
+                        <div className="flex items-center justify-between gap-3 rounded-2xl border-2 border-[#FFAE00] bg-[#FFAE00]/10 px-4 py-3">
+                          <div className="text-sm">
+                            <span className="font-mono font-bold tracking-wider text-neutral-900">{coupon.code}</span>
+                            <span className="ml-2 font-semibold text-[#b07a00]">−{coupon.percent} %</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => { setCoupon(null); setCouponInput(""); }}
+                            className="text-xs font-semibold text-neutral-500 underline hover:text-neutral-900"
+                          >
+                            {t("Odstrániť")}
+                          </button>
+                        </div>
+                      ) : (
+                        <form
+                          onSubmit={(e) => { e.preventDefault(); applyCoupon(); }}
+                          className="flex gap-2"
+                        >
+                          <input
+                            value={couponInput}
+                            onChange={(e) => { setCouponInput(e.target.value); setCouponError(null); }}
+                            placeholder={t("Zadajte kód kupónu")}
+                            autoCapitalize="characters"
+                            className="min-w-0 flex-1 rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm font-semibold uppercase tracking-wider outline-none placeholder:normal-case placeholder:font-normal placeholder:tracking-normal focus:border-[#FFAE00]"
+                          />
+                          <button
+                            type="submit"
+                            disabled={couponLoading || !couponInput.trim()}
+                            className="rounded-2xl bg-neutral-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-neutral-800 disabled:opacity-50"
+                          >
+                            {couponLoading ? "…" : t("Použiť")}
+                          </button>
+                        </form>
+                      )}
+                      {couponError && <div className="mt-2 text-xs font-semibold text-red-600">{couponError}</div>}
+                    </div>
+
                     {/* Price summary */}
                     <div className="rounded-2xl bg-neutral-50 px-4 py-3 text-sm">
                       <div className="flex justify-between text-neutral-600">
@@ -606,6 +687,12 @@ export default function Home() {
                         <div className="flex justify-between text-[#b07a00]">
                           <span>{t("Zľava za flexibilitu materiálu/farby")}</span>
                           <span className="font-semibold">−{formatEur(cartFlexibleDiscountEur)}</span>
+                        </div>
+                      )}
+                      {coupon && couponDiscountWithVat > 0 && (
+                        <div className="flex justify-between text-[#b07a00]">
+                          <span>{t("Zľavový kupón")} −{coupon.percent} %</span>
+                          <span className="font-semibold">−{formatEur(couponDiscountWithVat)}</span>
                         </div>
                       )}
                       <div className="flex justify-between text-neutral-600">

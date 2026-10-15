@@ -6,6 +6,7 @@ import { isMaterial, isQuality, quote, scaledGeometry } from "@/lib/pricing";
 import { createOrderWithNumber } from "@/lib/order-number";
 import { materialLabel, qualityLabel } from "@/lib/print-options";
 import { addVat } from "@/lib/vat";
+import { applyCouponToPricing, checkCoupon, claimCoupon, normalizeCouponCode, type CouponCheck } from "@/lib/coupons";
 import { SHIPPING_RATES } from "@/lib/shipping";
 import { getSafeServerSession } from "@/lib/session";
 
@@ -155,6 +156,33 @@ export async function POST(req: NextRequest) {
       pricedItems.push({ item, serverPricing, scaledVol, infill, scale, rawVol, qty, materialFlexible, colorFlexible });
     }
 
+    // Zľavový kupón: overí sa tu na serveri a zľava sa zapíše do ceny položiek.
+    const couponCode = normalizeCouponCode(body?.couponCode);
+    let coupon: Extract<CouponCheck, { ok: true }> | null = null;
+    if (couponCode) {
+      const check = await checkCoupon(couponCode);
+      if (!check.ok) return NextResponse.json({ error: check.error }, { status: 400 });
+      // Kupón drží iná nezaplatená objednávka — jej platbu zrušíme, aby
+      // sa kupón nedal zaplatiť dvakrát.
+      if (check.heldBy?.status === "PENDING" && check.heldBy.stripeSessionId) {
+        const old = await stripe.checkout.sessions.retrieve(check.heldBy.stripeSessionId).catch(() => null);
+        if (old?.status === "complete") {
+          return NextResponse.json({ error: "Tento kupón už bol použitý." }, { status: 400 });
+        }
+        if (old?.status === "open") {
+          try {
+            await stripe.checkout.sessions.expire(old.id);
+          } catch {
+            return NextResponse.json({ error: "Kupón sa práve používa v inej platbe. Skúste to o chvíľu." }, { status: 409 });
+          }
+        }
+      }
+      coupon = check;
+      for (const pi of pricedItems) {
+        pi.serverPricing = applyCouponToPricing(pi.serverPricing, check.code, check.percent);
+      }
+    }
+
     const totalNet = pricedItems.reduce((s, pi) => s + pi.serverPricing.total, 0);
     const totalWithVat = addVat(totalNet);
 
@@ -223,6 +251,11 @@ export async function POST(req: NextRequest) {
     }));
 
     createdOrderId = order.id;
+
+    // Rezervácia kupónu pre túto objednávku (použitý bude až po zaplatení).
+    if (coupon && !(await claimCoupon(coupon.code, order.id, coupon.holderOrderId, false))) {
+      throw new Error("Kupón sa práve použil v inej objednávke.");
+    }
 
     // Create one OrderItem per model
     await prisma.orderItem.createMany({

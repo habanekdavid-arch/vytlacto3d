@@ -157,6 +157,15 @@ export default async function AdminOrderDetailPage({
             </div>
           )}
 
+          {typeof pricing.couponCode === "string" && (
+            <div className="mt-6 rounded-2xl border border-[#FFAE00] bg-[#FFAE00]/10 px-5 py-4 text-sm">
+              <span className="font-extrabold text-neutral-900">Zľavový kupón {pricing.couponCode}</span>
+              <span className="ml-2 text-neutral-700">
+                −{pricing.couponPercent} % z výroby (ceny nižšie sú už po zľave)
+              </span>
+            </div>
+          )}
+
           <div className="mt-8 grid gap-4 md:grid-cols-4">
             <InfoCard label="Vytvorené" value={formatDateSK(order.createdAt)} />
             <InfoCard

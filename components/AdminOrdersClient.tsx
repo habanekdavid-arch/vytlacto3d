@@ -254,6 +254,12 @@ export default function AdminOrdersClient({
             />
             <FlowiiTestOrderButton className="rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50 disabled:opacity-60" />
             <a
+              href="/admin/kupony"
+              className="rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50"
+            >
+              Kupóny
+            </a>
+            <a
               href="/admin/ucty"
               className="rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50"
             >
