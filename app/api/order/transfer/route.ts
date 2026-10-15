@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { isMaterial, isQuality, quote, scaledGeometry } from "@/lib/pricing";
 import { createOrderWithNumber } from "@/lib/order-number";
 import { addVat } from "@/lib/vat";
-import { applyCouponToPricing, checkCoupon, claimCoupon, normalizeCouponCode, type CouponCheck } from "@/lib/coupons";
+import { applyCouponToPricing, cancelAbandonedOrder, checkCoupon, claimCoupon, normalizeCouponCode, type CouponCheck } from "@/lib/coupons";
 import { getSafeServerSession } from "@/lib/session";
 import { generateVariableSymbol, COMPANY_INFO } from "@/lib/company-info";
 import { SHIPPING_RATES } from "@/lib/shipping";
@@ -133,12 +133,17 @@ export async function POST(req: NextRequest) {
       if (check.heldBy?.status === "PENDING" && check.heldBy.stripeSessionId) {
         const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "");
         const old = await stripe.checkout.sessions.retrieve(check.heldBy.stripeSessionId).catch(() => null);
-        if (old?.status === "complete") {
+        if (!old) {
+          return NextResponse.json({ error: "Kupón sa nepodarilo overiť. Skúste to znova." }, { status: 503 });
+        }
+        if (old.status === "complete") {
           return NextResponse.json({ error: "Tento kupón už bol použitý." }, { status: 400 });
         }
-        if (old?.status === "open") {
+        if (old.status === "expired") await cancelAbandonedOrder(check.heldBy.orderId);
+        if (old.status === "open") {
           try {
             await stripe.checkout.sessions.expire(old.id);
+            await cancelAbandonedOrder(check.heldBy.orderId);
           } catch {
             return NextResponse.json({ error: "Kupón sa práve používa v inej platbe. Skúste to o chvíľu." }, { status: 409 });
           }

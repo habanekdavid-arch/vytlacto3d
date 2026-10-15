@@ -6,7 +6,8 @@ import { prisma } from "@/lib/prisma";
  * nezľavuje). Platba kartou kupón rezervuje (orderId) a použitý je až po
  * zaplatení; objednávka prevodom ho použije hneď. Rezervácia nezaplatenej
  * objednávky sa uvoľní, keď zákazník skúsi platiť znova (stará platobná
- * session sa vtedy zruší, aby kupón nešlo zaplatiť dvakrát).
+ * session sa vtedy zruší, aby kupón nešlo zaplatiť dvakrát). Zrušená alebo
+ * zmazaná objednávka kupón vráti.
  */
 
 export const COUPON_PERCENTS = [5, 10, 20] as const;
@@ -89,7 +90,7 @@ export async function checkCoupon(rawCode: unknown): Promise<CouponCheck> {
   await ensureCouponTable();
   const coupon = await prisma.coupon.findUnique({ where: { code } });
   if (!coupon) return { ok: false, error: "Tento kupón neexistuje." };
-  if (coupon.usedAt) return { ok: false, error: "Tento kupón už bol použitý." };
+  if (coupon.usedAt && !coupon.orderId) return { ok: false, error: "Tento kupón už bol použitý." };
 
   let heldBy: { orderId: string; stripeSessionId: string | null; status: string } | null = null;
   if (coupon.orderId) {
@@ -97,6 +98,12 @@ export async function checkCoupon(rawCode: unknown): Promise<CouponCheck> {
       where: { id: coupon.orderId },
       select: { id: true, status: true, stripeSessionId: true },
     });
+    // Zrušená alebo zmazaná objednávka (napr. nezaplatený prevod) kupón vracia.
+    if (coupon.usedAt && (!order || order.status === "CANCELLED")) {
+      await prisma.coupon.updateMany({ where: { code, orderId: coupon.orderId }, data: { usedAt: null } });
+    } else if (coupon.usedAt) {
+      return { ok: false, error: "Tento kupón už bol použitý." };
+    }
     if (order && !RELEASABLE_STATUSES.has(order.status)) {
       // Objednávka je zaplatená — kupón je použitý (doplň, keby to ešte nebolo zapísané).
       await prisma.coupon.updateMany({ where: { code, usedAt: null }, data: { usedAt: new Date() } });
@@ -144,4 +151,13 @@ export async function markCouponUsedForOrder(orderId: string) {
   } catch (e) {
     console.error("markCouponUsedForOrder failed:", orderId, e);
   }
+}
+
+/**
+ * Kupón prešiel do novej objednávky: stará nedokončená (jej platba už bola
+ * zrušená) sa zruší hneď a potichu — inak by ju neskôr zrušil cron a poslal
+ * zákazníkovi e-mail o zrušení.
+ */
+export async function cancelAbandonedOrder(orderId: string) {
+  await prisma.order.updateMany({ where: { id: orderId, status: "PENDING" }, data: { status: "CANCELLED" } });
 }
