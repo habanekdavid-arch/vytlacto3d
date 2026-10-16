@@ -161,7 +161,7 @@ function HalloweenBanner({ percent, c }: { percent: number; c: Countdown }) {
           }}
         >
           <Image
-            src="/promo/halloween.webp"
+            src="/promo/halloween-2.webp"
             alt=""
             fill
             priority
