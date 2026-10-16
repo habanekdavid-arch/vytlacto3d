@@ -120,7 +120,7 @@ export default async function RootLayout({
 
         <LocaleProvider locale={locale} dict={dictionaryFor(locale)}>
         <Providers>
-          {promo && <PromoBar percent={promo.percent} endsAt={promo.endsAt} />}
+          {promo && <PromoBar percent={promo.percent} endsAt={promo.endsAt} theme={promo.theme} />}
           <Navbar />
           <main className="flex-1">{children}</main>
           <Footer />
