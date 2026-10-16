@@ -6,6 +6,8 @@ import CookieBanner from "@/components/CookieBanner";
 import Providers from "@/components/Providers";
 import FourFromFloatingButton from "@/components/FourFromFloatingButton";
 import PromoTipPopup from "@/components/PromoTipPopup";
+import PromoBar from "@/components/PromoBar";
+import { activePromo } from "@/lib/promo";
 import RegisterNudgePopup from "@/components/RegisterNudgePopup";
 import CompleteProfilePopup from "@/components/CompleteProfilePopup";
 import { LocaleProvider } from "@/lib/i18n/client";
@@ -77,6 +79,7 @@ export default async function RootLayout({
   children: React.ReactNode;
 }) {
   const locale = await getLocale();
+  const promo = activePromo();
 
   return (
     <html lang={locale}>
@@ -117,6 +120,7 @@ export default async function RootLayout({
 
         <LocaleProvider locale={locale} dict={dictionaryFor(locale)}>
         <Providers>
+          {promo && <PromoBar percent={promo.percent} endsAt={promo.endsAt} />}
           <Navbar />
           <main className="flex-1">{children}</main>
           <Footer />

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { isMaterial, isQuality, quote, scaledGeometry } from "@/lib/pricing";
 import { createOrderWithNumber } from "@/lib/order-number";
 import { addVat } from "@/lib/vat";
+import { activePromo } from "@/lib/promo";
 import { applyCouponToPricing, cancelAbandonedOrder, checkCoupon, claimCoupon, normalizeCouponCode, type CouponCheck } from "@/lib/coupons";
 import { getSafeServerSession } from "@/lib/session";
 import { generateVariableSymbol, COMPANY_INFO } from "@/lib/company-info";
@@ -75,6 +76,8 @@ export async function POST(req: NextRequest) {
     }
 
     // Validate + calculate server-side pricing for each item
+    // Akcia (lib/promo) platí podľa času na serveri, nie podľa prehliadača.
+    const promo = activePromo();
     const pricedItems = [];
     for (const item of rawItems) {
       const rawVol = Number(item.analysis?.volumeCm3);
@@ -117,6 +120,7 @@ export async function POST(req: NextRequest) {
         quantity: qty,
         materialFlexible,
         colorFlexible,
+        promoPercent: promo?.percent,
       });
 
       pricedItems.push({ item, serverPricing, scaledVol, infill, scale, rawVol, materialFlexible, colorFlexible });

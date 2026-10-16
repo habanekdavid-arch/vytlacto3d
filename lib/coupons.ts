@@ -1,5 +1,6 @@
 import { randomInt } from "node:crypto";
 import { prisma } from "@/lib/prisma";
+import { activePromo } from "@/lib/promo";
 
 /**
  * Jednorazové zľavové kupóny (5 / 10 / 20 % z ceny výroby, doprava sa
@@ -90,6 +91,10 @@ export async function checkCoupon(rawCode: unknown): Promise<CouponCheck> {
   await ensureCouponTable();
   const coupon = await prisma.coupon.findUnique({ where: { code } });
   if (!coupon) return { ok: false, error: "Tento kupón neexistuje." };
+  const promo = activePromo();
+  if (promo && coupon.percent <= promo.percent) {
+    return { ok: false, error: "Počas akcie platí výhodnejšia akciová zľava. Kupón si nechajte na ďalší nákup." };
+  }
   if (coupon.usedAt && !coupon.orderId) return { ok: false, error: "Tento kupón už bol použitý." };
 
   let heldBy: { orderId: string; stripeSessionId: string | null; status: string } | null = null;
@@ -118,11 +123,16 @@ export async function checkCoupon(rawCode: unknown): Promise<CouponCheck> {
  * Zapíše zľavu do ceny jednej položky. Celá ďalšia cesta (Stripe, faktúra,
  * e-maily, FLOWii) pracuje s `total`, takže zľava sa prenesie všade.
  */
-export function applyCouponToPricing<T extends { total: number }>(pricing: T, code: string, percent: number) {
-  const before = pricing.total;
+export function applyCouponToPricing<T extends { total: number; totalBeforePromo?: number }>(pricing: T, code: string, percent: number) {
+  // Kupón sa s akciou nesčítava: výhodnejší kupón nahrádza akciovú zľavu.
+  const { promoPercent: _p, promoDiscountEur: _d, totalBeforePromo, ...rest } = pricing as T & {
+    promoPercent?: number;
+    promoDiscountEur?: number;
+  };
+  const before = totalBeforePromo ?? pricing.total;
   const discount = Math.round(before * percent) / 100;
   return {
-    ...pricing,
+    ...rest,
     total: Math.round((before - discount) * 100) / 100,
     totalBeforeCoupon: before,
     couponCode: code,

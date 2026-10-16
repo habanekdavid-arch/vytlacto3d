@@ -57,6 +57,8 @@ type QuoteInput = {
   // čím máme práve poruke. Každá z nich je vlastná zľava.
   materialFlexible?: boolean;
   colorFlexible?: boolean;
+  /** Akciová zľava v % (lib/promo) — z celej ceny výroby. */
+  promoPercent?: number;
 };
 
 type QuoteResult = {
@@ -71,6 +73,10 @@ type QuoteResult = {
   quantityDiscountAmount: number;
   flexibleDiscountEur: number;
   total: number;
+  /** Len počas akcie: cena pred akciovou zľavou a výška zľavy (bez DPH). */
+  promoPercent?: number;
+  promoDiscountEur?: number;
+  totalBeforePromo?: number;
 };
 
 // Cena materiálu za gram (€/g) — zhodné s verejným cenníkom MaterialPricing.tsx
@@ -253,5 +259,19 @@ export function quote(input: QuoteInput): QuoteResult {
     quantityDiscountAmount: round2(quantityDiscountAmountRaw),
     flexibleDiscountEur:    round2(flexibleDiscountRaw),
     total:                  round2(totalRaw),
+    ...promoFields(round2(totalRaw), input.promoPercent),
+  };
+}
+
+/** Akciová zľava — rovnaké zaokrúhlenie ako pri kupónoch (lib/coupons). */
+function promoFields(total: number, promoPercent: number | undefined) {
+  const p = Number(promoPercent);
+  if (!Number.isFinite(p) || p <= 0 || p >= 100) return {};
+  const discount = Math.round(total * p) / 100;
+  return {
+    total: round2(total - discount),
+    promoPercent: p,
+    promoDiscountEur: discount,
+    totalBeforePromo: total,
   };
 }

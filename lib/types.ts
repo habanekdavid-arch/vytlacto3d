@@ -33,6 +33,10 @@ export type CartItemPricing = {
   quantityDiscountAmount: number;
   flexibleDiscountEur: number;
   total: number;
+  /** Len počas akcie (lib/promo). */
+  promoPercent?: number;
+  promoDiscountEur?: number;
+  totalBeforePromo?: number;
 };
 
 export type CartItem = {

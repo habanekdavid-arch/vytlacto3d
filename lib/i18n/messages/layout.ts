@@ -381,6 +381,16 @@ const messages: Messages = {
     hu: "GYIK",
     de: "FAQ",
   },
+  "zľava na všetky objednávky do nedele": { en: "off all orders until Sunday", hu: "kedvezmény minden rendelésre vasárnapig", de: "Rabatt auf alle Bestellungen bis Sonntag" },
+  "končí o": { en: "ends in", hu: "vége", de: "endet in" },
+  "Vypočítať cenu": { en: "Calculate price", hu: "Ár kiszámítása", de: "Preis berechnen" },
+  "Akcia": { en: "Sale", hu: "Akció", de: "Aktion" },
+  "Akciová zľava": { en: "Sale discount", hu: "Akciós kedvezmény", de: "Aktionsrabatt" },
+  "Počas akcie platí výhodnejšia akciová zľava. Kupón si nechajte na ďalší nákup.": {
+    en: "During the sale the better sale discount applies. Keep your coupon for your next order.",
+    hu: "Az akció alatt a kedvezőbb akciós kedvezmény érvényes. A kupont tartsa meg a következő vásárlásra.",
+    de: "Während der Aktion gilt der günstigere Aktionsrabatt. Heben Sie den Gutschein für die nächste Bestellung auf.",
+  },
 };
 
 export default messages;

@@ -278,15 +278,20 @@ export default function Home() {
   // Len na zobrazenie — už je zarátaná v `cartTotalNet`, nič sa neodčítava druhýkrát.
   const cartFlexibleDiscountEur = cartItems.reduce((s, i) => s + (i.pricing?.flexibleDiscountEur ?? 0), 0);
   const shippingCostWithVat = deliveryMethod === "courier" ? SHIPPING_RATES.COURIER : SHIPPING_RATES.PACKETA;
-  // Rovnaký výpočet ako na serveri (lib/coupons applyCouponToPricing): zľava z každej položky zvlášť.
+  // Rovnaký výpočet ako na serveri (lib/coupons applyCouponToPricing): zľava
+  // z každej položky zvlášť. Kupón sa s akciou nesčítava — počíta sa z ceny
+  // pred akciou.
+  const baseNet = (i: CartItem) => i.pricing?.totalBeforePromo ?? i.pricing?.total ?? 0;
   const productionWithVat = coupon
     ? cartItems.reduce((s, i) => {
-        const total = i.pricing?.total ?? 0;
+        const total = baseNet(i);
         const discount = Math.round(total * coupon.percent) / 100;
         return s + addVat(Math.round((total - discount) * 100) / 100);
       }, 0)
     : addVat(cartTotalNet);
-  const couponDiscountWithVat = coupon ? Math.max(0, addVat(cartTotalNet) - productionWithVat) : 0;
+  const productionBeforeDiscountWithVat = addVat(cartItems.reduce((s, i) => s + baseNet(i), 0));
+  const promoPercentInCart = coupon ? 0 : Math.max(0, ...cartItems.map((i) => i.pricing?.promoPercent ?? 0));
+  const couponDiscountWithVat = Math.max(0, productionBeforeDiscountWithVat - productionWithVat);
   const grandTotal = productionWithVat + shippingCostWithVat;
 
   async function applyCoupon() {
@@ -681,7 +686,7 @@ export default function Home() {
                     <div className="rounded-2xl bg-neutral-50 px-4 py-3 text-sm">
                       <div className="flex justify-between text-neutral-600">
                         <span>{t("Výroba")} ({cartItems.length} {cartItems.length === 1 ? t("model") : t("modely/modelov")})</span>
-                        <span className="font-semibold">{formatEur(addVat(cartTotalNet))}</span>
+                        <span className="font-semibold">{formatEur(productionBeforeDiscountWithVat)}</span>
                       </div>
                       {cartFlexibleDiscountEur > 0 && (
                         <div className="flex justify-between text-[#b07a00]">
@@ -689,9 +694,9 @@ export default function Home() {
                           <span className="font-semibold">−{formatEur(cartFlexibleDiscountEur)}</span>
                         </div>
                       )}
-                      {coupon && couponDiscountWithVat > 0 && (
+                      {(coupon || promoPercentInCart > 0) && couponDiscountWithVat > 0.004 && (
                         <div className="flex justify-between text-[#b07a00]">
-                          <span>{t("Zľavový kupón")} −{coupon.percent} %</span>
+                          <span>{coupon ? t("Zľavový kupón") : t("Akciová zľava")} −{coupon ? coupon.percent : promoPercentInCart} %</span>
                           <span className="font-semibold">−{formatEur(couponDiscountWithVat)}</span>
                         </div>
                       )}

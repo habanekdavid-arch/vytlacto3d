@@ -30,6 +30,10 @@ type Quote = {
   quantityDiscountAmount: number;
   flexibleDiscountEur: number;
   total: number;
+  /** Len počas akcie (lib/promo). */
+  promoPercent?: number;
+  promoDiscountEur?: number;
+  totalBeforePromo?: number;
 };
 
 export type ConfigState = {
@@ -303,6 +307,14 @@ export default function Configurator({
             <div className="text-sm font-semibold text-neutral-500">
               {t("Cena výroby s DPH")}
             </div>
+            {quote?.totalBeforePromo !== undefined && (
+              <div className="mt-1 flex items-center gap-2 text-sm">
+                <span className="text-neutral-400 line-through">{formatEur(addVat(quote.totalBeforePromo))}</span>
+                <span className="rounded-full bg-[#FFAE00] px-2 py-0.5 text-xs font-extrabold text-black">
+                  {t("Akcia")} −{quote.promoPercent} %
+                </span>
+              </div>
+            )}
             <div className="mt-1 text-4xl font-extrabold tracking-tight text-neutral-900">
               {quote ? formatEur(addVat(quote.total)) : "—"}
             </div>
@@ -328,6 +340,15 @@ export default function Configurator({
                     <PriceLine
                       label={t("Zľava za flexibilitu materiálu/farby")}
                       value={`−${formatEur(addVat(quote.flexibleDiscountEur))}`}
+                    />
+                    <div className="my-1 border-t border-neutral-200" />
+                  </>
+                )}
+                {quote.promoDiscountEur !== undefined && quote.promoDiscountEur > 0 && (
+                  <>
+                    <PriceLine
+                      label={`${t("Akciová zľava")} −${quote.promoPercent} %`}
+                      value={`−${formatEur(addVat(quote.totalBeforePromo ?? 0) - addVat(quote.total))}`}
                     />
                     <div className="my-1 border-t border-neutral-200" />
                   </>

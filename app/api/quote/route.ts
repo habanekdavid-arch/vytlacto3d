@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { activePromo } from "@/lib/promo";
 import { isMaterial, isQuality, quote } from "@/lib/pricing";
 
 export async function POST(req: NextRequest) {
@@ -71,6 +72,7 @@ export async function POST(req: NextRequest) {
       quantity,
       materialFlexible,
       colorFlexible,
+      promoPercent: activePromo()?.percent,
     });
 
     return NextResponse.json(result);
