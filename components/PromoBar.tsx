@@ -30,29 +30,29 @@ export default function PromoBar({ percent, endsAt }: { percent: number; endsAt:
 
   const unit = (value: string, label: string) => (
     <span className="inline-flex items-baseline gap-0.5">
-      <span className="rounded-md bg-white/10 px-1.5 py-0.5 font-mono text-sm font-extrabold tabular-nums text-[#FFAE00] sm:text-base">
+      <span className="rounded-lg bg-white/10 px-2 py-1 font-mono text-lg font-extrabold tabular-nums text-[#FFAE00] sm:px-2.5 sm:text-2xl">
         {left === null ? "––" : value}
       </span>
-      <span className="text-[11px] font-semibold text-white/60">{label}</span>
+      <span className="text-xs font-bold text-white/70 sm:text-sm">{label}</span>
     </span>
   );
 
   return (
     <div className="relative z-[51] bg-neutral-950 text-white">
-      <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-x-4 gap-y-1.5 px-4 py-2 text-center text-sm">
-        <span className="font-extrabold">
-          <span className="mr-1.5 rounded-full bg-[#FFAE00] px-2 py-0.5 text-xs font-extrabold text-black">−{percent} %</span>
+      <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-x-6 gap-y-2.5 px-4 py-3.5 text-center text-base sm:py-4 sm:text-lg">
+        <span className="text-[15px] font-extrabold leading-tight [text-wrap:balance] sm:text-lg">
+          <span className="mr-2 inline-block rounded-full bg-[#FFAE00] px-2.5 py-0.5 text-base font-black text-black sm:px-3 sm:py-1 sm:text-xl">−{percent} %</span>
           {t("zľava na všetky objednávky do nedele")}
         </span>
-        <span className="inline-flex items-center gap-1.5">
-          <span className="text-xs text-white/60">{t("končí o")}</span>
+        <span className="inline-flex items-center gap-2">
+          <span className="text-sm font-semibold text-white/70 sm:text-base">{t("končí o")}</span>
           {unit(String(hours), "h")}
           {unit(pad(minutes), "m")}
           {unit(pad(seconds), "s")}
         </span>
         <a
           href="/#kalkulator"
-          className="hidden rounded-full bg-[#FFAE00] px-3 py-1 text-xs font-extrabold text-black transition hover:opacity-90 sm:inline-block"
+          className="hidden rounded-full bg-[#FFAE00] px-5 py-2 text-sm font-extrabold text-black transition hover:opacity-90 sm:inline-block"
         >
           {t("Vypočítať cenu")} →
         </a>
