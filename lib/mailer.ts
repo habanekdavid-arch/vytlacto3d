@@ -1,5 +1,6 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import nodemailer, { type SendMailOptions, type SentMessageInfo } from "nodemailer";
+import { CONTACT_EMAIL } from "@/lib/contact";
 
 // Pošta domény 4frommedia.sk beží na Microsofte 365, odosiela sa teda cez
 // smtp.office365.com. Všetko je riadené cez env premenné, aby sa dal
@@ -8,6 +9,12 @@ const DEFAULT_SMTP_HOST = "smtp.office365.com";
 
 /** Adresa, z ktorej web odosiela, ak nie je nastavené nič iné. */
 export const DEFAULT_FROM_EMAIL = "info@4frommedia.sk";
+
+/**
+ * Interné notifikácie chodia do oboch schránok: verejnej info@vytlacto3d.sk
+ * aj pôvodnej info@4frommedia.sk (nodemailer berie zoznam oddelený čiarkou).
+ */
+const DEFAULT_ADMIN_INBOX = `${CONTACT_EMAIL}, ${DEFAULT_FROM_EMAIL}`;
 
 const gmailUser = process.env.GMAIL_USER || "";
 const gmailPass = process.env.GMAIL_APP_PASSWORD || "";
@@ -51,17 +58,17 @@ export const FROM =
   process.env.EMAIL_FROM || `VytlačTo3D <${user || DEFAULT_FROM_EMAIL}>`;
 
 /**
- * Interná schránka, do ktorej chodia notifikácie o objednávkach a správy
- * z kontaktného formulára — tá istá adresa, z ktorej web odosiela.
+ * Interné schránky, do ktorých chodia notifikácie o objednávkach a správy
+ * z kontaktného formulára.
  */
-export const ADMIN_INBOX = process.env.ADMIN_ORDER_EMAIL || DEFAULT_FROM_EMAIL;
+export const ADMIN_INBOX = process.env.ADMIN_ORDER_EMAIL || DEFAULT_ADMIN_INBOX;
 
 /**
  * Adresa, na ktorú majú smerovať odpovede zákazníkov. Odosiela sa z
- * prihlasovacej schránky, ale na webe je všade uvedená info@ — bez Reply-To by
+ * prihlasovacej schránky, ale na webe je všade uvedená info@vytlacto3d.sk — bez Reply-To by
  * zákazník odpovedal na adresu, ktorú nikdy nikde nevidel.
  */
-export const REPLY_TO = process.env.EMAIL_REPLY_TO || ADMIN_INBOX;
+export const REPLY_TO = process.env.EMAIL_REPLY_TO || CONTACT_EMAIL;
 
 // Záložný Gmail transport. Keď primárny server odmietne prihlásenie alebo je
 // nedostupný, zákazník nesmie dostať 500 na kontaktnom formulári a objednávkové

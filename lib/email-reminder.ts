@@ -1,4 +1,5 @@
 import { sendMail, FROM, hasMailCredentials } from "@/lib/mailer";
+import { CONTACT_EMAIL } from "@/lib/contact";
 
 const baseUrl =
   process.env.NEXT_PUBLIC_BASE_URL || "https://www.vytlacto3d.sk";
@@ -6,7 +7,7 @@ const baseUrl =
 const CONTACT = `
   <div style="margin-top:32px;border-top:1px solid #eee;padding-top:20px;font-size:13px;color:#777;line-height:1.7;">
     <strong style="color:#111;">VytlačTo3D</strong><br/>
-    Ak máte otázky, napíšte nám: <a href="mailto:info@4frommedia.sk" style="color:#FFAE00;">info@4frommedia.sk</a><br/>
+    Ak máte otázky, napíšte nám: <a href="mailto:${CONTACT_EMAIL}" style="color:#FFAE00;">${CONTACT_EMAIL}</a><br/>
     <a href="${baseUrl}" style="color:#FFAE00;">www.vytlacto3d.sk</a>
   </div>
 `;

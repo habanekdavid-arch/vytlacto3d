@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useT } from "@/lib/i18n/client";
+import { CONTACT_EMAIL } from "@/lib/contact";
 
 const OPEN_EVENT = "vytlacto3d:open-cookie-banner";
 
@@ -29,10 +30,10 @@ export default function Footer() {
             <div>
               Email:{" "}
               <a
-                href="mailto:info@4frommedia.sk"
+                href={`mailto:${CONTACT_EMAIL}`}
                 className="transition hover:text-black hover:underline"
               >
-                info@4frommedia.sk
+                {CONTACT_EMAIL}
               </a>
             </div>
 
@@ -71,7 +72,7 @@ export default function Footer() {
             <div>4from media, s.r.o.</div>
             <div>M. Hodžu 393/5</div>
             <div>971 01 Prievidza</div>
-            <div>Email: info@4frommedia.sk</div>
+            <div>Email: {CONTACT_EMAIL}</div>
           </div>
         </div>
       </div>
