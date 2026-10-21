@@ -1,3 +1,5 @@
+import { CONTACT_EMAIL } from "@/lib/contact";
+
 export function getSellerInfo() {
   return {
     name:    process.env.SELLER_NAME    ?? "VytlacTo3D",
@@ -11,7 +13,7 @@ export function getSellerInfo() {
     iban:    process.env.SELLER_IBAN    ?? "",
     swift:   process.env.SELLER_SWIFT   ?? "",
     bank:    process.env.SELLER_BANK    ?? "",
-    email:   process.env.SELLER_EMAIL   ?? "info@4frommedia.sk",
+    email:   process.env.SELLER_EMAIL   ?? CONTACT_EMAIL,
     phone:   process.env.SELLER_PHONE   ?? "",
   };
 }

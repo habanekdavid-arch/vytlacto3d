@@ -1,4 +1,5 @@
 import { getT } from "@/lib/i18n/server";
+import { CONTACT_EMAIL } from "@/lib/contact";
 export default async function KontaktPage() {
   const { t } = await getT();
   return (
@@ -19,8 +20,8 @@ export default async function KontaktPage() {
           <div className="mt-4 space-y-2 text-sm font-normal text-neutral-700">
             <div>
               {t("Email:")}{" "}
-              <a className="underline" href="mailto:info@4frommedia.sk">
-                info@4frommedia.sk
+              <a className="underline" href={`mailto:${CONTACT_EMAIL}`}>
+                {CONTACT_EMAIL}
               </a>
             </div>
 

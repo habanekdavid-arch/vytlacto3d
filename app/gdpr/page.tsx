@@ -1,3 +1,5 @@
+import { CONTACT_EMAIL } from "@/lib/contact";
+
 export default function GDPRPage() {
   return (
     <main className="min-h-screen bg-white text-neutral-900">
@@ -32,7 +34,7 @@ export default function GDPRPage() {
           Mestského súdu Bratislava I, oddiel Sro, vložka č. 39182/B, IČO: 35 976 063,
           DIČ: 2022117966, IČ DPH: SK2022117966, tel. číslo:{" "}
           <a className="underline" href="tel:+421917244422">+421 917 244 422</a>, e-mail:{" "}
-          <a className="underline" href="mailto:info@4frommedia.sk">info@4frommedia.sk</a>.
+          <a className="underline" href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>.
         </Section>
 
         <Section title="II. Kontaktné údaje zodpovednej osoby">
@@ -131,7 +133,7 @@ export default function GDPRPage() {
           Objednávateľ má právo svoj súhlas so spracovaním osobných údajov odvolať písomným
           „odvolaním súhlasu“ zaslaným doporučenou poštou na adresu sídla spoločnosti
           4from media, s.r.o., Nezábudková 5, 821 01 Bratislava alebo zaslaním e-mailu na adresu{" "}
-          <a className="underline" href="mailto:info@4frommedia.sk">info@4frommedia.sk</a>.
+          <a className="underline" href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>.
         </Section>
 
         <Section title="IX. Kupujúci má v súvislosti so spracovaním osobných údajov právo">

@@ -1,3 +1,5 @@
+import { CONTACT_EMAIL } from "@/lib/contact";
+
 export const COMPANY_INFO = {
   name: "4from media, s.r.o.",
   street: "Nezábudková 5",
@@ -20,7 +22,7 @@ export const COMPANY_INFO = {
   },
   contacts: {
     obchod: { name: "Tomáš Machalík", role: "konateľ", phone: "+421 907 907 097", email: "machalik@4frommedia.sk" },
-    administrativa: { name: "Denisa Machalíková", role: "konateľka", phone: "+421 917 244 422", email: "info@4frommedia.sk" },
+    administrativa: { name: "Denisa Machalíková", role: "konateľka", phone: "+421 917 244 422", email: CONTACT_EMAIL },
   },
 };
 

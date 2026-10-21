@@ -1,3 +1,5 @@
+import { CONTACT_EMAIL } from "@/lib/contact";
+
 export const runtime = "nodejs";
 
 function Section({
@@ -46,8 +48,8 @@ export default function TermsPage() {
               Značka/web: <b>VytlačTo3D</b> (projekt spoločnosti 4from media, s.r.o.).
               <br />
               Kontakt:{" "}
-              <a className="underline" href="mailto:info@4frommedia.sk">
-                info@4frommedia.sk
+              <a className="underline" href={`mailto:${CONTACT_EMAIL}`}>
+                {CONTACT_EMAIL}
               </a>{" "}
               •{" "}
               <a className="underline" href="tel:+421907907097">
