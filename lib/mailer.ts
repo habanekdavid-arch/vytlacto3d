@@ -199,9 +199,6 @@ export function mailErrorHint(err: unknown): string | null {
   } else if (["ETIMEDOUT", "ECONNECTION", "ESOCKET", "EDNS"].includes(String(e?.code))) {
     hints.push(`Server ${host}:${port} neodpovedá — skontrolujte SMTP_HOST a SMTP_PORT.`);
   }
-  if (/gsmtp|support\.google\.com\/mail\/\?p=BadCredentials/i.test(text)) {
-    hints.push("Záložný Gmail má zlé prihlásenie — GMAIL_USER / GMAIL_APP_PASSWORD na Verceli treba opraviť (heslo aplikácie Google).");
-  }
   return hints.length ? hints.join(" ") : null;
 }
 
