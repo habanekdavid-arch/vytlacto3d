@@ -134,7 +134,20 @@ export default function AdminOrdersClient({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({}),
       });
+      const d = await res.json().catch(() => ({}));
       setTestEmailStatus(res.ok ? "ok" : "error");
+      if (!res.ok) {
+        alert(
+          "Testovací email sa nepodarilo odoslať.\n\n" +
+            (d.hint ? `Čo s tým: ${d.hint}\n\n` : "") +
+            `Chyba: ${d.error ?? res.status}` +
+            (d.config ? `\n\nOdosiela: ${d.config.from}\nPrihlásenie: ${d.config.user}\nPríjemca: ${d.to}` : "")
+        );
+      } else if (d.transport === "fallback") {
+        alert(
+          "Email odišiel len cez záložný Gmail — hlavné odosielanie cez Microsoft 365 nefunguje. Detail je vo Vercel logoch."
+        );
+      }
     } catch {
       setTestEmailStatus("error");
     }

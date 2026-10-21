@@ -149,14 +149,57 @@ export async function sendMail(
       `Primary SMTP (${host}:${port}, user ${user}) failed with ${code} — resending via Gmail fallback.`,
       err
     );
-    const info = await fallback.transporter.sendMail({ ...message, from: fallback.from });
-    return Object.assign(info, { transport: "fallback" as const });
+    try {
+      const info = await fallback.transporter.sendMail({ ...message, from: fallback.from });
+      return Object.assign(info, { transport: "fallback" as const });
+    } catch (fallbackErr) {
+      // Zlyhali obe cesty. Vyhodiť len chybu Gmailu by zakrylo pôvodnú
+      // príčinu na Microsofte — v správe musia byť obe.
+      const primaryMsg = err instanceof Error ? err.message : String(err);
+      const fallbackMsg = fallbackErr instanceof Error ? fallbackErr.message : String(fallbackErr);
+      throw Object.assign(
+        new Error(`Primárny SMTP: ${primaryMsg.slice(0, 300)} | Záložný Gmail: ${fallbackMsg.slice(0, 200)}`),
+        { code, primary: err, fallback: fallbackErr }
+      );
+    }
   }
 }
 
 /** Sú nastavené prihlasovacie údaje pre SMTP? Bez nich nemá zmysel odosielať. */
 export function hasMailCredentials() {
   return Boolean((user && pass) || fallback);
+}
+
+/**
+ * Zrozumiteľná rada k chybe SMTP pre administráciu. Microsoft 365 vracia
+ * kódy, z ktorých sa dá príčina spoznať; neznámu chybu necháme bez rady.
+ */
+export function mailErrorHint(err: unknown): string | null {
+  const e = err as { code?: string; responseCode?: number; response?: string; message?: string };
+  const text = `${e?.message ?? ""} ${e?.response ?? ""}`;
+  const fromAddress = FROM.match(/<([^>]+)>/)?.[1] ?? FROM;
+  // Pri zlyhaní oboch ciest je v správe aj chyba Gmailu — rady k Microsoftu
+  // sa riadia len prvou časťou.
+  const primaryText = text.split(" | Záložný Gmail:")[0];
+  const login = user || "prihlasovacia schránka (SMTP_USER)";
+  const hints: string[] = [];
+
+  if (/5\.7\.60|SendAsDenied|5\.2\.252|not have permissions to send as/i.test(primaryText)) {
+    hints.push(
+      `Microsoft 365 nedovolí schránke ${login} odosielať ako ${fromAddress}. ` +
+        `${fromAddress} musí byť samostatná (napr. zdieľaná) schránka v tom istom Microsoft 365 ako ${login}, nie len alias, ` +
+        `a v jej oprávneniach musí byť „Send as“ pre ${login}. Prejaviť sa to môže až do 60 minút.`
+    );
+  } else if (/5\.7\.139|SmtpClientAuthentication is disabled/i.test(primaryText)) {
+    hints.push(`Pre schránku ${login} je v Microsofte 365 vypnuté SMTP AUTH (Authenticated SMTP).`);
+  } else if (/5\.1\.1|5\.4\.1|5\.1\.10|Recipient address rejected|RecipientNotFound/i.test(primaryText)) {
+    hints.push("Server odmietol príjemcu — adresa v ADMIN_ORDER_EMAIL neexistuje alebo doména ešte neprijíma poštu (MX).");
+  } else if (/Invalid login|\b535\b/.test(primaryText) && !/gsmtp/.test(primaryText)) {
+    hints.push(`Prihlásenie do schránky ${login} zlyhalo — skontrolujte SMTP_PASSWORD na Verceli.`);
+  } else if (["ETIMEDOUT", "ECONNECTION", "ESOCKET", "EDNS"].includes(String(e?.code))) {
+    hints.push(`Server ${host}:${port} neodpovedá — skontrolujte SMTP_HOST a SMTP_PORT.`);
+  }
+  return hints.length ? hints.join(" ") : null;
 }
 
 /** Diagnostika pre administráciu — nikdy nevracia heslo. */

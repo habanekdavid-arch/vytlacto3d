@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { activeAdminEmails } from "@/lib/admin-auth";
 import { getSafeServerSession } from "@/lib/session";
-import { ADMIN_INBOX, mailConfigSummary, withSubjectPrefix } from "@/lib/mailer";
+import { ADMIN_INBOX, mailConfigSummary, mailErrorHint, withSubjectPrefix } from "@/lib/mailer";
 import { sendOrderPaidEmail } from "@/lib/email";
 import { sendWelcomeEmail } from "@/lib/email-welcome";
 import { sendOrderStatusEmail } from "@/lib/email-status";
@@ -209,7 +209,12 @@ export async function POST(req: NextRequest) {
         console.error(`Vzorový mail "${sample.label}" zlyhal:`, err);
         // Odpoveď SMTP serveru býva na niekoľko obrazoviek; do JSONu patrí
         // len toľko, aby sa dal problém rozpoznať — zvyšok je v logoch.
-        results.push({ label: sample.label, ok: false, error: message.slice(0, 300) });
+        const hint = mailErrorHint(err);
+        results.push({
+          label: sample.label,
+          ok: false,
+          error: message.slice(0, 300) + (hint ? `\n→ ${hint}` : ""),
+        });
       }
     }
   });

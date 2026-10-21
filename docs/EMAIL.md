@@ -7,11 +7,14 @@ aj keď je doména vedená vo WebSupport administrácii.
 
 Zvláštnosť tohto nastavenia: **prihlasovacia schránka nie je odosielacia adresa.**
 Prihlasuje sa `office@4frommedia.sk`, ale maily odchádzajú ako
-`info@vytlacto3d.sk` — verejná adresa webu (`CONTACT_EMAIL` v `lib/contact.ts`,
+`info@4frommedia.sk`. To funguje len vtedy, keď má prihlasovacia schránka
+v Microsofte 365 udelené právo **Send as** na odosielaciu adresu.
+
+Verejná adresa webu je `info@vytlacto3d.sk` (`CONTACT_EMAIL` v `lib/contact.ts`,
 uvedená v pätičke, na Kontakte, v GDPR, podmienkach aj v pätičkách mailov).
-To funguje len vtedy, keď má prihlasovacia schránka v Microsofte 365 udelené
-právo **Send as** na odosielaciu adresu. Pôvodná `info@4frommedia.sk` ďalej
-dostáva všetky interné notifikácie.
+Odpovede zákazníkov smerujú na ňu cez `Reply-To` a interné notifikácie chodia
+do oboch schránok. Odosielať priamo ako `info@vytlacto3d.sk` sa zatiaľ nedá —
+`office@` na ňu nemá *Send as* (Microsoft vracia `554 5.2.252 SendAsDenied`).
 
 ## Env premenné
 
@@ -25,7 +28,7 @@ v `.env.local`), pre Production aj Preview:
 | `SMTP_SECURE`   | *(nenastavovať)*                       | Odvodí sa z portu: 587 → STARTTLS, 465 → implicitné TLS. |
 | `SMTP_USER`     | `office@4frommedia.sk`                 | Prihlasovacia schránka. |
 | `SMTP_PASSWORD` | *(heslo tejto schránky)*               | Nikdy nepatrí do repozitára. |
-| `EMAIL_FROM`    | `VytlačTo3D <info@vytlacto3d.sk>`      | **Povinné**, keď sa login líši od odosielacej adresy. Bez neho by web odosielal pod `office@`. Odosielať sa dá len pod adresou, na ktorú má prihlasovacia schránka právo *Send as* — alias nestačí. |
+| `EMAIL_FROM`    | `VytlačTo3D <info@4frommedia.sk>`      | **Povinné**, keď sa login líši od odosielacej adresy. Bez neho by web odosielal pod `office@`. Odosielať sa dá len pod adresou, na ktorú má prihlasovacia schránka právo *Send as* — alias nestačí. |
 | `EMAIL_REPLY_TO`| `info@vytlacto3d.sk`                   | Kam smerujú odpovede zákazníkov. Bez nej sa použije `CONTACT_EMAIL`, teda `info@vytlacto3d.sk`. |
 
 Súvisiace premenné:
@@ -48,8 +51,8 @@ odpoveď zákazníkovi a prepísanie by znamenalo odpovedať sám sebe.
 
 ## Odosielateľ aj prijímateľ
 
-`info@vytlacto3d.sk` je odosielacia aj prijímacia adresa; `info@4frommedia.sk`
-dostáva kópiu všetkých interných notifikácií:
+`info@4frommedia.sk` je odosielacia adresa; interné notifikácie chodia do
+`info@vytlacto3d.sk` aj `info@4frommedia.sk`:
 
 | Smer | Kde sa to deje |
 | ---- | -------------- |
@@ -69,7 +72,7 @@ Toto sú najčastejšie dôvody, prečo odosielanie nefunguje ani so správnym h
    vypnutý. Prejav: `535 5.7.139 Authentication unsuccessful,
    SmtpClientAuthentication is disabled for this tenant`. Zapína sa v Microsoft
    365 admin centre pri schránke, alebo cez PowerShell.
-2. **Send as oprávnenie** pre `office@` na adresu `info@vytlacto3d.sk`. Bez neho server
+2. **Send as oprávnenie** pre `office@` na adresu v `EMAIL_FROM` (`info@4frommedia.sk`). Bez neho server
    odmietne správu s `550 5.7.60 Client does not have permissions to send as
    this sender`.
 3. **Viacfaktorové overenie / security defaults.** Ak sú zapnuté, obyčajné heslo
