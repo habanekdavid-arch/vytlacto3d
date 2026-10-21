@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { activeAdminEmails } from "@/lib/admin-auth";
 import { getSafeServerSession } from "@/lib/session";
-import { sendMail, FROM, ADMIN_INBOX, mailConfigSummary } from "@/lib/mailer";
+import { sendMail, FROM, ADMIN_INBOX, mailConfigSummary, mailErrorHint } from "@/lib/mailer";
 
 async function requireAdmin() {
   const session = await getSafeServerSession();
@@ -29,31 +29,51 @@ export async function POST(req: NextRequest) {
   // odosielanie aj doručenie na tú istú adresu.
   const to = String(body?.to ?? "").trim() || ADMIN_INBOX;
 
-  const info = await sendMail({
-    from: FROM,
-    to,
-    subject: "Test emailu – VytlačTo3D",
-    html: `
-      <div style="font-family:Arial,sans-serif;padding:32px;background:#f7f7f7;">
-        <div style="max-width:600px;margin:0 auto;background:white;border-radius:16px;
-                    padding:28px;border:1px solid #eee;">
-          <div style="font-size:13px;color:#777;font-weight:700;text-transform:uppercase;">
-            VytlačTo3D
+  let info: Awaited<ReturnType<typeof sendMail>>;
+  try {
+    info = await sendMail({
+      from: FROM,
+      to,
+      subject: "Test emailu – VytlačTo3D",
+      html: `
+        <div style="font-family:Arial,sans-serif;padding:32px;background:#f7f7f7;">
+          <div style="max-width:600px;margin:0 auto;background:white;border-radius:16px;
+                      padding:28px;border:1px solid #eee;">
+            <div style="font-size:13px;color:#777;font-weight:700;text-transform:uppercase;">
+              VytlačTo3D
+            </div>
+            <h1 style="margin:14px 0;font-size:22px;color:#111;">
+              Testovací email funguje
+            </h1>
+            <p style="font-size:15px;color:#444;line-height:1.6;">
+              Tento email bol odoslaný z adresy: <strong>${FROM}</strong><br/>
+              Ak vidíš správnu odosielaciu adresu, konfigurácia emailu je v poriadku.
+            </p>
+            <p style="font-size:13px;color:#999;margin-top:24px;">
+              VytlačTo3D • vytlacto3d.sk
+            </p>
           </div>
-          <h1 style="margin:14px 0;font-size:22px;color:#111;">
-            Testovací email funguje
-          </h1>
-          <p style="font-size:15px;color:#444;line-height:1.6;">
-            Tento email bol odoslaný z adresy: <strong>${FROM}</strong><br/>
-            Ak vidíš správnu odosielaciu adresu, konfigurácia emailu je v poriadku.
-          </p>
-          <p style="font-size:13px;color:#999;margin-top:24px;">
-            VytlačTo3D • vytlacto3d.sk
-          </p>
         </div>
-      </div>
-    `,
-  });
+      `,
+    });
+  } catch (err) {
+    // Bez detailu by administrácia ukázala len „Chyba“ a príčina by bola
+    // dohľadateľná iba vo Vercel logoch.
+    console.error("Test email failed:", err);
+    const e = err as { code?: string; responseCode?: number; message?: string };
+    return NextResponse.json(
+      {
+        ok: false,
+        error: String(e?.message ?? err).slice(0, 500),
+        code: e?.code ?? null,
+        responseCode: e?.responseCode ?? null,
+        hint: mailErrorHint(err),
+        to,
+        config: mailConfigSummary(),
+      },
+      { status: 502 }
+    );
+  }
 
   // transport === "fallback" znamená, že primárny SMTP zlyhal a mail odišiel
   // cez záložný Gmail — mail síce prišiel, ale konfigurácia je zle.
