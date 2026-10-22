@@ -9,7 +9,7 @@ const faqs = [
   {
     question: "Aké súbory podporujete?",
     answer:
-      "Podporujeme STL, OBJ a SVG súbory. STL a OBJ sa spracujú priamo, SVG vieme automaticky previesť na 3D model s nastaviteľnou hrúbkou.",
+      "Podporujeme STL, OBJ, SVG aj obrázky PNG a JPG. STL a OBJ sa spracujú priamo, SVG a obrázky (napr. logo) automaticky vytiahneme do 3D s nastaviteľnou výškou.",
   },
   {
     question: "Ako sa počíta cena tlače?",

@@ -1,4 +1,4 @@
-export const MATERIALS = ["PLA", "PETG", "ABS"] as const;
+export const MATERIALS = ["PLA", "PETG", "ABS", "PA6-CF"] as const;
 export const QUALITIES = ["DRAFT", "STANDARD", "FINE"] as const;
 
 export type Material = (typeof MATERIALS)[number];
@@ -6,6 +6,23 @@ export type Quality = (typeof QUALITIES)[number];
 
 export function isMaterial(value: unknown): value is Material {
   return MATERIALS.includes(value as Material);
+}
+
+/**
+ * Materiály, ktoré sa tlačia len v niektorých farbách (PA6-CF len čierna
+ * a biela). Ostatné materiály môžu mať akúkoľvek farbu z palety.
+ */
+export const MATERIAL_COLORS: Partial<Record<Material, readonly string[]>> = {
+  "PA6-CF": ["black", "white"],
+};
+
+export function allowedColors(material: string): readonly string[] | null {
+  return isMaterial(material) ? MATERIAL_COLORS[material] ?? null : null;
+}
+
+export function isColorAllowed(material: string, color: string): boolean {
+  const allowed = allowedColors(material);
+  return !allowed || allowed.includes(color);
 }
 
 export function isQuality(value: unknown): value is Quality {
@@ -84,12 +101,14 @@ const MATERIAL_PRICE_PER_GRAM: Record<Material, number> = {
   PLA:  0.012,
   PETG: 0.016,
   ABS:  0.030,
+  "PA6-CF": 0.080,
 };
 
 const MATERIAL_DENSITY_G_PER_CM3: Record<Material, number> = {
   PLA:  1.24,
   PETG: 1.27,
   ABS:  1.04,
+  "PA6-CF": 1.20,
 };
 
 // Strojová sadzba €/hod (odpis stroja + elektrina + údržba + réžia)
@@ -135,11 +154,14 @@ const PRINT_MODEL: Record<
 };
 
 // PETG sa tlačí pomalšie ako PLA (nižší prietok, chladenie); ABS na Bambu
-// približne rovnako rýchlo ako PLA.
+// približne rovnako rýchlo ako PLA. PA6-CF (nylon s uhlíkovými vláknami)
+// má nízky maximálny prietok — odhad ako PETG, kým nebude kalibrácia
+// zo slicera.
 const MATERIAL_TIME_FACTOR: Record<Material, number> = {
   PLA:  1.0,
   PETG: 1.6,
   ABS:  1.0,
+  "PA6-CF": 1.6,
 };
 
 // Najmenší možný povrch telesa daného objemu má guľa: (36π)^(1/3) · V^(2/3).

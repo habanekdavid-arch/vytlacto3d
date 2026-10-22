@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 
 import { prisma } from "@/lib/prisma";
-import { isMaterial, isQuality, quote, scaledGeometry } from "@/lib/pricing";
+import { isColorAllowed, isMaterial, isQuality, quote, scaledGeometry } from "@/lib/pricing";
 import { createOrderWithNumber } from "@/lib/order-number";
 import { materialLabel, qualityLabel } from "@/lib/print-options";
 import { addVat } from "@/lib/vat";
@@ -137,7 +137,14 @@ export async function POST(req: NextRequest) {
       if (!isMaterial(item.config.material)) {
         return NextResponse.json({ error: `Neznámy materiál pre ${item.fileName}` }, { status: 400 });
       }
-      if (!isQuality(item.config.quality)) {
+      // PA6-CF len v čiernej a bielej — iná farba sa nedá vyrobiť.
+      if (!item.config.colorFlexible && !isColorAllowed(item.config.material, String(item.config.color ?? ""))) {
+        return NextResponse.json(
+          { error: `Materiál ${item.config.material} tlačíme len v čiernej alebo bielej farbe (${item.fileName}).` },
+          { status: 400 }
+        );
+      }
+            if (!isQuality(item.config.quality)) {
         return NextResponse.json({ error: `Neznáma kvalita tlače pre ${item.fileName}` }, { status: 400 });
       }
 

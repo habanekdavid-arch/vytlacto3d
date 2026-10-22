@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import ColorPalette, { COLOR_LABELS } from "@/components/ColorPalette";
 import { formatEur, addVat, vatAmount } from "@/lib/vat";
-import { scaledGeometry } from "@/lib/pricing";
+import { allowedColors, scaledGeometry } from "@/lib/pricing";
 import { useT } from "@/lib/i18n/client";
 import type { TFunction } from "@/lib/i18n/config";
 
@@ -37,7 +37,7 @@ type Quote = {
 };
 
 export type ConfigState = {
-  material: "PLA" | "PETG" | "ABS";
+  material: "PLA" | "PETG" | "ABS" | "PA6-CF";
   quality: "DRAFT" | "STANDARD" | "FINE";
   infillPct: number;
   color: string;
@@ -178,16 +178,25 @@ export default function Configurator({
             className="w-full rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 outline-none transition focus:border-[#FFAE00]"
             value={config.material}
             onChange={(e) =>
-              setConfig((c) => ({
-                ...c,
-                material: e.target.value as ConfigState["material"],
-              }))
+              setConfig((c) => {
+                const material = e.target.value as ConfigState["material"];
+                // PA6-CF len v čiernej a bielej — inú farbu prepneme na prvú povolenú.
+                const allowed = allowedColors(material);
+                const color = allowed && !allowed.includes(c.color) ? allowed[0] : c.color;
+                return { ...c, material, color };
+              })
             }
           >
             <option value="PLA">PLA</option>
             <option value="PETG">PETG</option>
             <option value="ABS">ABS</option>
+            <option value="PA6-CF">PA6-CF</option>
           </select>
+          {config.material === "PA6-CF" && (
+            <p className="mt-2 text-xs leading-relaxed text-neutral-500">
+              {t("Nylon s uhlíkovými vláknami — veľmi pevný, tuhý a tepelne odolný. Tlačíme ho len v čiernej a bielej farbe.")}
+            </p>
+          )}
 
           <FlexibleCheckbox
             label={t("Nezáleží mi na materiáli")}
@@ -272,6 +281,7 @@ export default function Configurator({
             value={config.color}
             onChange={(id) => setConfig((c) => ({ ...c, color: id }))}
             disabled={!!config.colorFlexible}
+            allowed={allowedColors(config.material)}
           />
 
           {config.colorFlexible ? (

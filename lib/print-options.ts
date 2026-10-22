@@ -16,6 +16,7 @@ export const MATERIAL_LABELS: Record<Material, string> = {
   PLA: "PLA",
   PETG: "PETG",
   ABS: "ABS",
+  "PA6-CF": "PA6-CF",
 };
 
 export const COLOR_LABELS: Record<string, string> = {

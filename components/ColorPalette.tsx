@@ -25,16 +25,20 @@ export default function ColorPalette({
   value,
   onChange,
   disabled = false,
+  allowed = null,
 }: {
   value: string; // ukladáme id farby
   onChange: (id: string) => void;
   // Zákazníkovi nezáleží na farbe — farby sú šedé a nedajú sa vybrať.
   disabled?: boolean;
+  // Materiál má len niektoré farby (napr. PA6-CF čierna a biela) — ostatné sa nezobrazia.
+  allowed?: readonly string[] | null;
 }) {
   const t = useT();
+  const colors = allowed ? COLORS.filter((c) => allowed.includes(c.id)) : COLORS;
   return (
     <div className="flex flex-wrap gap-2" aria-disabled={disabled || undefined}>
-      {COLORS.map((c) => {
+      {colors.map((c) => {
         const active = !disabled && c.id === value;
         return (
           <button

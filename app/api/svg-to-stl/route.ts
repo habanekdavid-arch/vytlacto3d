@@ -79,7 +79,22 @@ function triangleNormal(a: THREE.Vector3, b: THREE.Vector3, c: THREE.Vector3) {
   return cb.cross(ab).normalize();
 }
 
-function geometryToAsciiStl(geometry: THREE.BufferGeometry, name: string): string {
+/** Znamienkový objem — záporný znamená plochy otočené dovnútra. */
+function signedVolume(geometry: THREE.BufferGeometry): number {
+  const nonIndexed = geometry.index ? geometry.toNonIndexed() : geometry;
+  const p = nonIndexed.getAttribute("position");
+  let volume = 0;
+  for (let i = 0; i < p.count; i += 3) {
+    const ax = p.getX(i), ay = p.getY(i), az = p.getZ(i);
+    const bx = p.getX(i + 1), by = p.getY(i + 1), bz = p.getZ(i + 1);
+    const cx = p.getX(i + 2), cy = p.getY(i + 2), cz = p.getZ(i + 2);
+    volume += (ax * (by * cz - bz * cy) - ay * (bx * cz - bz * cx) + az * (bx * cy - by * cx)) / 6;
+  }
+  if (nonIndexed !== geometry) nonIndexed.dispose();
+  return volume;
+}
+
+function geometryToAsciiStl(geometry: THREE.BufferGeometry, name: string, flipWinding = false): string {
   const nonIndexed = geometry.index ? geometry.toNonIndexed() : geometry;
   const position = nonIndexed.getAttribute("position");
 
@@ -87,8 +102,9 @@ function geometryToAsciiStl(geometry: THREE.BufferGeometry, name: string): strin
 
   for (let i = 0; i < position.count; i += 3) {
     const a = new THREE.Vector3().fromBufferAttribute(position, i);
-    const b = new THREE.Vector3().fromBufferAttribute(position, i + 1);
-    const c = new THREE.Vector3().fromBufferAttribute(position, i + 2);
+    // Pri otočení poradia vrcholov sa normála otočí von.
+    const b = new THREE.Vector3().fromBufferAttribute(position, flipWinding ? i + 2 : i + 1);
+    const c = new THREE.Vector3().fromBufferAttribute(position, flipWinding ? i + 1 : i + 2);
 
     const normal = triangleNormal(a, b, c);
 
@@ -218,17 +234,18 @@ export async function POST(req: NextRequest) {
     }
 
     /**
-     * Zrkadlenie/flip: opravuje SVG koordinátový systém.
-     * Všetky tvary sa preklopia podľa spoločného stredu celého SVG
-     * aby ostali pohromade.
+     * Preklopenie osi Y: SVG má Y smerom dole, 3D model hore. Bez neho by
+     * bol model zrkadlový; preklopenie X (ako predtým) ho len otočilo
+     * o 180° — tlačil sa správne, ale v náhľade bol hore nohami.
+     * Všetky tvary sa preklopia podľa spoločného stredu, aby ostali pohromade.
      */
     const globalBox = getGlobalBox(geometries);
-    const centerX = (globalBox.min.x + globalBox.max.x) / 2;
+    const centerY = (globalBox.min.y + globalBox.max.y) / 2;
 
     for (const geometry of geometries) {
-      geometry.translate(-centerX, 0, 0);
-      geometry.scale(-1, 1, 1);
-      geometry.translate(centerX, 0, 0);
+      geometry.translate(0, -centerY, 0);
+      geometry.scale(1, -1, 1);
+      geometry.translate(0, centerY, 0);
       geometry.computeBoundingBox();
       geometry.computeVertexNormals();
     }
@@ -238,6 +255,11 @@ export async function POST(req: NextRequest) {
      * Všetky časti sa posúvajú rovnakou hodnotou aby ostali pokope.
      */
     const fixedGlobalBox = getGlobalBox(geometries);
+
+    // Zrkadlenie vyššie otočí poradie vrcholov, takže plochy by mierili
+    // dovnútra (slicery to niekedy opravia, náhľad by model ukázal dutý).
+    // Smer sa určí z objemu, nech sedí bez ohľadu na zdroj SVG.
+    const flipWinding = geometries.reduce((sum, g) => sum + signedVolume(g), 0) < 0;
 
     const stlParts: string[] = [];
 
@@ -250,7 +272,7 @@ export async function POST(req: NextRequest) {
       geometry.computeBoundingBox();
       geometry.computeVertexNormals();
 
-      stlParts.push(geometryToAsciiStl(geometry, file.name));
+      stlParts.push(geometryToAsciiStl(geometry, file.name, flipWinding));
       geometry.dispose();
     }
 
