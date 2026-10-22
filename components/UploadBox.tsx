@@ -4,6 +4,7 @@ import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "re
 import { upload } from "@vercel/blob/client";
 import { useT } from "@/lib/i18n/client";
 import { relaxAcceptOnMobile } from "@/lib/file-accept";
+import { isRasterImage, rasterImageToSvgFile } from "@/lib/image-to-svg";
 import type { BuildPhase } from "@/components/ModelBuildAnimation";
 
 type Uploaded = {
@@ -155,11 +156,21 @@ const UploadBox = forwardRef<UploadBoxHandle, {
       const isAllowed =
         originalFileName.endsWith(".stl") ||
         originalFileName.endsWith(".obj") ||
-        originalFileName.endsWith(".svg");
+        originalFileName.endsWith(".svg") ||
+        isRasterImage(originalFileName);
 
-      if (!isAllowed) throw new Error(t("Podporujeme len STL, OBJ a SVG súbory."));
+      if (!isAllowed) throw new Error(t("Podporujeme STL, OBJ, SVG a obrázky PNG alebo JPG."));
 
-      if (originalFileName.endsWith(".svg")) {
+      if (isRasterImage(originalFileName)) {
+        // Obrázok → obrys (SVG) v prehliadači → rovnaké vytiahnutie ako SVG.
+        // SVG obrys si pamätáme, aby „Použiť novú výšku“ fungovalo aj tu.
+        onPreviewFile?.(null);
+        onProgress?.("convert", 0);
+        const svgFile = await rasterImageToSvgFile(originalFile);
+        setOriginalSvgFile(svgFile);
+        const stlFile = await convertSvgToStl(svgFile);
+        await uploadAndAnalyze(stlFile);
+      } else if (originalFileName.endsWith(".svg")) {
         setOriginalSvgFile(originalFile);
         const stlFile = await convertSvgToStl(originalFile);
         await uploadAndAnalyze(stlFile);
@@ -223,11 +234,11 @@ const UploadBox = forwardRef<UploadBoxHandle, {
           </div>
 
           <h3 className="mt-4 text-xl font-extrabold text-neutral-900">
-            {t("Nahrajte STL, OBJ alebo SVG súbor")}
+            {t("Nahrajte STL, OBJ, SVG alebo obrázok")}
           </h3>
 
           <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-neutral-600">
-            {t("SVG súbor automaticky prevedieme na 3D model s nastavenou hrúbkou. STL a OBJ súbory sa spracujú priamo.")}
+            {t("SVG aj obrázok (PNG, JPG) automaticky vytiahneme do 3D s nastavenou výškou. STL a OBJ súbory sa spracujú priamo.")}
           </p>
 
           <div className="mt-5 inline-flex rounded-2xl bg-[#FFAE00] px-5 py-3 text-sm font-semibold text-black shadow-sm">
@@ -235,7 +246,7 @@ const UploadBox = forwardRef<UploadBoxHandle, {
           </div>
 
           <p className="mt-3 text-xs text-neutral-500">
-            {t("Podporované formáty:")} .STL, .OBJ, .SVG
+            {t("Podporované formáty:")} .STL, .OBJ, .SVG, .PNG, .JPG
           </p>
         </div>
       )}
@@ -243,10 +254,10 @@ const UploadBox = forwardRef<UploadBoxHandle, {
       {showThicknessInput && (
         <div className="mt-4 rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
           <div className="text-sm font-semibold text-neutral-800">
-            {t("Výška SVG modelu")}
+            {t("Výška modelu zo SVG alebo obrázka")}
           </div>
           <div className="mt-1 text-xs text-neutral-500">
-            {t("Používa sa iba pri SVG súboroch. Odporúčaná hodnota je 10 mm.")}
+            {t("Používa sa pri SVG a obrázkoch (PNG, JPG). Z obrázka sa vytiahne tmavý tvar alebo nepriehľadná časť PNG. Odporúčaná hodnota je 10 mm.")}
           </div>
 
           <div className="mt-3 flex flex-wrap items-center gap-3">
@@ -285,7 +296,7 @@ const UploadBox = forwardRef<UploadBoxHandle, {
       <input
         ref={inputRef}
         type="file"
-        accept=".stl,.obj,.svg"
+        accept=".stl,.obj,.svg,.png,.jpg,.jpeg,.webp"
         className="hidden"
         onChange={(e) => {
           const file = e.target.files?.[0];

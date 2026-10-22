@@ -781,6 +781,61 @@ const messages: Messages = {
     hu: "Elemzés és ár",
     de: "Analyse & Preis",
   },
+  "Podporujeme STL, OBJ, SVG a obrázky PNG alebo JPG.": {
+    en: "We support STL, OBJ, SVG and PNG or JPG images.",
+    hu: "STL, OBJ, SVG fájlokat és PNG vagy JPG képeket támogatunk.",
+    de: "Wir unterstützen STL, OBJ, SVG sowie PNG- oder JPG-Bilder.",
+  },
+  "Nahrajte STL, OBJ, SVG alebo obrázok": {
+    en: "Upload an STL, OBJ, SVG or image",
+    hu: "Töltsön fel STL, OBJ, SVG fájlt vagy képet",
+    de: "STL, OBJ, SVG oder Bild hochladen",
+  },
+  "SVG aj obrázok (PNG, JPG) automaticky vytiahneme do 3D s nastavenou výškou. STL a OBJ súbory sa spracujú priamo.": {
+    en: "We automatically extrude SVG files and images (PNG, JPG) into 3D at the height you set. STL and OBJ files are processed directly.",
+    hu: "Az SVG fájlokat és a képeket (PNG, JPG) automatikusan 3D-be húzzuk a beállított magasságra. Az STL és OBJ fájlokat közvetlenül feldolgozzuk.",
+    de: "SVG-Dateien und Bilder (PNG, JPG) extrudieren wir automatisch in der eingestellten Höhe zu 3D. STL- und OBJ-Dateien werden direkt verarbeitet.",
+  },
+  "Výška modelu zo SVG alebo obrázka": {
+    en: "Height of a model from SVG or image",
+    hu: "SVG-ből vagy képből készült modell magassága",
+    de: "Höhe des Modells aus SVG oder Bild",
+  },
+  "Používa sa pri SVG a obrázkoch (PNG, JPG). Z obrázka sa vytiahne tmavý tvar alebo nepriehľadná časť PNG. Odporúčaná hodnota je 10 mm.": {
+    en: "Used for SVG files and images (PNG, JPG). From an image we extrude the dark shape or the opaque part of a PNG. Recommended value is 10 mm.",
+    hu: "SVG fájloknál és képeknél (PNG, JPG) használjuk. A képből a sötét forma vagy a PNG nem átlátszó része lesz kihúzva. Ajánlott érték: 10 mm.",
+    de: "Wird für SVG-Dateien und Bilder (PNG, JPG) verwendet. Aus einem Bild wird die dunkle Form bzw. der nicht transparente Teil eines PNG extrudiert. Empfohlener Wert: 10 mm.",
+  },
+  "Prevod na 3D": {
+    en: "Converting to 3D",
+    hu: "Átalakítás 3D-be",
+    de: "Umwandlung in 3D",
+  },
+  "Prevádzam obrázok na 3D model…": {
+    en: "Converting the image to a 3D model…",
+    hu: "A kép átalakítása 3D modellé…",
+    de: "Bild wird in ein 3D-Modell umgewandelt…",
+  },
+  "Podporujeme STL, OBJ, SVG aj obrázky PNG a JPG. STL a OBJ sa spracujú priamo, SVG a obrázky (napr. logo) automaticky vytiahneme do 3D s nastaviteľnou výškou.": {
+    en: "We support STL, OBJ, SVG and PNG and JPG images. STL and OBJ are processed directly; SVG files and images (e.g. a logo) are automatically extruded into 3D with an adjustable height.",
+    hu: "STL, OBJ, SVG fájlokat, valamint PNG és JPG képeket támogatunk. Az STL és OBJ fájlokat közvetlenül feldolgozzuk, az SVG fájlokat és képeket (pl. logót) automatikusan 3D-be húzzuk állítható magassággal.",
+    de: "Wir unterstützen STL, OBJ, SVG sowie PNG- und JPG-Bilder. STL und OBJ werden direkt verarbeitet, SVG-Dateien und Bilder (z. B. ein Logo) extrudieren wir automatisch mit einstellbarer Höhe zu 3D.",
+  },
+  "Nahrajte STL, OBJ alebo SVG súbor vášho 3D modelu — alebo obrázok loga (PNG, JPG), ktorý vytiahneme do 3D — priamo na našu stránku. Náš systém automaticky analyzuje model — objem, povrch aj previsy — a vypočíta hmotnosť a presnú cenu.": {
+    en: "Upload the STL, OBJ or SVG file of your 3D model — or a logo image (PNG, JPG) that we extrude into 3D — right on our website. Our system automatically analyses the model — volume, surface and overhangs — and calculates the weight and exact price.",
+    hu: "Töltse fel 3D modellje STL, OBJ vagy SVG fájlját — vagy egy logó képét (PNG, JPG), amelyet 3D-be húzunk — közvetlenül az oldalunkra. Rendszerünk automatikusan elemzi a modellt — térfogat, felület és túlnyúlások —, és kiszámítja a tömeget és a pontos árat.",
+    de: "Laden Sie die STL-, OBJ- oder SVG-Datei Ihres 3D-Modells — oder ein Logo-Bild (PNG, JPG), das wir zu 3D extrudieren — direkt auf unserer Website hoch. Unser System analysiert das Modell automatisch — Volumen, Oberfläche und Überhänge — und berechnet Gewicht und genauen Preis.",
+  },
+  "Obrázok sa nepodarilo načítať. Skúste PNG alebo JPG.": {
+    en: "The image could not be loaded. Try PNG or JPG.",
+    hu: "A képet nem sikerült betölteni. Próbálja PNG vagy JPG formátumban.",
+    de: "Das Bild konnte nicht geladen werden. Versuchen Sie PNG oder JPG.",
+  },
+  "V obrázku sa nenašiel žiadny tvar. Skúste logo alebo kresbu s kontrastným pozadím.": {
+    en: "No shape was found in the image. Try a logo or drawing with a contrasting background.",
+    hu: "A képen nem található forma. Próbáljon logót vagy rajzot kontrasztos háttérrel.",
+    de: "Im Bild wurde keine Form gefunden. Versuchen Sie ein Logo oder eine Zeichnung mit kontrastreichem Hintergrund.",
+  },
 };
 
 export default messages;

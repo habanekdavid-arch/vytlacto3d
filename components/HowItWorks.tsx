@@ -118,7 +118,7 @@ export default function HowItWorks() {
     {
       number: "1",
       title: "Nahrajte váš 3D model",
-      text: "Nahrajte STL, OBJ alebo SVG súbor vášho 3D modelu priamo na našu stránku. Náš systém automaticky analyzuje model — objem, povrch aj previsy — a vypočíta hmotnosť a presnú cenu.",
+      text: "Nahrajte STL, OBJ alebo SVG súbor vášho 3D modelu — alebo obrázok loga (PNG, JPG), ktorý vytiahneme do 3D — priamo na našu stránku. Náš systém automaticky analyzuje model — objem, povrch aj previsy — a vypočíta hmotnosť a presnú cenu.",
       icon: <UploadIcon />,
     },
     {

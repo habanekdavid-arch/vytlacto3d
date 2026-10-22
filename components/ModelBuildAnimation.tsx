@@ -368,7 +368,7 @@ export default function ModelBuildAnimation({
   }, [file]);
 
   const steps = [
-    { key: "upload", label: phase === "convert" ? t("Prevod SVG") : t("Nahrávanie") },
+    { key: "upload", label: phase === "convert" ? t("Prevod na 3D") : t("Nahrávanie") },
     { key: "analyze", label: t("Analýza a cena") },
     { key: "preview", label: t("3D náhľad") },
   ];
@@ -377,7 +377,7 @@ export default function ModelBuildAnimation({
   const label = finished
     ? t("Hotovo! Otváram 3D náhľad…")
     : phase === "convert"
-    ? t("Prevádzam SVG na 3D model…")
+    ? t("Prevádzam obrázok na 3D model…")
     : phase === "upload"
     ? t("Nahrávam model…")
     : t("Analyzujem model a počítam cenu…");
