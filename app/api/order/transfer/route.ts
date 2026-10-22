@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
 import { isColorAllowed, isMaterial, isQuality, quote, scaledGeometry } from "@/lib/pricing";
+import { isMulticolor, validatePartColors } from "@/lib/multicolor";
+import { COLOR_LABELS } from "@/lib/print-options";
 import { createOrderWithNumber } from "@/lib/order-number";
 import { addVat } from "@/lib/vat";
 import { activePromo } from "@/lib/promo";
@@ -19,7 +21,7 @@ type RawItem = {
   fileName: string;
   fileSize?: number;
   analysis: { volumeCm3: number; dimsXmm?: number; dimsYmm?: number; dimsZmm?: number; surfaceAreaCm2?: number; supportCm3?: number; printHeightMm?: number };
-  config: { material: string; quality: string; infillPct?: number; quantity?: number; scalePct?: number; color?: string; materialFlexible?: boolean; colorFlexible?: boolean };
+  config: { material: string; quality: string; infillPct?: number; quantity?: number; scalePct?: number; color?: string; materialFlexible?: boolean; colorFlexible?: boolean; partColors?: string[] };
 };
 
 export async function POST(req: NextRequest) {
@@ -116,8 +118,16 @@ export async function POST(req: NextRequest) {
 
       const geometry = scaledGeometry(item.analysis, scale);
       const scaledVol = geometry.volumeCm3;
+      // Viacfarebná tlač: farby častí overíme; jednofarebné zoznamy zahodíme,
+      // aby výroba videla len farbu položky.
+      const partColorsError = validatePartColors(item.config.material, item.config.partColors, COLOR_LABELS);
+      if (partColorsError) {
+        return NextResponse.json({ error: `${partColorsError} (${item.fileName})` }, { status: 400 });
+      }
+      const multicolor = isMulticolor(item.config.partColors);
+      if (!multicolor) delete item.config.partColors;
       const materialFlexible = Boolean(item.config.materialFlexible);
-      const colorFlexible = Boolean(item.config.colorFlexible);
+      const colorFlexible = !multicolor && Boolean(item.config.colorFlexible);
 
       const serverPricing = quote({
         ...geometry,
@@ -127,6 +137,7 @@ export async function POST(req: NextRequest) {
         quantity: qty,
         materialFlexible,
         colorFlexible,
+        multicolor,
         promoPercent: promo?.percent,
       });
 

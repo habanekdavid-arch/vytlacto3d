@@ -54,6 +54,26 @@ export function colorLabel(value: unknown, fallback = "—"): string {
   return label(value, COLOR_LABELS, fallback);
 }
 
+/** Farby častí viacfarebnej položky, alebo null pri jednofarebnej. */
+export function multicolorParts(config: unknown): string[] | null {
+  const parts = (config as { partColors?: unknown } | null)?.partColors;
+  if (!Array.isArray(parts) || new Set(parts).size < 2) return null;
+  return parts.map(String);
+}
+
+/** „Viacfarebná: Červená, Modrá“ alebo popisok jednej farby. */
+export function colorSummary(config: unknown, fallback = "—"): string {
+  const parts = multicolorParts(config);
+  if (!parts) return colorLabel((config as { color?: unknown } | null)?.color, fallback);
+  return `Viacfarebná: ${Array.from(new Set(parts)).map((c) => colorLabel(c)).join(", ")}`;
+}
+
+/** Pre výrobu: „1 Červená, 2 Modrá, …“ — časti od najväčšej podľa objemu. */
+export function partColorsLabel(config: unknown): string | null {
+  const parts = multicolorParts(config);
+  return parts ? parts.map((c, i) => `${i + 1} ${colorLabel(c)}`).join(", ") : null;
+}
+
 /**
  * Voľby pre rozbaľovacie zoznamy v administrácii. Ukladá sa kód, zobrazuje
  * popisok — administrátor tak nemôže uložiť kvalitu, ktorú cenník nepozná

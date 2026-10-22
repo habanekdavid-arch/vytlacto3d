@@ -23,7 +23,10 @@ import {
   MATERIAL_OPTIONS,
   QUALITY_OPTIONS,
   colorLabel,
+  colorSummary,
   materialLabel,
+  multicolorParts,
+  partColorsLabel,
   qualityLabel,
 } from "@/lib/print-options";
 
@@ -207,6 +210,7 @@ export default async function AdminOrderDetailPage({
               fileName={order.fileName}
               scalePct={config.scalePct}
               colorId={config.color}
+              partColors={multicolorParts(config) ?? undefined}
               label={order.orderItems.length > 1 ? "👁 Náhľad 1. modelu" : "👁 3D náhľad"}
             />
 
@@ -244,6 +248,7 @@ export default async function AdminOrderDetailPage({
                       fileName: item.fileName,
                       scalePct: itemConfig?.scalePct,
                       colorId: itemConfig?.color,
+                      partColors: multicolorParts(itemConfig) ?? undefined,
                     };
                   })}
                   className="rounded-2xl border border-neutral-200 bg-white px-5 py-3 text-sm font-bold text-neutral-900 shadow-sm transition hover:bg-neutral-50"
@@ -336,6 +341,7 @@ export default async function AdminOrderDetailPage({
                         fileName={item.fileName}
                         scalePct={ic.scalePct}
                         colorId={ic.color}
+                        partColors={multicolorParts(ic) ?? undefined}
                         label="👁 Náhľad"
                         className="rounded-full border border-neutral-200 bg-white px-3 py-1 text-xs font-bold text-neutral-900 shadow-sm transition hover:bg-neutral-50"
                       />
@@ -362,7 +368,8 @@ export default async function AdminOrderDetailPage({
                     <div className="grid gap-2 text-xs sm:grid-cols-4">
                       <InfoCard label="Materiál" value={ic.materialFlexible ? `${materialLabel(ic.material)} · nezáleží` : materialLabel(ic.material)} />
                       <InfoCard label="Kvalita" value={qualityLabel(ic.quality)} />
-                      <InfoCard label="Farba" value={ic.colorFlexible ? `${colorLabel(ic.color)} · nezáleží` : colorLabel(ic.color)} />
+                      <InfoCard label="Farba" value={ic.colorFlexible ? `${colorLabel(ic.color)} · nezáleží` : colorSummary(ic)} />
+                      {partColorsLabel(ic) && <InfoCard label="Farby častí (od najväčšej)" value={partColorsLabel(ic)!} />}
                       <InfoCard label="Počet ks" value={String(ic.quantity ?? "—")} />
                       <InfoCard label="Infill" value={ic.infillPct !== undefined ? `${ic.infillPct}%` : "—"} />
                       <InfoCard label="Mierka" value={ic.scalePct !== undefined ? `${ic.scalePct}%` : "—"} />
@@ -376,6 +383,7 @@ export default async function AdminOrderDetailPage({
                         {typeof ip.materialCostPerPart === "number" && <InfoCard label="Materiál / ks" value={formatEur(ip.materialCostPerPart)} />}
                         {typeof ip.machineCostPerPart === "number" && <InfoCard label="Stroj / ks" value={formatEur(ip.machineCostPerPart)} />}
                         {typeof ip.setupFee === "number" && <InfoCard label="Nastavenie" value={formatEur(ip.setupFee)} />}
+                        {typeof ip.multicolorFee === "number" && ip.multicolorFee > 0 && <InfoCard label="Viacfarebná tlač" value={formatEur(ip.multicolorFee)} />}
                         {typeof ip.quantityDiscountPct === "number" && ip.quantityDiscountPct > 0 && <InfoCard label="Zľava množstvo" value={`${ip.quantityDiscountPct}%`} />}
                         {typeof ip.productionSubtotal === "number" && <InfoCard label="Výroba celkom" value={formatEur(ip.productionSubtotal)} />}
                         <InfoCard label="Cena bez DPH" value={formatEur(ip.total)} />
@@ -409,6 +417,7 @@ export default async function AdminOrderDetailPage({
             <EditableField orderId={order.id} label="Mierka" value={config.scalePct !== undefined ? String(config.scalePct) : ""} jsonField="config" jsonKey="scalePct" />
             {config.materialFlexible && <InfoCard label="Materiál — flexibilita" value="Zákazníkovi nezáleží na materiáli" />}
             {config.colorFlexible && <InfoCard label="Farba — flexibilita" value="Zákazníkovi nezáleží na farbe" />}
+            {partColorsLabel(config) && <InfoCard label="Viacfarebná tlač — farby častí (od najväčšej)" value={partColorsLabel(config)!} />}
           </Panel>
 
           <Panel title="Analýza modelu">

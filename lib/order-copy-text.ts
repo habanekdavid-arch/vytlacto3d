@@ -1,7 +1,7 @@
 import type { Order, OrderItem } from "@prisma/client";
 import { formatEur, addVat } from "@/lib/vat";
 import { formatDateSK } from "@/lib/formatDate";
-import { colorLabel, materialLabel, qualityLabel } from "@/lib/print-options";
+import { colorSummary, materialLabel, partColorsLabel, qualityLabel } from "@/lib/print-options";
 
 export type OrderWithItems = Order & { orderItems: OrderItem[] };
 
@@ -97,7 +97,8 @@ export function buildOrderCopyText(order: OrderWithItems): string {
             const ia = oi.analysis as Obj;
             return [
               `  [${idx + 1}] ${oi.fileName}`,
-              `      Materiál : ${materialLabel(ic.material)}  Kvalita: ${qualityLabel(ic.quality)}  Farba: ${colorLabel(ic.color)}`,
+              `      Materiál : ${materialLabel(ic.material)}  Kvalita: ${qualityLabel(ic.quality)}  Farba: ${colorSummary(ic)}`,
+              ...(partColorsLabel(ic) ? [`      Časti    : ${partColorsLabel(ic)} (od najväčšej)`] : []),
               `      Množstvo : ${v(ic.quantity)} ks  Infill: ${ic.infillPct ?? "—"}%  Mierka: ${ic.scalePct ?? 100}%`,
               `      Rozmery  : ${ia?.dimsXmm !== undefined ? `${Number(ia.dimsXmm).toFixed(0)}×${Number(ia.dimsYmm).toFixed(0)}×${Number(ia.dimsZmm).toFixed(0)} mm` : "—"}  Objem: ${ia?.volumeCm3 !== undefined ? `${Number(ia.volumeCm3).toFixed(2)} cm³` : "—"}`,
               ...(ic.materialFlexible ? ["      Materiál : zákazníkovi nezáleží (−1 €)"] : []),
@@ -113,7 +114,8 @@ export function buildOrderCopyText(order: OrderWithItems): string {
           sep,
           `  Materiál    : ${materialLabel(config.material)}`,
           `  Kvalita     : ${qualityLabel(config.quality)}`,
-          `  Farba       : ${colorLabel(config.color)}`,
+          `  Farba       : ${colorSummary(config)}`,
+          ...(partColorsLabel(config) ? [`  Časti       : ${partColorsLabel(config)} (od najväčšej)`] : []),
           `  Počet kusov : ${v(config.quantity)}`,
           `  Infill      : ${config.infillPct !== undefined ? `${config.infillPct}%` : "—"}`,
           `  Mierka      : ${config.scalePct !== undefined ? `${config.scalePct}%` : "—"}`,

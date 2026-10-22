@@ -5,7 +5,7 @@ import { getSafeServerSession } from "@/lib/session";
 import { formatDateSK } from "@/lib/formatDate";
 import AdminOrdersClient from "@/components/AdminOrdersClient";
 import { ensurePacketaTable } from "@/lib/packeta/shipment";
-import { colorLabel, materialLabel, qualityLabel } from "@/lib/print-options";
+import { colorSummary, materialLabel, qualityLabel } from "@/lib/print-options";
 
 export const dynamic = "force-dynamic";
 
@@ -19,7 +19,7 @@ function getConfigLabel(config: any, modelCount: number) {
     materialLabel(config.material),
     qualityLabel(config.quality),
     infill,
-    colorLabel(config.color),
+    colorSummary(config),
     quantity,
   ].join(" • ");
 

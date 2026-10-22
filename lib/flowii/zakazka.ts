@@ -1,5 +1,5 @@
 import { buildOrderCopyText, type OrderWithItems } from "@/lib/order-copy-text";
-import { colorLabel, materialLabel, qualityLabel } from "@/lib/print-options";
+import { colorSummary, materialLabel, partColorsLabel, qualityLabel } from "@/lib/print-options";
 
 /**
  * Z objednávky zostaví obsah zákazky a partnera presne tak, ako ich dnes
@@ -273,7 +273,7 @@ export function buildFlowiiZakazka(
         const flex = [c.materialFlexible ? "materiál nezáleží" : null, c.colorFlexible ? "farba nezáleží" : null]
           .filter(Boolean)
           .join(", ");
-        return `${idx + 1}. ${it.fileName} — ${materialLabel(c.material)}, ${qualityLabel(c.quality)}, ${colorLabel(c.color)}, ${c.quantity ?? 1} ks${flex ? ` (${flex})` : ""}`;
+        return `${idx + 1}. ${it.fileName} — ${materialLabel(c.material)}, ${qualityLabel(c.quality)}, ${colorSummary(c)}, ${c.quantity ?? 1} ks${flex ? ` (${flex})` : ""}${partColorsLabel(c) ? `\n   Časti (od najväčšej): ${partColorsLabel(c)}` : ""}`;
       }),
       "",
       orderConfig.allowModelAdjustments

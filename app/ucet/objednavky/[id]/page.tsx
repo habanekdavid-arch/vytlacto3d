@@ -6,7 +6,7 @@ import { getSafeServerSession } from "@/lib/session";
 import { formatDateSK } from "@/lib/formatDate";
 import ResumeOrderButton from "@/components/ResumeOrderButton";
 
-import { colorLabel, materialLabel, qualityLabel } from "@/lib/print-options";
+import { colorLabel, materialLabel, multicolorParts, qualityLabel } from "@/lib/print-options";
 import { getT } from "@/lib/i18n/server";
 export const dynamic = "force-dynamic";
 
@@ -16,6 +16,12 @@ export default async function OrderDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { t } = await getT();
+  // Viacfarebná položka: „Viacfarebná tlač: Červená, Modrá“.
+  const colorText = (cfg: { color?: unknown }) => {
+    const parts = multicolorParts(cfg);
+    if (!parts) return t(colorLabel(cfg.color));
+    return `${t("Viacfarebná tlač")}: ${Array.from(new Set(parts)).map((c) => t(colorLabel(c))).join(", ")}`;
+  };
   const session = await getSafeServerSession();
   const sessionUser = session?.user as
     | { id?: string; email?: string | null }
@@ -200,7 +206,7 @@ export default async function OrderDetailPage({
                   <div className="flex flex-wrap gap-2 text-xs text-neutral-600">
                     {ic.material && <span className="rounded-full bg-neutral-200 px-2 py-0.5 font-semibold">{t(materialLabel(ic.material))}</span>}
                     {ic.quality && <span className="rounded-full bg-neutral-200 px-2 py-0.5 font-semibold">{t(qualityLabel(ic.quality))}</span>}
-                    {ic.color && <span className="rounded-full bg-neutral-200 px-2 py-0.5 font-semibold">{t(colorLabel(ic.color))}</span>}
+                    {ic.color && <span className="rounded-full bg-neutral-200 px-2 py-0.5 font-semibold">{colorText(ic)}</span>}
                     {ic.quantity && <span className="rounded-full bg-neutral-200 px-2 py-0.5 font-semibold">{ic.quantity} ks</span>}
                     {ic.scalePct && <span className="rounded-full bg-neutral-200 px-2 py-0.5 font-semibold">{ic.scalePct}%</span>}
                   </div>
@@ -216,7 +222,7 @@ export default async function OrderDetailPage({
         <div className="mt-4 grid gap-4 md:grid-cols-2">
           <DetailCard label={t("Materiál")} value={t(materialLabel(config.material))} />
           <DetailCard label={t("Kvalita")} value={t(qualityLabel(config.quality))} />
-          <DetailCard label={t("Farba")} value={t(colorLabel(config.color))} />
+          <DetailCard label={t("Farba")} value={colorText(config)} />
           <DetailCard label={t("Počet kusov")} value={String(config.quantity ?? "—")} />
           <DetailCard label={t("Infill")} value={`${String(config.infillPct ?? "—")}%`} />
           <DetailCard label={t("Mierka")} value={`${String(config.scalePct ?? "100")}%`} />

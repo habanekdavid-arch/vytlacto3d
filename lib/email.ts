@@ -1,6 +1,6 @@
 import { sendMail, FROM, hasMailCredentials } from "@/lib/mailer";
 import { formatEur, addVat, vatAmount } from "@/lib/vat";
-import { colorLabel, materialLabel, qualityLabel } from "@/lib/print-options";
+import { colorSummary, materialLabel, qualityLabel } from "@/lib/print-options";
 import { CONTACT_EMAIL } from "@/lib/contact";
 
 const baseUrl =
@@ -70,7 +70,7 @@ export async function sendOrderPaidEmail({
             <table style="border-collapse:collapse;width:100%;">
               ${row("Súbor", fileName)}
               ${row("Materiál", materialLabel(config?.material, ""))}
-              ${row("Farba", colorLabel(config?.color, ""))}
+              ${row("Farba", colorSummary(config, ""))}
               ${row("Kvalita", qualityLabel(config?.quality, ""))}
               ${config?.quantity != null ? row("Množstvo", `${config.quantity} ks`) : ""}
               ${config?.infillPct != null ? row("Infill", `${config.infillPct}%`) : ""}

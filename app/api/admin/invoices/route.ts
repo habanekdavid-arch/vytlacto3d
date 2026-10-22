@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getSafeServerSession } from "@/lib/session";
 import { addVat, vatAmount } from "@/lib/vat";
 import { getSellerInfo } from "@/lib/seller";
-import { colorLabel, materialLabel, qualityLabel } from "@/lib/print-options";
+import { colorSummary, materialLabel, qualityLabel } from "@/lib/print-options";
 
 export const runtime = "nodejs";
 
@@ -17,7 +17,7 @@ function describeItem(fileName: string, config: Record<string, unknown> | null |
   const specs = [
     materialLabel(config?.material, ""),
     qualityLabel(config?.quality, ""),
-    colorLabel(config?.color, ""),
+    colorSummary(config, ""),
   ].filter(Boolean);
 
   return `3D tlač: ${fileName}${specs.length > 0 ? ` (${specs.join(", ")})` : ""}`;

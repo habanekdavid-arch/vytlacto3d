@@ -846,6 +846,91 @@ const messages: Messages = {
     hu: "Szénszálas nejlon: a legerősebb és legmerevebb műszaki alkatrészek, hőállóság (csak fekete és fehér)",
     de: "Kohlefaser-Nylon: festeste und steifste technische Teile, Hitzebeständigkeit (nur Schwarz und Weiß)",
   },
+  "Na jednom modeli môžu byť najviac {n} farby.": {
+    en: "A single model can have at most {n} colours.",
+    hu: "Egy modellen legfeljebb {n} szín lehet.",
+    de: "Ein Modell kann höchstens {n} Farben haben.",
+  },
+  "Viacfarebná tlač": {
+    en: "Multicolour printing",
+    hu: "Többszínű nyomtatás",
+    de: "Mehrfarbiger Druck",
+  },
+  "Viac farieb": {
+    en: "Multicolour",
+    hu: "Több szín",
+    de: "Mehrfarbig",
+  },
+  "Vyberte farbu a kliknite na časť modelu.": {
+    en: "Pick a colour and click a part of the model.",
+    hu: "Válasszon színt, és kattintson a modell egy részére.",
+    de: "Wählen Sie eine Farbe und klicken Sie auf ein Teil des Modells.",
+  },
+  "Počet častí: {n}": {
+    en: "Parts: {n}",
+    hu: "Részek száma: {n}",
+    de: "Anzahl der Teile: {n}",
+  },
+  "Použité farby": {
+    en: "Colours used",
+    hu: "Használt színek",
+    de: "Verwendete Farben",
+  },
+  "Jedna farba": {
+    en: "Single colour",
+    hu: "Egy szín",
+    de: "Eine Farbe",
+  },
+  "Hotovo": {
+    en: "Done",
+    hu: "Kész",
+    de: "Fertig",
+  },
+  "Viacfarebnú tlač robíme len z PLA.": {
+    en: "Multicolour printing is available in PLA only.",
+    hu: "Többszínű nyomtatást csak PLA-ból készítünk.",
+    de: "Mehrfarbigen Druck bieten wir nur in PLA an.",
+  },
+  "Časť {n}": {
+    en: "Part {n}",
+    hu: "{n}. rész",
+    de: "Teil {n}",
+  },
+  "časti od najväčšej": {
+    en: "parts from the largest",
+    hu: "részek a legnagyobbtól",
+    de: "Teile vom größten",
+  },
+  "Farby častí meníte v 3D náhľade cez kýblik vpravo hore.": {
+    en: "Change the part colours in the 3D preview using the bucket in the top right.",
+    hu: "A részek színét a 3D előnézetben, a jobb felső vödör ikonnal módosíthatja.",
+    de: "Die Farben der Teile ändern Sie in der 3D-Vorschau über den Farbeimer oben rechts.",
+  },
+  "Zrušiť viacfarebnú tlač": {
+    en: "Cancel multicolour printing",
+    hu: "Többszínű nyomtatás törlése",
+    de: "Mehrfarbigen Druck aufheben",
+  },
+  "{n} farby na modeli": {
+    en: "{n} colours on the model",
+    hu: "{n} szín a modellen",
+    de: "{n} Farben am Modell",
+  },
+  "viacfarebne": {
+    en: "multicolour",
+    hu: "többszínű",
+    de: "mehrfarbig",
+  },
+  "Viacfarebnú tlač robíme len z PLA. Prepnite materiál na PLA.": {
+    en: "Multicolour printing is available in PLA only. Switch the material to PLA.",
+    hu: "Többszínű nyomtatást csak PLA-ból készítünk. Válassza a PLA anyagot.",
+    de: "Mehrfarbigen Druck bieten wir nur in PLA an. Wechseln Sie das Material zu PLA.",
+  },
+  "Pri viacfarebnej tlači vyberáte farby sami — zrušte voľbu „Nezáleží mi na farbe“.": {
+    en: "With multicolor printing you choose the colours yourself — untick “Any colour is fine”.",
+    hu: "Többszínű nyomtatásnál a színeket Ön választja — kapcsolja ki a „Nem számít a szín” opciót.",
+    de: "Beim mehrfarbigen Druck wählen Sie die Farben selbst — deaktivieren Sie „Farbe ist mir egal“.",
+  },
 };
 
 export default messages;

@@ -1,3 +1,4 @@
+import { MULTICOLOR_FEE_EUR } from "@/lib/multicolor";
 export const MATERIALS = ["PLA", "PETG", "ABS", "PA6-CF"] as const;
 export const QUALITIES = ["DRAFT", "STANDARD", "FINE"] as const;
 
@@ -74,6 +75,8 @@ type QuoteInput = {
   // čím máme práve poruke. Každá z nich je vlastná zľava.
   materialFlexible?: boolean;
   colorFlexible?: boolean;
+  /** Viacfarebná tlač (aspoň dve farby na modeli) — poplatok raz za položku. */
+  multicolor?: boolean;
   /** Akciová zľava v % (lib/promo) — z celej ceny výroby. */
   promoPercent?: number;
 };
@@ -89,6 +92,8 @@ type QuoteResult = {
   quantityDiscountPct: number;
   quantityDiscountAmount: number;
   flexibleDiscountEur: number;
+  /** Poplatok za viacfarebnú tlač (bez DPH), 0 pri jednej farbe. */
+  multicolorFee: number;
   total: number;
   /** Len počas akcie: cena pred akciovou zľavou a výška zľavy (bez DPH). */
   promoPercent?: number;
@@ -257,9 +262,11 @@ export function quote(input: QuoteInput): QuoteResult {
     SETUP_FEE + productionSubtotalRaw - quantityDiscountAmountRaw
   );
 
+  // Pri viacfarebnej tlači si zákazník farby vybral sám — zľava za
+  // „nezáleží mi na farbe“ sa neuplatní.
   const flexibleDiscountRequestedRaw =
     (input.materialFlexible ? FLEXIBLE_DISCOUNT_EUR : 0) +
-    (input.colorFlexible ? FLEXIBLE_DISCOUNT_EUR : 0);
+    (input.colorFlexible && !input.multicolor ? FLEXIBLE_DISCOUNT_EUR : 0);
 
   // Zľava nikdy nezje základný poplatok za spracovanie objednávky.
   const flexibleDiscountRaw = Math.min(
@@ -267,7 +274,8 @@ export function quote(input: QuoteInput): QuoteResult {
     Math.max(0, totalBeforeFlexibleDiscountRaw - SETUP_FEE)
   );
 
-  const totalRaw = totalBeforeFlexibleDiscountRaw - flexibleDiscountRaw;
+  const multicolorFeeRaw = input.multicolor ? MULTICOLOR_FEE_EUR : 0;
+  const totalRaw = totalBeforeFlexibleDiscountRaw - flexibleDiscountRaw + multicolorFeeRaw;
 
   return {
     gramsPerPart:           round2(gramsPerPartRaw),
@@ -280,6 +288,7 @@ export function quote(input: QuoteInput): QuoteResult {
     quantityDiscountPct,
     quantityDiscountAmount: round2(quantityDiscountAmountRaw),
     flexibleDiscountEur:    round2(flexibleDiscountRaw),
+    multicolorFee:          multicolorFeeRaw,
     total:                  round2(totalRaw),
     ...promoFields(round2(totalRaw), input.promoPercent),
   };
