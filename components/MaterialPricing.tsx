@@ -28,6 +28,14 @@ export default function MaterialPricing() {
       use: "Technické diely, teplotná odolnosť, pevnosť (náročnejšia tlač)",
       dot: "bg-gray-500",
     },
+    {
+      key: "PA6-CF",
+      name: "PA6-CF",
+      eurPerGram: 80 / 1000,
+      density: "1.20 g/cm³",
+      use: "Nylon s uhlíkovými vláknami: najpevnejšie a najtuhšie technické diely, odolnosť voči teplu (len čierna a biela)",
+      dot: "bg-neutral-900",
+    },
   ];
 
   return (
@@ -61,9 +69,9 @@ export default function MaterialPricing() {
                   >
                     <td className="px-6 py-5">
                       <div className="flex items-center gap-3">
-                        <span className={`h-3 w-3 rounded-full ${m.dot}`} />
+                        <span className={`h-3 w-3 flex-none rounded-full ${m.dot}`} />
 
-                        <div className="font-semibold text-neutral-900">
+                        <div className="whitespace-nowrap font-semibold text-neutral-900">
                           {m.name}
                         </div>
                       </div>
