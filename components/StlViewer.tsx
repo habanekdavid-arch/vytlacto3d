@@ -169,6 +169,9 @@ export default function StlViewer({
       metalness: 0.02,
       clearcoat: 0.16,
       clearcoatRoughness: 0.7,
+      // Obe strany: model s plochami otočenými dovnútra (časté pri exportoch)
+      // by inak vyzeral dutý — chýbali by plochy natočené k nám.
+      side: THREE.DoubleSide,
     });
 
     function prepareAndAddModel(model: THREE.Object3D, rotateStl = false) {
