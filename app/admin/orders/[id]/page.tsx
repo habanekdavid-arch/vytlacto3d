@@ -4,7 +4,6 @@ import { getSafeServerSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { formatEur, addVat, vatAmount, formatPaidTotal } from "@/lib/vat";
 import CopyOrderButton from "@/components/CopyOrderButton";
-import InvoiceSection from "@/components/InvoiceSection";
 import AdminStatusChanger from "@/components/AdminStatusChanger";
 import Fold from "@/components/admin/Fold";
 import EditableField from "@/components/EditableField";
@@ -98,12 +97,6 @@ export default async function AdminOrderDetailPage({
 
   const shippingCostEur =
     typeof shippingCost.amount === "number" ? shippingCost.amount / 100 : null;
-
-  const invoices = await prisma.invoice.findMany({
-    where: { orderId: id },
-    include: { creditNotes: { select: { id: true, invoiceNumber: true } } },
-    orderBy: { createdAt: "asc" },
-  });
 
   const packetDraft = buildPacketDraft(order);
   const packetaShipment = await getPacketaShipment(order.id);
@@ -463,20 +456,6 @@ export default async function AdminOrderDetailPage({
           configured={isFlowiiConfigured()}
           autoEnabled={isFlowiiAutoEnabled()}
           canCreate={["PAID", "IN_PRODUCTION", "SHIPPED", "DELIVERED"].includes(order.status)}
-        />
-          </Fold>
-          <Fold title="Faktúry" summary={invoices.length ? `${invoices.length} ks` : "žiadna"}>
-        <InvoiceSection
-          orderId={order.id}
-          initialInvoices={invoices.map((inv: any) => ({
-            id: inv.id,
-            invoiceNumber: inv.invoiceNumber,
-            type: inv.type,
-            isTest: inv.isTest,
-            issuedAt: inv.issuedAt.toISOString(),
-            totalGross: inv.totalGross,
-            creditNotes: (inv.creditNotes ?? []) as { id: string; invoiceNumber: string }[],
-          }))}
         />
           </Fold>
           <Fold title="Stripe a technické dáta">
