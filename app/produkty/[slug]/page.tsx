@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import StlViewer from "@/components/StlViewer";
 import { PRODUCTS, getProduct } from "@/content/produkty";
 import { getT } from "@/lib/i18n/server";
+import { getProductsWithImages } from "@/lib/product-images";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -13,7 +14,7 @@ export function generateStaticParams() {
 
 export async function generateMetadata({ params }: Props) {
   const { slug } = await params;
-  const product = getProduct(slug);
+  const product = (await getProductsWithImages()).find((p) => p.slug === slug);
   if (!product) return {};
   const { t } = await getT();
   return {
@@ -45,7 +46,7 @@ export default async function ProduktPage({ params }: Props) {
     t("Veľkosť v percentách"),
     t("Počet kusov so zľavou"),
   ];
-  const others = PRODUCTS.filter((p) => p.slug !== product.slug);
+  const others = (await getProductsWithImages()).filter((p) => p.slug !== product.slug);
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-10 sm:px-6">

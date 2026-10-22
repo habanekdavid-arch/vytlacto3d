@@ -1,6 +1,6 @@
 import Link from "next/link";
 import ProductCard from "@/components/ProductCard";
-import { PRODUCTS } from "@/content/produkty";
+import { getProductsWithImages } from "@/lib/product-images";
 import { getT } from "@/lib/i18n/server";
 
 export async function generateMetadata() {
@@ -15,6 +15,7 @@ export async function generateMetadata() {
 
 export default async function ProduktyPage() {
   const { t } = await getT();
+  const products = await getProductsWithImages();
   const steps = [
     { n: 1, title: t("Vyberte produkt"), text: t("Hotový model, ktorý sme pre vás pripravili.") },
     { n: 2, title: t("Prispôsobte si ho"), text: t("Materiál, farba, kvalita, veľkosť aj počet kusov.") },
@@ -51,7 +52,7 @@ export default async function ProduktyPage() {
       </ol>
 
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        {PRODUCTS.map((p, i) => (
+        {products.map((p, i) => (
           <ProductCard key={p.slug} product={p} priority={i < 4} />
         ))}
       </div>

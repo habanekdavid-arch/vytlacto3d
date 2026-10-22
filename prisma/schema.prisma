@@ -313,3 +313,12 @@ model Coupon {
 
   @@index([email])
 }
+
+// Náhľadový obrázok hotového produktu nahratý v administrácii (/admin/produkty).
+// Produkty sú v content/produkty.ts; tu je len obrázok, ktorý nahradí pôvodný.
+model ProductImage {
+  slug      String   @id
+  url       String
+  updatedAt DateTime @default(now()) @updatedAt
+  updatedBy String?
+}
