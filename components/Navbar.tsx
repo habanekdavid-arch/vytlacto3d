@@ -13,6 +13,7 @@ const FOURFROM_URL =
 
 const LINKS = [
   { href: "/#kalkulator", label: "Kalkulátor" },
+  { href: "/produkty", label: "Produkty" },
   { href: "/#cennik", label: "Cenník" },
   { href: "/realizacie", label: "Realizácie" },
   { href: "/komunita", label: "Komunita" },

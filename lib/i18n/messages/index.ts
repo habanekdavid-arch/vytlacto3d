@@ -6,6 +6,7 @@ import configurator from "./configurator";
 import content from "./content";
 import home from "./home";
 import layout from "./layout";
+import products from "./products";
 
 /**
  * Preklady sú kľúčované pôvodným slovenským textom — v kóde ostáva
@@ -21,6 +22,7 @@ const ALL: Messages = {
   ...content,
   ...home,
   ...layout,
+  ...products,
 };
 
 const cache = new Map<Locale, Record<string, string>>();

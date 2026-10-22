@@ -56,9 +56,10 @@ const UploadBox = forwardRef<UploadBoxHandle, {
   const [isReconverting, setIsReconverting] = useState(false);
   const [uploadedFileName, setUploadedFileName] = useState<string>("");
 
-  // Zobraz panel hrúbky len ak nie je ešte uploadnutý súbor, alebo ak bol uploadnutý SVG
+  // Zobraz panel hrúbky len ak nie je ešte uploadnutý súbor, alebo ak bol uploadnutý SVG.
+  // Keď je v kalkulátore už iný model (napr. hotový produkt), panel nepatrí k nemu.
   const isSvgMode = originalSvgFile !== null;
-  const showThicknessInput = !uploadedFileName || isSvgMode;
+  const showThicknessInput = isSvgMode || (!uploadedFileName && !hideDropzone);
 
   function sanitizeFileName(name: string): string {
     return name
