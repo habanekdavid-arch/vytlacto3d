@@ -8,6 +8,7 @@ type ModelItem = {
   fileName: string;
   scalePct?: number;
   colorId?: string;
+  partColors?: string[];
 };
 
 export default function ModelPreviewAllButton({
@@ -108,6 +109,7 @@ export default function ModelPreviewAllButton({
               title={current.fileName}
               scalePct={current.scalePct}
               colorId={current.colorId}
+              partColors={current.partColors}
               height={500}
             />
           </div>

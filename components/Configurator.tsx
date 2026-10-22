@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import ColorPalette, { COLOR_LABELS } from "@/components/ColorPalette";
 import { formatEur, addVat, vatAmount } from "@/lib/vat";
 import { allowedColors, scaledGeometry } from "@/lib/pricing";
+import { getColor } from "@/components/StlViewer";
+import { MULTICOLOR_FEE_EUR, distinctColors, isMulticolor, multicolorAllowedFor } from "@/lib/multicolor";
 import { useT } from "@/lib/i18n/client";
 import type { TFunction } from "@/lib/i18n/config";
 
@@ -29,6 +31,7 @@ type Quote = {
   quantityDiscountPct: number;
   quantityDiscountAmount: number;
   flexibleDiscountEur: number;
+  multicolorFee?: number;
   total: number;
   /** Len počas akcie (lib/promo). */
   promoPercent?: number;
@@ -45,16 +48,22 @@ export type ConfigState = {
   scalePct: number;
   materialFlexible?: boolean;
   colorFlexible?: boolean;
+  partColors?: string[];
 };
 
 export default function Configurator({
   analysis,
   initialConfig,
   onQuote,
+  partColors,
+  onPartColorsChange,
 }: {
   analysis: Analysis;
   initialConfig?: ConfigState;
   onQuote: (q: Quote, config: ConfigState) => void;
+  /** Farby častí z 3D náhľadu (viacfarebná tlač) — vlastní ich stránka. */
+  partColors?: string[];
+  onPartColorsChange?: (colors: string[] | undefined) => void;
 }) {
   const t = useT();
   const [config, setConfig] = useState<ConfigState>(
@@ -72,6 +81,23 @@ export default function Configurator({
 
   const [quote, setQuote] = useState<Quote | null>(null);
   const [loading, setLoading] = useState(false);
+
+  // Viacfarebná tlač len z PLA; farby častí berieme vždy najnovšie, aby
+  // neskoršia odpoveď na starší výpočet ceny neprepísala práve zafarbené časti.
+  const multicolor = isMulticolor(partColors) && multicolorAllowedFor(config.material);
+  const partColorsRef = useRef(partColors);
+  useEffect(() => {
+    partColorsRef.current = partColors;
+  }, [partColors]);
+  const usedColors = distinctColors(partColors);
+
+  // Všetky časti v jednej farbe = obyčajná jednofarebná tlač v tej farbe.
+  const singleColor = partColors && usedColors.length === 1 ? usedColors[0] : null;
+  useEffect(() => {
+    if (!singleColor) return;
+    if (singleColor === config.color) onPartColorsChange?.(undefined);
+    else setConfig((c) => ({ ...c, color: singleColor }));
+  }, [singleColor, config.color, onPartColorsChange]);
 
   const scaleFactor = config.scalePct / 100;
 
@@ -103,8 +129,9 @@ export default function Configurator({
       scalePct: config.scalePct,
       materialFlexible: config.materialFlexible,
       colorFlexible: config.colorFlexible,
+      multicolor,
     }),
-    [geometry, config]
+    [geometry, config, multicolor]
   );
 
   useEffect(() => {
@@ -131,7 +158,8 @@ export default function Configurator({
         if (!ok) throw new Error(j.error || "Quote error");
 
         setQuote(j);
-        onQuote(j, config);
+        const latest = partColorsRef.current;
+        onQuote(j, { ...config, partColors: isMulticolor(latest) && multicolorAllowedFor(config.material) ? latest : undefined });
       })
       .catch(() => {
         if (!alive) return;
@@ -177,15 +205,16 @@ export default function Configurator({
           <select
             className="w-full rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 outline-none transition focus:border-[#FFAE00]"
             value={config.material}
-            onChange={(e) =>
+            onChange={(e) => {
               setConfig((c) => {
                 const material = e.target.value as ConfigState["material"];
                 // PA6-CF len v čiernej a bielej — inú farbu prepneme na prvú povolenú.
                 const allowed = allowedColors(material);
                 const color = allowed && !allowed.includes(c.color) ? allowed[0] : c.color;
                 return { ...c, material, color };
-              })
-            }
+              });
+              if (!multicolorAllowedFor(e.target.value) && partColors) onPartColorsChange?.(undefined);
+            }}
           >
             <option value="PLA">PLA</option>
             <option value="PETG">PETG</option>
@@ -277,36 +306,70 @@ export default function Configurator({
         </Field>
 
         <Field label={t("Farba")} hint={t("Reálna dostupnosť závisí od skladových zásob.")}>
-          <ColorPalette
-            value={config.color}
-            onChange={(id) => setConfig((c) => ({ ...c, color: id }))}
-            disabled={!!config.colorFlexible}
-            allowed={allowedColors(config.material)}
-          />
-
-          {config.colorFlexible ? (
-            <div className="mt-3 rounded-2xl bg-neutral-50 px-4 py-3 text-xs text-neutral-600">
-              {t("Farbu vyberieme podľa aktuálnej dostupnosti.")}{" "}
-              <span className="font-bold text-neutral-900">
-                {t("Farba modelu v 3D náhľade je len ilustračná.")}
-              </span>
+          {multicolor ? (
+            <div className="rounded-2xl border border-[#FFAE00] bg-[#FFAE00]/10 px-4 py-3 text-xs text-neutral-700">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-sm font-extrabold text-neutral-900">{t("Viacfarebná tlač")}</span>
+                <span className="rounded-full bg-black/5 px-2 py-0.5 text-[10px] font-bold text-neutral-700">
+                  +{formatEur(addVat(MULTICOLOR_FEE_EUR))}
+                </span>
+              </div>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {usedColors.map((id) => (
+                  <span key={id} className="inline-flex items-center gap-1.5 rounded-full bg-white px-2 py-1 font-semibold text-neutral-900">
+                    <span
+                      className={["h-3 w-3 rounded-full", id === "white" ? "border border-neutral-300" : ""].join(" ")}
+                      style={{ background: getColor(id) }}
+                    />
+                    {t(COLOR_LABELS[id] ?? id)}
+                  </span>
+                ))}
+              </div>
+              <p className="mt-2 leading-relaxed">
+                {t("Farby častí meníte v 3D náhľade cez kýblik vpravo hore.")}
+              </p>
+              <button
+                type="button"
+                onClick={() => onPartColorsChange?.(undefined)}
+                className="mt-2 font-bold text-neutral-900 underline decoration-[#FFAE00] decoration-2 underline-offset-4"
+              >
+                {t("Zrušiť viacfarebnú tlač")}
+              </button>
             </div>
           ) : (
-            <div className="mt-3 rounded-2xl bg-neutral-50 px-4 py-3 text-xs text-neutral-600">
-              {t("Vybraná farba:")}{" "}
-              <span className="font-bold text-neutral-900">
-                {t(COLOR_LABELS[config.color] ?? config.color)}
-              </span>
-            </div>
-          )}
+            <>
+            <ColorPalette
+              value={config.color}
+              onChange={(id) => setConfig((c) => ({ ...c, color: id }))}
+              disabled={!!config.colorFlexible}
+              allowed={allowedColors(config.material)}
+            />
 
-          <FlexibleCheckbox
-            label={t("Nezáleží mi na farbe")}
-            checked={!!config.colorFlexible}
-            onChange={(checked) =>
-              setConfig((c) => ({ ...c, colorFlexible: checked }))
-            }
-          />
+            {config.colorFlexible ? (
+              <div className="mt-3 rounded-2xl bg-neutral-50 px-4 py-3 text-xs text-neutral-600">
+                {t("Farbu vyberieme podľa aktuálnej dostupnosti.")}{" "}
+                <span className="font-bold text-neutral-900">
+                  {t("Farba modelu v 3D náhľade je len ilustračná.")}
+                </span>
+              </div>
+            ) : (
+              <div className="mt-3 rounded-2xl bg-neutral-50 px-4 py-3 text-xs text-neutral-600">
+                {t("Vybraná farba:")}{" "}
+                <span className="font-bold text-neutral-900">
+                  {t(COLOR_LABELS[config.color] ?? config.color)}
+                </span>
+              </div>
+            )}
+
+            <FlexibleCheckbox
+              label={t("Nezáleží mi na farbe")}
+              checked={!!config.colorFlexible}
+              onChange={(checked) =>
+                setConfig((c) => ({ ...c, colorFlexible: checked }))
+              }
+            />
+            </>
+          )}
         </Field>
       </div>
 
@@ -345,6 +408,16 @@ export default function Configurator({
                 {t("Rozpis ceny")}
               </div>
               <div className="space-y-2">
+                {(quote.multicolorFee ?? 0) > 0 && (
+                  <>
+                    <PriceLine
+                      label={t("Viacfarebná tlač")}
+                      hint={t("{n} farby na modeli", { n: usedColors.length })}
+                      value={`+${formatEur(addVat(quote.multicolorFee ?? 0))}`}
+                    />
+                    <div className="my-1 border-t border-neutral-200" />
+                  </>
+                )}
                 {quote.flexibleDiscountEur > 0 && (
                   <>
                     <PriceLine

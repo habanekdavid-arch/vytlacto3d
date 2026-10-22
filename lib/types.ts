@@ -19,6 +19,11 @@ export type CartItemConfig = {
   // Zákazníkovi nezáleží na presnom materiáli/farbe — za každú voľbu zľava.
   materialFlexible?: boolean;
   colorFlexible?: boolean;
+  /**
+   * Viacfarebná tlač: farba každej časti modelu (poradie podľa
+   * lib/model-parts — od najväčšej časti). Chýba = jedna farba `color`.
+   */
+  partColors?: string[];
 };
 
 export type CartItemPricing = {
@@ -32,6 +37,8 @@ export type CartItemPricing = {
   quantityDiscountPct: number;
   quantityDiscountAmount: number;
   flexibleDiscountEur: number;
+  /** Poplatok za viacfarebnú tlač (bez DPH); staršie položky ho nemajú. */
+  multicolorFee?: number;
   total: number;
   /** Len počas akcie (lib/promo). */
   promoPercent?: number;

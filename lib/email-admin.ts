@@ -1,6 +1,6 @@
 import { sendMail, FROM, ADMIN_INBOX, hasMailCredentials } from "@/lib/mailer";
 import { formatEur, addVat, vatAmount } from "@/lib/vat";
-import { colorLabel, materialLabel, qualityLabel } from "@/lib/print-options";
+import { colorSummary, materialLabel, partColorsLabel, qualityLabel } from "@/lib/print-options";
 import { CONTACT_EMAIL } from "@/lib/contact";
 
 const baseUrl =
@@ -189,7 +189,8 @@ export async function sendAdminOrderNotificationEmail({
     line("Súbor   ", fileName),
     line("Materiál", materialLabel(config?.material, "")),
     line("Kvalita ", qualityLabel(config?.quality, "")),
-    line("Farba   ", colorLabel(config?.color, "")),
+    line("Farba   ", colorSummary(config, "")),
+    line("Časti   ", partColorsLabel(config) ? `${partColorsLabel(config)} (od najväčšej, +10 € bez DPH)` : null),
     line("Množstvo", config?.quantity != null ? `${config.quantity} ks` : null),
     line("Infill  ", config?.infillPct != null ? `${config.infillPct}%` : null),
     line("Mierka  ", config?.scalePct != null ? `${config.scalePct}%` : null),

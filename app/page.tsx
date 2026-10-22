@@ -14,6 +14,7 @@ import InstagramFeed from "@/components/InstagramFeed";
 import FloatingCta from "@/components/FloatingCta";
 import ModelSummaryBar from "@/components/ModelSummaryBar";
 import { CartItem, CartItemConfig, CartItemPricing } from "@/lib/types";
+import { isMulticolor, multicolorAllowedFor } from "@/lib/multicolor";
 import { formatPriceWithVat, formatEur, addVat } from "@/lib/vat";
 import { SHIPPING_RATES } from "@/lib/shipping";
 import { useCartUi } from "@/lib/cart-ui-context";
@@ -199,6 +200,19 @@ export default function Home() {
   const updateItemConfig = useCallback((id: string, config: CartItemConfig) => {
     setCartItems((prev) => prev.map((item) => (item.id === id ? { ...item, config } : item)));
   }, []);
+
+  // Farby častí z 3D náhľadu (viacfarebná tlač). Cenu prepočíta konfigurátor.
+  const updateItemPartColors = useCallback((id: string, partColors: string[] | undefined) => {
+    setCartItems((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, config: { ...item.config, partColors } } : item))
+    );
+  }, []);
+  const handlePartColors = useCallback(
+    (colors: string[] | undefined) => {
+      if (activeItemId) updateItemPartColors(activeItemId, colors);
+    },
+    [activeItemId, updateItemPartColors]
+  );
 
   const handleQuote = useCallback(
     (q: CartItemPricing, cfg: ConfigState) => {
@@ -845,7 +859,7 @@ export default function Home() {
                     <div className="min-w-0">
                       <div className="max-w-[120px] truncate text-xs font-semibold text-neutral-900">{item.fileName}</div>
                       <div className="text-[10px] text-neutral-500">
-                        {item.config.material}{item.pricing ? ` · ${formatEur(addVat(item.pricing.total))}` : " · …"}
+                        {item.config.material}{isMulticolor(item.config.partColors) ? ` · ${t("viacfarebne")}` : ""}{item.pricing ? ` · ${formatEur(addVat(item.pricing.total))}` : " · …"}
                       </div>
                     </div>
                     <span
@@ -931,12 +945,20 @@ export default function Home() {
                     </div>
                   </div>
                   <StlViewer
-                    key={`${activeItem.fileKey}-${activeItem.config.scalePct}-${activeItem.config.color}`}
+                    key={`${activeItem.fileKey}-${activeItem.config.scalePct}`}
                     fileKey={activeItem.fileKey}
                     title={t("Model sa dá otáčať a zoomovať")}
                     colorId={activeItem.config.colorFlexible ? "gray" : activeItem.config.color}
                     height={380}
                     scalePct={activeItem.config.scalePct}
+                    partColors={activeItem.config.partColors}
+                    onPartColorsChange={handlePartColors}
+                    multicolorAllowed={multicolorAllowedFor(activeItem.config.material) && !activeItem.config.colorFlexible}
+                    multicolorBlockedReason={
+                      !multicolorAllowedFor(activeItem.config.material)
+                        ? t("Viacfarebnú tlač robíme len z PLA. Prepnite materiál na PLA.")
+                        : t("Pri viacfarebnej tlači vyberáte farby sami — zrušte voľbu „Nezáleží mi na farbe“.")
+                    }
                   />
                   {activeItem.config.colorFlexible && (
                     <p className="mt-3 rounded-2xl bg-neutral-50 px-4 py-2.5 text-xs text-neutral-600">
@@ -969,6 +991,8 @@ export default function Home() {
                     }}
                     initialConfig={activeItem.config}
                     onQuote={handleQuote}
+                    partColors={activeItem.config.partColors}
+                    onPartColorsChange={handlePartColors}
                   />
                 </div>
 

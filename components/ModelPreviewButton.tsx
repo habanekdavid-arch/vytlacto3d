@@ -8,6 +8,7 @@ export default function ModelPreviewButton({
   fileName,
   scalePct = 100,
   colorId = "black",
+  partColors,
   label = "👁 3D náhľad",
   className,
 }: {
@@ -15,6 +16,8 @@ export default function ModelPreviewButton({
   fileName: string;
   scalePct?: number;
   colorId?: string;
+  /** Viacfarebná tlač — farby častí sa zobrazia v náhľade. */
+  partColors?: string[];
   label?: string;
   className?: string;
 }) {
@@ -57,6 +60,7 @@ export default function ModelPreviewButton({
               title={fileName}
               scalePct={scalePct}
               colorId={colorId}
+              partColors={partColors}
               height={500}
             />
           </div>
