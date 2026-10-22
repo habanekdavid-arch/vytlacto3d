@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { PRODUCTS } from "@/content/produkty";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl =
@@ -43,5 +44,17 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "yearly",
       priority: 0.4,
     },
+    {
+      url: `${baseUrl}/produkty`,
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 0.8,
+    },
+    ...PRODUCTS.map((p) => ({
+      url: `${baseUrl}/produkty/${p.slug}`,
+      lastModified: now,
+      changeFrequency: "monthly" as const,
+      priority: 0.7,
+    })),
   ];
 }

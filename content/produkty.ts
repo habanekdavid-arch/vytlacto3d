@@ -1,0 +1,105 @@
+import type { CartItemConfig } from "@/lib/types";
+
+/**
+ * Hotové 3D produkty. Zákazník si produkt nekupuje priamo — vloží ho do
+ * konfigurátora, prispôsobí (materiál, farba, kvalita, výplň, mierka,
+ * počet kusov) a objedná ako bežný výtlačok. Cena sa počíta rovnako ako
+ * pri vlastnom modeli.
+ *
+ * Nový produkt: STL súbor a obrázok do `public/produkty/`, záznam sem.
+ */
+export type ProductAnalysis = {
+  dimsXmm: number;
+  dimsYmm: number;
+  dimsZmm: number;
+  volumeCm3: number;
+  surfaceAreaCm2?: number;
+  supportCm3?: number;
+  printHeightMm?: number;
+};
+
+export type Product = {
+  slug: string;
+  name: string;
+  subtitle: string;
+  description: string;
+  category: string;
+  /** STL model v `public/` — cesta od koreňa webu. */
+  file: string;
+  /** Náhľad produktu v `public/` — cesta od koreňa webu. */
+  image: string;
+  /** Rozmery pri mierke 100 % (Š × H × V), len na zobrazenie. */
+  dimsMm: [number, number, number];
+  highlights: string[];
+  /**
+   * Výsledok analýzy modelu (rovnaký ako z /api/analyze), aby sa produkt
+   * vložil do konfigurátora bez sťahovania modelu na serveri. Chýba → web
+   * model analyzuje pri vložení.
+   */
+  analysis?: ProductAnalysis;
+  /** Odporúčané nastavenie, s ktorým sa produkt otvorí v konfigurátore. */
+  defaults?: Partial<Pick<CartItemConfig, "material" | "quality" | "infillPct" | "color">>;
+};
+
+export const PRODUCTS: Product[] = [
+  {
+    slug: "skrutena-vaza",
+    name: "Skrútená váza",
+    subtitle: "Dizajnová váza s hviezdicovým prierezom",
+    description:
+      "Váza so skrúteným rebrovaním, ktoré na svetle vytvára výrazné tiene. Hodí sa na sušené kvety aj ako samostatná dekorácia. Vyberte si farbu a veľkosť podľa svojho interiéru.",
+    category: "Domácnosť",
+    file: "/produkty/skrutena-vaza.stl",
+    analysis: { dimsXmm: 90.88, dimsYmm: 92.03, dimsZmm: 150, volumeCm3: 272.42, surfaceAreaCm2: 882.42, supportCm3: 0, printHeightMm: 150 },
+    image: "/produkty/skrutena-vaza.jpg",
+    dimsMm: [91, 92, 150],
+    highlights: ["Dekorácia na sušené kvety", "Odporúčaná mierka 80–140 %", "Pekne vynikne v bielej alebo oranžovej"],
+    defaults: { material: "PLA", quality: "STANDARD", infillPct: 15, color: "orange" },
+  },
+  {
+    slug: "rebrovany-kvetinac",
+    name: "Rebrovaný kvetináč",
+    subtitle: "Obal na izbovú rastlinu s jemnými rebrami",
+    description:
+      "Kvetináč s rebrovaným povrchom a rovnou vnútornou stenou. Vojde doň plastový kvetináč s priemerom do 9 cm. Na rastliny vonku odporúčame PETG.",
+    category: "Domácnosť",
+    file: "/produkty/rebrovany-kvetinac.stl",
+    analysis: { dimsXmm: 131.2, dimsYmm: 131.2, dimsZmm: 95, volumeCm3: 208.81, surfaceAreaCm2: 867.9, supportCm3: 0, printHeightMm: 95 },
+    image: "/produkty/rebrovany-kvetinac.jpg",
+    dimsMm: [131, 131, 95],
+    highlights: ["Pre kvetináč do Ø 9 cm", "PETG pre vonkajšie použitie", "Rebrá skryjú vrstvy tlače"],
+    defaults: { material: "PETG", quality: "STANDARD", infillPct: 15, color: "green" },
+  },
+  {
+    slug: "organizer-na-pera",
+    name: "Organizér na perá",
+    subtitle: "Šesťhranný stojan na perá a ceruzky",
+    description:
+      "Jednoduchý šesťhranný stojan na písacie potreby. Viac kusov vedľa seba vytvorí plástový organizér na pracovný stôl. Pri 20 a viac kusoch platí množstevná zľava.",
+    category: "Kancelária",
+    file: "/produkty/organizer-na-pera.stl",
+    analysis: { dimsXmm: 72, dimsYmm: 62.35, dimsZmm: 100, volumeCm3: 114.6, surfaceAreaCm2: 447.89, supportCm3: 0, printHeightMm: 100 },
+    image: "/produkty/organizer-na-pera.jpg",
+    dimsMm: [72, 62, 100],
+    highlights: ["Skladá sa do plástu", "Zľava od 20 kusov", "Vhodný aj ako firemný darček"],
+    defaults: { material: "PLA", quality: "STANDARD", infillPct: 20, color: "black" },
+  },
+  {
+    slug: "stojan-na-mobil",
+    name: "Stojan na mobil",
+    subtitle: "Stabilný stojan na telefón alebo malý tablet",
+    description:
+      "Stojan s mierne zakloneným opierkom na sledovanie videí alebo videohovory. Spredu má zarážku, aby telefón nekĺzal. Pre väčší tablet zväčšite mierku.",
+    category: "Kancelária",
+    file: "/produkty/stojan-na-mobil.stl",
+    analysis: { dimsXmm: 72, dimsYmm: 90, dimsZmm: 95, volumeCm3: 119.88, surfaceAreaCm2: 319.76, supportCm3: 0, printHeightMm: 72 },
+    image: "/produkty/stojan-na-mobil.jpg",
+    dimsMm: [72, 90, 95],
+    highlights: ["Telefón aj malý tablet", "Pevný aj s nízkou výplňou", "Mierka 120 % pre tablet"],
+    defaults: { material: "PLA", quality: "STANDARD", infillPct: 20, color: "gray" },
+  },
+];
+
+export function getProduct(slug: string | null | undefined): Product | null {
+  return PRODUCTS.find((p) => p.slug === slug) ?? null;
+}

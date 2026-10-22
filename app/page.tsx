@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import UploadBox, { UploadBoxHandle } from "@/components/UploadBox";
 import ModelBuildAnimation, { type BuildPhase } from "@/components/ModelBuildAnimation";
+import { getProduct, type Product } from "@/content/produkty";
 import Configurator, { ConfigState } from "@/components/Configurator";
 import StlViewer from "@/components/StlViewer";
 import CartSidebar from "@/components/CartSidebar";
@@ -36,6 +37,8 @@ type Uploaded = {
     supportCm3?: number;
     printHeightMm?: number;
   };
+  /** Odporúčané nastavenie hotového produktu z katalógu. */
+  configDefaults?: Product["defaults"];
 };
 
 type ContactForm = {
@@ -100,6 +103,7 @@ export default function Home() {
   const [coupon, setCoupon] = useState<{ code: string; percent: number } | null>(null);
   const [couponError, setCouponError] = useState<string | null>(null);
   const [couponLoading, setCouponLoading] = useState(false);
+  const [productError, setProductError] = useState<string | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<"CARD" | "TRANSFER">("CARD");
   const [showTransferModal, setShowTransferModal] = useState(false);
   const { status: sessionStatus } = useSession();
@@ -127,6 +131,20 @@ export default function Home() {
     } finally {
       cartRestored.current = true;
     }
+  }, []);
+
+  // Hotový produkt z katalógu (/?produkt=slug): model sa vloží do
+  // konfigurátora rovnako ako nahratý súbor — s animáciou tlače.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const product = getProduct(params.get("produkt"));
+    if (!product) return;
+    // Odkaz sa po načítaní neopakuje (refresh by pridal produkt znova).
+    params.delete("produkt");
+    const query = params.toString();
+    window.history.replaceState(null, "", `${window.location.pathname}${query ? `?${query}` : ""}${window.location.hash}`);
+    loadProduct(product);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Persist cart whenever it changes (after the initial restore above).
@@ -240,6 +258,48 @@ export default function Home() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [buildResult]);
 
+  async function loadProduct(product: Product) {
+    setProductError(null);
+    setActiveItemId(null);
+    setBuild({ file: null, phase: "upload", progress: 0, result: null });
+    try {
+      const res = await fetch(product.file);
+      if (!res.ok) throw new Error(`Model sa nepodarilo načítať (${res.status}).`);
+      const fileName = product.file.split("/").pop() || `${product.slug}.stl`;
+      const file = new File([await res.blob()], fileName, { type: "model/stl" });
+      setBuild((b) => (b ? { ...b, file, phase: "analyze", progress: 1 } : b));
+
+      // Plná adresa — s ňou sa model uloží aj do objednávky.
+      const fileKey = new URL(product.file, window.location.origin).href;
+      // Produkty majú analýzu vopred vypočítanú; server si model sťahovať
+      // nemusí (na chránenej testovacej verzii Vercelu by to ani nešlo).
+      let analysis = product.analysis;
+      if (!analysis) {
+        const analyzeRes = await fetch("/api/analyze", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ fileKey, fileName, fileSize: file.size }),
+        });
+        const data = await analyzeRes.json().catch(() => null);
+        if (!analyzeRes.ok || !data?.analysis) throw new Error(data?.error || "Analýza zlyhala.");
+        analysis = data.analysis as Uploaded["analysis"];
+      }
+
+      const result: Uploaded = {
+        fileKey,
+        fileName,
+        fileSize: file.size,
+        analysis,
+        configDefaults: product.defaults,
+      };
+      setBuild((b) => (b ? { ...b, result } : b));
+    } catch (e) {
+      console.error("PRODUCT LOAD ERROR:", e);
+      setBuild(null);
+      setProductError(t("Produkt sa nepodarilo načítať. Skúste to znova alebo nás kontaktujte."));
+    }
+  }
+
   function addToCart(uploaded: Uploaded) {
     const id = String(Date.now());
     const newItem: CartItem = {
@@ -257,6 +317,7 @@ export default function Home() {
         scalePct: 100,
         materialFlexible: false,
         colorFlexible: false,
+        ...uploaded.configDefaults,
       },
       pricing: null,
     };
@@ -912,6 +973,11 @@ export default function Home() {
                 onPreviewFile={(file) => setBuild((b) => (b ? { ...b, file } : b))}
                 onProgress={(phase, progress) => setBuild((b) => (b ? { ...b, phase, progress } : b))}
               />
+              {productError && !build && (
+                <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                  {productError}
+                </div>
+              )}
               {build && (
                 <div className={activeItem ? "" : "mt-4"}>
                   <ModelBuildAnimation

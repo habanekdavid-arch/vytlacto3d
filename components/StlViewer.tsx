@@ -255,7 +255,10 @@ export default function StlViewer({
     controls.maxPolarAngle = Math.PI / 2.02;
     controlsRef.current = controls;
 
-    const modelUrl = `/api/file?key=${encodeURIComponent(fileKey)}`;
+    // Cesta na webe (hotové produkty v public/) sa načíta priamo.
+    const modelUrl = fileKey.startsWith("/")
+      ? fileKey
+      : `/api/file?key=${encodeURIComponent(fileKey)}`;
     const material = new THREE.MeshPhysicalMaterial({
       color: resolvedColor,
       roughness: 0.58,
