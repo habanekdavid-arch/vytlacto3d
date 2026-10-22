@@ -1,6 +1,7 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { relaxAcceptOnMobile } from "@/lib/file-accept";
 import {
   CONTACT_ACCEPT,
   CONTACT_BLOB_PREFIX,
@@ -48,6 +49,8 @@ export default function ContactForm() {
   const [attachError, setAttachError] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // Na mobile by 3D súbory boli vo výbere zosivené (pozri lib/file-accept).
+  useEffect(() => relaxAcceptOnMobile(fileInputRef.current), []);
 
   const uploading = attachments.some((a) => a.status === "uploading");
 

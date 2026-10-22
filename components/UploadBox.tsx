@@ -1,8 +1,9 @@
 "use client";
 
-import { forwardRef, useImperativeHandle, useRef, useState } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { upload } from "@vercel/blob/client";
 import { useT } from "@/lib/i18n/client";
+import { relaxAcceptOnMobile } from "@/lib/file-accept";
 import type { BuildPhase } from "@/components/ModelBuildAnimation";
 
 type Uploaded = {
@@ -43,6 +44,9 @@ const UploadBox = forwardRef<UploadBoxHandle, {
   useImperativeHandle(ref, () => ({
     triggerOpen: () => inputRef.current?.click(),
   }));
+
+  // Na mobile by .stl/.obj súbory boli vo výbere zosivené (pozri lib/file-accept).
+  useEffect(() => relaxAcceptOnMobile(inputRef.current), []);
   const [dragging, setDragging] = useState(false);
   const [error, setError] = useState<string>("");
   const [svgThicknessMm, setSvgThicknessMm] = useState(10);
