@@ -207,153 +207,96 @@ export default function AdminOrdersClient({
     }
   }
 
-  function cardClass(filter: FilterType) {
-    const base =
-      "cursor-pointer rounded-3xl border p-5 transition-all select-none";
-    const active =
-      "border-[#FFAE00] bg-[#FFAE00]/10 shadow-md ring-2 ring-[#FFAE00]/30";
-    const inactive =
-      "border-neutral-200 bg-white shadow-sm hover:shadow-md hover:border-neutral-300";
-    return `${base} ${activeFilter === filter ? active : inactive}`;
-  }
+  const [openIds, setOpenIds] = useState<Set<string>>(new Set());
+  const toggle = (id: string) =>
+    setOpenIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
 
   const filterCards = [
-    { filter: "ALL" as FilterType,               title: "Všetky",       value: stats.total,             hint: "Všetky objednávky" },
-    { filter: "PENDING" as FilterType,           title: "Čakajúce",     value: stats.pending,           hint: "Status PENDING" },
-    { filter: "AWAITING_TRANSFER" as FilterType, title: "Prevod",       value: stats.awaitingTransfer,  hint: "Čakajú na bankový prevod" },
-    { filter: "PAID" as FilterType,              title: "Zaplatené",    value: stats.paid,              hint: "Status PAID" },
-    { filter: "IN_PRODUCTION" as FilterType,     title: "Tlačia sa",    value: stats.inProduction,      hint: "Status IN_PRODUCTION" },
-    { filter: "SHIPPED" as FilterType,           title: "Odoslané",     value: stats.shipped,           hint: "Status SHIPPED" },
-    { filter: "DELIVERED" as FilterType,         title: "Doručené",     value: stats.delivered,         hint: "Status DELIVERED" },
-    { filter: "CANCELLED" as FilterType,         title: "Zrušené",      value: stats.cancelled,         hint: "Status CANCELLED" },
+    { filter: "ALL" as FilterType,               title: "Všetky",     value: stats.total },
+    { filter: "PENDING" as FilterType,           title: "Čakajúce",   value: stats.pending },
+    { filter: "AWAITING_TRANSFER" as FilterType, title: "Prevod",     value: stats.awaitingTransfer },
+    { filter: "PAID" as FilterType,              title: "Zaplatené",  value: stats.paid },
+    { filter: "IN_PRODUCTION" as FilterType,     title: "Tlačia sa",  value: stats.inProduction },
+    { filter: "SHIPPED" as FilterType,           title: "Odoslané",   value: stats.shipped },
+    { filter: "DELIVERED" as FilterType,         title: "Doručené",   value: stats.delivered },
+    { filter: "CANCELLED" as FilterType,         title: "Zrušené",    value: stats.cancelled },
   ];
 
+  const navLink = "rounded-xl border border-neutral-200 bg-white px-3 py-1.5 text-xs font-semibold text-neutral-700 hover:bg-neutral-50";
+  const toolBtn = "w-full rounded-lg px-3 py-2 text-left text-xs font-semibold text-neutral-700 hover:bg-neutral-100 disabled:opacity-60";
+  const actBtn = "rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-xs font-bold text-neutral-900 transition hover:bg-neutral-50 disabled:opacity-50";
+
   return (
-    <main className="min-h-screen bg-white px-6 py-10 text-neutral-900">
+    <main className="min-h-screen bg-neutral-50 px-4 py-6 text-neutral-900 sm:px-6">
       <div className="mx-auto max-w-7xl">
 
-        {/* Header */}
-        <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-3 py-1 text-sm text-neutral-600 shadow-sm">
-              <span className="inline-block h-2 w-2 rounded-full bg-[#FFAE00]" />
-              Klientský admin
-            </div>
-            <h1 className="mt-4 text-4xl font-extrabold tracking-tight">
-              Správa objednávok 3D tlače
-            </h1>
-            <p className="mt-2 max-w-2xl text-sm text-neutral-600">
-              Tu klient alebo administrátor vidí všetky objednávky, ich stav, cenu, konfiguráciu aj STL model od zákazníka.
-            </p>
-          </div>
+        {/* Hlavička */}
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <h1 className="text-2xl font-extrabold tracking-tight">Objednávky</h1>
           <div className="flex flex-wrap items-center gap-2">
-            <button
-              onClick={sendTestEmail}
-              disabled={testEmailStatus === "sending"}
-              className="rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50 disabled:opacity-60"
-            >
-              {testEmailStatus === "sending" ? "Odosiela..." : testEmailStatus === "ok" ? "Email odoslaný ✓" : testEmailStatus === "error" ? "Chyba ✗" : "Testovací email"}
-            </button>
-            <button
-              onClick={sendAllSampleEmails}
-              disabled={allEmailsStatus === "sending"}
-              className="rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50 disabled:opacity-60"
-            >
-              {allEmailsStatus === "sending" ? "Rozposielam..." : "Vzorky všetkých mailov"}
-            </button>
-            <FlowiiCheckButton
-              label="Test FLOWii"
-              className="rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50 disabled:opacity-60"
-            />
-            <FlowiiTestOrderButton className="rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50 disabled:opacity-60" />
-            <a
-              href="/admin/kupony"
-              className="rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50"
-            >
-              Kupóny
-            </a>
-            <a
-              href="/admin/ucty"
-              className="rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50"
-            >
-              Účty
-            </a>
-            <a
-              href="/admin/cms"
-              className="rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50"
-            >
-              CMS
-            </a>
-            <a
-              href="/"
-              className="rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 shadow-sm hover:bg-neutral-50"
-            >
-              Späť na web
-            </a>
+            <a href="/admin/kupony" className={navLink}>Kupóny</a>
+            <a href="/admin/ucty" className={navLink}>Účty</a>
+            <a href="/admin/cms" className={navLink}>CMS</a>
+            {/* Testovacie nástroje — netreba ich na očiach každý deň. */}
+            <details className="relative">
+              <summary className={`${navLink} cursor-pointer list-none select-none`}>Nástroje ▾</summary>
+              <div className="absolute right-0 z-20 mt-1 w-56 rounded-xl border border-neutral-200 bg-white p-1 shadow-lg">
+                <button onClick={sendTestEmail} disabled={testEmailStatus === "sending"} className={toolBtn}>
+                  {testEmailStatus === "sending" ? "Odosiela..." : testEmailStatus === "ok" ? "Email odoslaný ✓" : testEmailStatus === "error" ? "Chyba ✗" : "Testovací email"}
+                </button>
+                <button onClick={sendAllSampleEmails} disabled={allEmailsStatus === "sending"} className={toolBtn}>
+                  {allEmailsStatus === "sending" ? "Rozposielam..." : "Vzorky všetkých mailov"}
+                </button>
+                <FlowiiCheckButton label="Test FLOWii" className={toolBtn} />
+                <FlowiiTestOrderButton className={toolBtn} />
+              </div>
+            </details>
+            <a href="/" className={navLink}>Späť na web</a>
           </div>
         </div>
 
-        {/* Stat Cards — filter */}
-        <section className="grid gap-3 sm:grid-cols-2 md:grid-cols-4 xl:grid-cols-8">
-          {filterCards.map(({ filter, title, value, hint }) => (
-            <div
-              key={filter}
-              className={cardClass(filter)}
-              onClick={() => setActiveFilter(filter)}
-            >
-              <div className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
-                {title}
-              </div>
-              <div className="mt-2 text-3xl font-extrabold text-neutral-900">{value}</div>
-              <div className="mt-1 text-xs text-neutral-400">{hint}</div>
-              {activeFilter === filter && (
-                <div className="mt-2 text-xs font-bold text-[#FFAE00]">● Aktívny</div>
-              )}
-            </div>
-          ))}
-
-          {/* Tržby — neklikateľná */}
-          <div className="rounded-3xl border border-neutral-200 bg-white p-5 shadow-sm">
-            <div className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
-              Tržby
-            </div>
-            <div className="mt-2 text-2xl font-extrabold text-neutral-900">
-              {formatEur(stats.revenueTotal)}
-            </div>
-            <div className="mt-1 text-xs text-neutral-400">vrátane DPH</div>
-          </div>
-        </section>
-
-        {/* Aktívny filter info */}
-        {activeFilter !== "ALL" && (
-          <div className="mt-5 flex items-center gap-3">
-            <span className="text-sm font-semibold text-neutral-600">
-              Filter:{" "}
-              <span className="text-[#FFAE00]">
-                {STATUS_LABELS[activeFilter]?.label ?? activeFilter}
-              </span>{" "}
-              — {filtered.length} objednávok
-            </span>
+        {/* Filtre podľa stavu */}
+        <div className="mb-3 flex flex-wrap items-center gap-1.5">
+          {filterCards.map(({ filter, title, value }) => (
             <button
-              onClick={() => setActiveFilter("ALL")}
-              className="rounded-full border border-neutral-200 px-3 py-1 text-xs font-semibold text-neutral-600 hover:bg-neutral-50"
+              key={filter}
+              onClick={() => setActiveFilter(filter)}
+              className={[
+                "rounded-full border px-3 py-1 text-xs font-semibold transition",
+                activeFilter === filter
+                  ? "border-neutral-900 bg-neutral-900 text-white"
+                  : "border-neutral-200 bg-white text-neutral-700 hover:border-neutral-400",
+              ].join(" ")}
             >
-              Zrušiť filter ×
+              {title} <span className="opacity-60">{value}</span>
             </button>
-          </div>
-        )}
+          ))}
+          <span className="ml-auto text-xs text-neutral-500">
+            Tržby: <span className="font-bold text-neutral-900">{formatEur(stats.revenueTotal)}</span> s DPH
+          </span>
+        </div>
 
-        {/* Zoznam */}
-        <section className="mt-6 space-y-4">
+        {/* Zoznam — tenké riadky, po kliknutí detail a akcie */}
+        <section className="overflow-hidden rounded-2xl border border-neutral-200 bg-white">
+          <div className="hidden grid-cols-[20px_130px_minmax(0,1.3fr)_minmax(0,1.3fr)_90px_120px_130px] items-center gap-3 border-b border-neutral-200 bg-neutral-50 px-4 py-2 text-[11px] font-bold uppercase tracking-wide text-neutral-500 lg:grid">
+            <span />
+            <span>Číslo</span>
+            <span>Zákazník</span>
+            <span>Model</span>
+            <span className="text-right">Suma</span>
+            <span>Dátum</span>
+            <span>Stav</span>
+          </div>
+
           {filtered.length === 0 ? (
-            <div className="rounded-3xl border border-neutral-200 bg-white px-6 py-12 text-center shadow-sm">
-              <div className="text-lg font-semibold text-neutral-800">
-                Žiadne objednávky pre filter „{STATUS_LABELS[activeFilter]?.label ?? activeFilter}"
-              </div>
-              <button
-                onClick={() => setActiveFilter("ALL")}
-                className="mt-4 text-sm font-semibold text-[#FFAE00] underline"
-              >
+            <div className="px-6 py-10 text-center text-sm text-neutral-500">
+              Žiadne objednávky pre filter „{STATUS_LABELS[activeFilter]?.label ?? activeFilter}“.{" "}
+              <button onClick={() => setActiveFilter("ALL")} className="font-semibold text-neutral-900 underline">
                 Zobraziť všetky
               </button>
             </div>
@@ -363,239 +306,150 @@ export default function AdminOrdersClient({
                 label: order.status,
                 classes: "border-neutral-200 bg-neutral-100 text-neutral-700",
               };
+              const open = openIds.has(order.id);
+              const busy = changingId === order.id;
 
               return (
-                <div
-                  key={order.id}
-                  className="rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm"
-                >
-                  <div className="grid gap-6 xl:grid-cols-[1.2fr_1fr_1fr_auto]">
+                <div key={order.id} className="border-b border-neutral-100 last:border-b-0">
+                  <button
+                    type="button"
+                    onClick={() => toggle(order.id)}
+                    aria-expanded={open}
+                    className={[
+                      "grid w-full grid-cols-[20px_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-0.5 px-4 py-2.5 text-left text-sm transition hover:bg-neutral-50",
+                      "lg:grid-cols-[20px_130px_minmax(0,1.3fr)_minmax(0,1.3fr)_90px_120px_130px]",
+                      open ? "bg-neutral-50" : "",
+                    ].join(" ")}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={`text-neutral-400 transition-transform ${open ? "rotate-90" : ""}`} aria-hidden>
+                      <path d="m9 18 6-6-6-6" />
+                    </svg>
+                    <span className="truncate font-bold text-neutral-900">
+                      {order.orderNumber ?? <span className="font-mono text-xs text-neutral-500">{order.id.slice(0, 10)}…</span>}
+                      {order.allowModelAdjustments && <span className="ml-1 text-amber-600" title="Súhlasí s úpravou modelu">⚠</span>}
+                      {order.packetaBarcodeText && <span className="ml-1 text-green-600" title={`Štítok Packeta ${order.packetaBarcodeText}`}>✓</span>}
+                    </span>
+                    <span className="col-start-2 row-start-2 truncate text-xs text-neutral-500 lg:col-start-auto lg:row-start-auto lg:text-sm lg:text-neutral-700">
+                      {order.customerEmail}
+                    </span>
+                    <span className="hidden truncate text-neutral-600 lg:block">
+                      {order.fileName}
+                      {order.modelCount > 1 && <span className="ml-1 text-xs font-bold text-[#b07a00]">+{order.modelCount - 1}</span>}
+                    </span>
+                    <span className="hidden text-right font-semibold text-neutral-900 lg:block">{formatEur(order.paidTotalEur)}</span>
+                    <span className="hidden text-xs text-neutral-500 lg:block">{order.createdAtText}</span>
+                    <span className="col-start-3 row-span-2 row-start-1 lg:col-start-auto lg:row-span-1 lg:row-start-auto">
+                      <span className={`inline-flex whitespace-nowrap rounded-full border px-2.5 py-0.5 text-[11px] font-bold ${statusInfo.classes}`}>
+                        {statusInfo.label}
+                      </span>
+                    </span>
+                  </button>
 
-                    {/* Stĺpec 1: Identifikácia */}
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <div className="text-lg font-extrabold text-neutral-900">
-                          {order.orderNumber ?? (
-                            <span className="font-mono text-sm text-neutral-500">
-                              {order.id.slice(0, 16)}…
-                            </span>
+                  {open && (
+                    <div className="grid gap-4 border-t border-neutral-100 bg-neutral-50/60 px-4 py-4 text-sm md:grid-cols-[1fr_1fr_auto] md:pl-12">
+                      <div className="space-y-1.5">
+                        <div><span className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Model: </span>{order.fileName}{order.modelCount > 1 ? ` (+${order.modelCount - 1} ďalšie)` : ""}</div>
+                        <div><span className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Konfigurácia: </span>{order.configLabel}</div>
+                        <div className="text-xs">
+                          {order.allowModelAdjustments ? (
+                            <span className="font-bold text-amber-700">⚠ Súhlasí s úpravou modelu</span>
+                          ) : (
+                            <span className="text-neutral-500">Úprava modelu nepovolená</span>
                           )}
                         </div>
-                        {order.modelCount > 1 && (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-[#FFAE00] px-2 py-0.5 text-xs font-bold text-black">
-                            {order.modelCount} modely
-                          </span>
+                      </div>
+                      <div className="space-y-1.5">
+                        <div><span className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Kontakt: </span>{order.customerEmail}</div>
+                        <div><span className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Doprava: </span>{order.shippingMethod}</div>
+                        <div><span className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Suma: </span><span className="font-bold">{formatEur(order.paidTotalEur)}</span> <span className="text-xs text-neutral-500">s DPH a dopravou · {order.createdAtText}</span></div>
+                        {order.stripeSessionId && (
+                          <div className="font-mono text-[11px] text-neutral-400">Stripe {order.stripeSessionId.slice(0, 18)}…</div>
                         )}
                       </div>
-                      <div className="mt-1 text-sm font-semibold text-neutral-700">
-                        {order.fileName}
-                      </div>
-                      <div className="mt-2">
-                        {order.allowModelAdjustments ? (
-                          <span className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-800">
-                            ⚠ Súhlasí s úpravou modelu
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 rounded-full border border-neutral-200 bg-neutral-50 px-2.5 py-1 text-xs font-semibold text-neutral-500">
-                            Úprava modelu nepovolená
-                          </span>
+
+                      <div className="flex flex-wrap content-start gap-1.5 md:w-[330px] md:justify-end">
+                        {/* Ďalší krok v stave objednávky */}
+                        {order.status === "PENDING" && (
+                          <button onClick={() => handleStatusChange(order.id, "PAID")} disabled={busy} className="rounded-lg bg-[#FFAE00] px-3 py-1.5 text-xs font-bold text-black hover:bg-[#e09d00] disabled:opacity-50">
+                            {busy ? "..." : "Označiť PAID"}
+                          </button>
                         )}
-                      </div>
-                      <div className="mt-1 font-mono text-xs text-neutral-400">
-                        {order.id}
-                      </div>
-                      <div className="mt-3">
-                        <Link
-                          href={`/admin/orders/${order.id}`}
-                          className="text-sm font-semibold text-neutral-900 underline underline-offset-4"
-                        >
-                          Otvoriť detail objednávky
-                        </Link>
-                      </div>
-                      {order.stripeSessionId && (
-                        <div className="mt-2 text-xs text-neutral-500">
-                          Stripe:{" "}
-                          <span className="font-mono">
-                            {order.stripeSessionId.slice(0, 18)}...
-                          </span>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Stĺpec 2: Konfigurácia + kontakt */}
-                    <div>
-                      <div className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
-                        Konfigurácia
-                      </div>
-                      <div className="mt-2 text-sm text-neutral-700">
-                        {order.configLabel}
-                      </div>
-                      <div className="mt-4 text-xs font-semibold uppercase tracking-wide text-neutral-500">
-                        Kontakt
-                      </div>
-                      <div className="mt-2 text-sm text-neutral-700">
-                        {order.customerEmail}
-                      </div>
-                      {order.shippingMethod !== "—" && (
-                        <div className="mt-2 text-xs text-neutral-500">
-                          Doprava: {order.shippingMethod}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Stĺpec 3: Cena + dátum + stav */}
-                    <div>
-                      <div className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
-                        Cena celkom
-                      </div>
-                      <div className="mt-2 text-lg font-bold text-neutral-900">
-                        {formatEur(order.paidTotalEur)}
-                      </div>
-                      <div className="text-xs text-neutral-500">vrátane DPH a dopravy</div>
-                      <div className="mt-4 text-xs font-semibold uppercase tracking-wide text-neutral-500">
-                        Dátum
-                      </div>
-                      <div className="mt-2 text-sm text-neutral-600">
-                        {order.createdAtText}
-                      </div>
-                      <div className="mt-4">
-                        <span
-                          className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${statusInfo.classes}`}
-                        >
-                          {statusInfo.label}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Stĺpec 4: Akcie */}
-                    <div className="flex flex-col gap-2 xl:min-w-[160px]">
-                      <Link
-                        href={`/admin/orders/${order.id}#packeta`}
-                        title={
-                          order.packetaBarcodeText
-                            ? `Zásielka ${order.packetaBarcodeText} — stiahnuť štítok`
-                            : order.isPacketa
-                            ? "Vytvoriť štítok Packeta"
-                            : "Objednávka nemá výdajné miesto Packeta"
-                        }
-                        className={[
-                          "flex items-center justify-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-bold transition",
-                          order.packetaBarcodeText
-                            ? "border-green-300 bg-green-50 text-green-800 hover:bg-green-100"
-                            : order.isPacketa
-                            ? "border-[#BA1B02]/30 bg-[#BA1B02]/5 text-[#BA1B02] hover:bg-[#BA1B02]/10"
-                            : "border-neutral-200 bg-white text-neutral-500 hover:bg-neutral-50",
-                        ].join(" ")}
-                      >
-                        <PacketaIcon />
-                        {order.packetaBarcodeText ? `Štítok ✓ ${order.packetaBarcodeText}` : "Štítok Packeta"}
-                      </Link>
-                      {/* Nakukne do modelu bez otvárania objednávky. Pri viacerých
-                          modeloch sa medzi nimi preklikáva šípkami v prehliadači. */}
-                      <ModelPreviewAllButton
-                        items={order.models}
-                        className="flex items-center justify-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-3 py-2 text-xs font-bold text-neutral-900 transition hover:bg-neutral-50"
-                        label={
+                        {order.status === "AWAITING_TRANSFER" && (
                           <>
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                              <circle cx="12" cy="12" r="3" />
-                            </svg>
-                            {order.models.length > 1 ? `Náhľad (${order.models.length})` : "Náhľad modelu"}
+                            <button onClick={() => handleStatusChange(order.id, "PAID")} disabled={busy} className="rounded-lg bg-green-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-green-700 disabled:opacity-50">
+                              {busy ? "..." : "✓ Platba prijatá"}
+                            </button>
+                            <button onClick={() => resendTransferEmail(order.id)} disabled={resendingId === order.id} className="rounded-lg border border-orange-300 bg-orange-50 px-3 py-1.5 text-xs font-bold text-orange-800 hover:bg-orange-100 disabled:opacity-50">
+                              {resendingId === order.id ? "Odosielam..." : "Poslať znova platobné údaje"}
+                            </button>
                           </>
-                        }
-                      />
-                      <a
-                        href={`/api/file?key=${encodeURIComponent(order.fileKey)}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="rounded-xl border border-neutral-200 bg-white px-3 py-2 text-center text-xs font-bold text-neutral-900 hover:bg-neutral-50"
-                      >
-                        Otvoriť STL
-                      </a>
-                      <a
-                        href={`/api/file?key=${encodeURIComponent(order.fileKey)}`}
-                        download
-                        className="rounded-xl bg-[#FFAE00] px-3 py-2 text-center text-xs font-bold text-black hover:opacity-90"
-                      >
-                        {order.modelCount > 1 ? "Stiahnuť 1. model" : "Stiahnuť STL"}
-                      </a>
+                        )}
+                        {order.status === "PAID" && (
+                          <button onClick={() => handleStatusChange(order.id, "IN_PRODUCTION")} disabled={busy} className="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-blue-700 disabled:opacity-50">
+                            {busy ? "..." : "Spustiť tlač"}
+                          </button>
+                        )}
+                        {order.status === "IN_PRODUCTION" && (
+                          <button onClick={() => handleStatusChange(order.id, "SHIPPED")} disabled={busy} className="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-blue-700 disabled:opacity-50">
+                            {busy ? "..." : "Označiť ODOSLANÉ"}
+                          </button>
+                        )}
+                        {order.status === "SHIPPED" && (
+                          <button onClick={() => handleStatusChange(order.id, "DELIVERED")} disabled={busy} className="rounded-lg bg-green-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-green-700 disabled:opacity-50">
+                            {busy ? "..." : "Označiť DORUČENÉ"}
+                          </button>
+                        )}
 
-                      {order.modelCount > 1 && (
-                        <a
-                          href={`/api/admin/orders/${order.id}/download-all`}
-                          className="rounded-xl bg-black px-3 py-2 text-center text-xs font-bold text-white hover:opacity-90"
+                        <Link
+                          href={`/admin/orders/${order.id}#packeta`}
+                          title={
+                            order.packetaBarcodeText
+                              ? `Zásielka ${order.packetaBarcodeText} — stiahnuť štítok`
+                              : order.isPacketa
+                              ? "Vytvoriť štítok Packeta"
+                              : "Objednávka nemá výdajné miesto Packeta"
+                          }
+                          className={[
+                            "inline-flex items-center gap-1 rounded-lg border px-3 py-1.5 text-xs font-bold transition",
+                            order.packetaBarcodeText
+                              ? "border-green-300 bg-green-50 text-green-800 hover:bg-green-100"
+                              : order.isPacketa
+                              ? "border-[#BA1B02]/30 bg-[#BA1B02]/5 text-[#BA1B02] hover:bg-[#BA1B02]/10"
+                              : "border-neutral-200 bg-white text-neutral-500 hover:bg-neutral-50",
+                          ].join(" ")}
                         >
-                          Stiahnuť všetky ({order.modelCount}) — ZIP
+                          <PacketaIcon />
+                          {order.packetaBarcodeText ? `Štítok ✓` : "Štítok Packeta"}
+                        </Link>
+                        <ModelPreviewAllButton
+                          items={order.models}
+                          className={actBtn}
+                          label={order.models.length > 1 ? `Náhľad (${order.models.length})` : "Náhľad"}
+                        />
+                        <a href={`/api/file?key=${encodeURIComponent(order.fileKey)}`} target="_blank" rel="noreferrer" className={actBtn}>
+                          Otvoriť STL
                         </a>
-                      )}
-
-                      {order.status === "PENDING" && (
-                        <button
-                          onClick={() => handleStatusChange(order.id, "PAID")}
-                          disabled={changingId === order.id}
-                          className="w-full rounded-xl bg-[#FFAE00] px-3 py-2 text-xs font-bold text-black transition hover:bg-[#e09d00] disabled:opacity-50"
-                        >
-                          {changingId === order.id ? "..." : "Označiť PAID"}
-                        </button>
-                      )}
-                      {order.status === "AWAITING_TRANSFER" && (
-                        <>
-                          <button
-                            onClick={() => resendTransferEmail(order.id)}
-                            disabled={resendingId === order.id}
-                            className="w-full rounded-xl border border-orange-300 bg-orange-50 px-3 py-2 text-xs font-bold text-orange-800 transition hover:bg-orange-100 disabled:opacity-50"
-                          >
-                            {resendingId === order.id ? "Odosielam..." : "Poslať znova platobné údaje"}
-                          </button>
-                          <button
-                            onClick={() => handleStatusChange(order.id, "PAID")}
-                            disabled={changingId === order.id}
-                            className="w-full rounded-xl bg-green-600 px-3 py-2 text-xs font-bold text-white transition hover:bg-green-700 disabled:opacity-50"
-                          >
-                            {changingId === order.id ? "..." : "✓ Platba prijatá"}
-                          </button>
-                        </>
-                      )}
-                      {order.status === "PAID" && (
-                        <button
-                          onClick={() => handleStatusChange(order.id, "IN_PRODUCTION")}
-                          disabled={changingId === order.id}
-                          className="w-full rounded-xl bg-blue-600 px-3 py-2 text-xs font-bold text-white transition hover:bg-blue-700 disabled:opacity-50"
-                        >
-                          {changingId === order.id ? "..." : "Spustiť tlač"}
-                        </button>
-                      )}
-                      {order.status === "IN_PRODUCTION" && (
-                        <button
-                          onClick={() => handleStatusChange(order.id, "SHIPPED")}
-                          disabled={changingId === order.id}
-                          className="w-full rounded-xl bg-blue-600 px-3 py-2 text-xs font-bold text-white transition hover:bg-blue-700 disabled:opacity-50"
-                        >
-                          {changingId === order.id ? "..." : "Označiť ODOSLANÉ"}
-                        </button>
-                      )}
-                      {order.status === "SHIPPED" && (
-                        <button
-                          onClick={() => handleStatusChange(order.id, "DELIVERED")}
-                          disabled={changingId === order.id}
-                          className="w-full rounded-xl bg-green-600 px-3 py-2 text-xs font-bold text-white transition hover:bg-green-700 disabled:opacity-50"
-                        >
-                          {changingId === order.id ? "..." : "Označiť DORUČENÉ"}
-                        </button>
-                      )}
-
-                      <div className="mt-auto pt-2 border-t border-neutral-100">
+                        <a href={`/api/file?key=${encodeURIComponent(order.fileKey)}`} download className={actBtn}>
+                          {order.modelCount > 1 ? "Stiahnuť 1. model" : "Stiahnuť STL"}
+                        </a>
+                        {order.modelCount > 1 && (
+                          <a href={`/api/admin/orders/${order.id}/download-all`} className={actBtn}>
+                            ZIP ({order.modelCount})
+                          </a>
+                        )}
+                        <Link href={`/admin/orders/${order.id}`} className="rounded-lg bg-neutral-900 px-3 py-1.5 text-xs font-bold text-white hover:bg-neutral-800">
+                          Detail →
+                        </Link>
                         <button
                           onClick={() => handleDelete(order)}
                           disabled={deletingId === order.id}
-                          className="w-full rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-600 transition hover:bg-red-100 disabled:opacity-50"
+                          className="rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 disabled:opacity-50"
                         >
                           {deletingId === order.id ? "Mazanie..." : "Vymazať"}
                         </button>
                       </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               );
             })

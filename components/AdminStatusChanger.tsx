@@ -54,9 +54,9 @@ export default function AdminStatusChanger({
   }
 
   return (
-    <div className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">
-      <div className="mb-3 text-xs font-bold uppercase tracking-wide text-neutral-500">
-        Zmeniť stav objednávky
+    <div>
+      <div className="mb-2 text-xs text-neutral-500">
+        Kliknutím zmeníte stav — zákazníkovi príde e-mail.
       </div>
       <div className="flex flex-wrap gap-2">
         {STATUSES.map((s) => (
@@ -65,7 +65,7 @@ export default function AdminStatusChanger({
             onClick={() => handleChange(s.value)}
             disabled={loading}
             className={[
-              "rounded-xl px-4 py-2 text-sm font-bold transition border-2",
+              "rounded-lg px-3 py-1.5 text-xs font-bold transition border-2",
               selected === s.value
                 ? "border-[#FFAE00] ring-2 ring-[#FFAE00]/30 " + s.color
                 : "border-transparent opacity-50 hover:opacity-100 " + s.color,

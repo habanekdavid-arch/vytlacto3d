@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useT } from "@/lib/i18n/client";
 import { useCartUi } from "@/lib/cart-ui-context";
+import { usePathname } from "next/navigation";
 
 const STORAGE_KEY = "vytlacto3d:promo-popup-last-seen";
 const SHOW_AFTER_HOURS = 24;
@@ -97,6 +98,7 @@ function shouldShowPopup() {
 export default function PromoTipPopup() {
   const t = useT();
   const { cartCount, isCartOpen } = useCartUi();
+  const pathname = usePathname() ?? "/";
   const cartBusy = cartCount > 0 || isCartOpen;
   const [visible,   setVisible]   = useState(false);
   const [closing,   setClosing]   = useState(false);
@@ -160,7 +162,8 @@ export default function PromoTipPopup() {
   }
 
   // Kým má zákazník model v košíku, nič mu nesmie zakryť objednávku.
-  if (cartBusy) return null;
+  // V administrácii a pri košíku nič nevyskakuje.
+  if (cartBusy || pathname.startsWith("/admin")) return null;
   if (!visible) return null;
 
   const { Icon, badge, title, text } = tips[activeIdx];

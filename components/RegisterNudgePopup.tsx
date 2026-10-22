@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { useT } from "@/lib/i18n/client";
 import { useCartUi } from "@/lib/cart-ui-context";
+import { usePathname } from "next/navigation";
 
 const STORAGE_KEY = "vytlacto3d:register-nudge-last-seen";
 const SHOW_AFTER_MS = 60_000;
@@ -47,6 +48,7 @@ export default function RegisterNudgePopup() {
   const { status } = useSession();
   const t = useT();
   const { cartCount, isCartOpen } = useCartUi();
+  const pathname = usePathname() ?? "/";
   const cartBusy = cartCount > 0 || isCartOpen;
   const [visible, setVisible] = useState(false);
   const [closing, setClosing] = useState(false);
@@ -75,7 +77,8 @@ export default function RegisterNudgePopup() {
   }
 
   // Kým má zákazník model v košíku, nič mu nesmie zakryť objednávku.
-  if (cartBusy) return null;
+  // V administrácii a pri košíku nič nevyskakuje.
+  if (cartBusy || pathname.startsWith("/admin")) return null;
   if (!visible) return null;
 
   return (

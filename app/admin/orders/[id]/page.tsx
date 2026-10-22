@@ -6,6 +6,7 @@ import { formatEur, addVat, vatAmount, formatPaidTotal } from "@/lib/vat";
 import CopyOrderButton from "@/components/CopyOrderButton";
 import InvoiceSection from "@/components/InvoiceSection";
 import AdminStatusChanger from "@/components/AdminStatusChanger";
+import Fold from "@/components/admin/Fold";
 import EditableField from "@/components/EditableField";
 import ModelPreviewButton from "@/components/ModelPreviewButton";
 import ModelPreviewAllButton from "@/components/ModelPreviewAllButton";
@@ -28,6 +29,16 @@ import {
 } from "@/lib/print-options";
 
 export const dynamic = "force-dynamic";
+
+const STATUS_LABEL_SK: Record<string, string> = {
+  PENDING: "Čaká na platbu",
+  AWAITING_TRANSFER: "Čaká na prevod",
+  PAID: "Zaplatená",
+  IN_PRODUCTION: "V produkcii",
+  SHIPPED: "Odoslaná",
+  DELIVERED: "Doručená",
+  CANCELLED: "Zrušená",
+};
 
 function getValue(value: any) {
   if (value === null || value === undefined || value === "") return "";
@@ -105,49 +116,29 @@ export default async function AdminOrderDetailPage({
   });
 
   return (
-    <main className="min-h-screen bg-white px-6 py-10 text-neutral-900">
+    <main className="min-h-screen bg-neutral-50 px-4 py-6 text-neutral-900 sm:px-6">
       <div className="mx-auto max-w-6xl">
         <a
           href="/admin/orders"
-          className="mb-6 inline-flex rounded-full border border-neutral-200 bg-white px-4 py-2 text-sm font-semibold text-neutral-700 shadow-sm transition hover:bg-neutral-50"
+          className="mb-4 inline-flex rounded-full border border-neutral-200 bg-white px-3 py-1.5 text-xs font-semibold text-neutral-700 hover:bg-neutral-50"
         >
           ← Späť na objednávky
         </a>
 
-        <section className="rounded-3xl bg-white p-6 shadow-[0_12px_40px_rgba(0,0,0,0.06)]">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <div className="text-sm font-semibold text-neutral-500">
-                Detail objednávky
-              </div>
-
-              <h1 className="mt-2 text-3xl font-extrabold tracking-tight">
-                {order.orderNumber ?? order.fileName}
-              </h1>
-
-              {order.orderNumber && (
-                <div className="mt-1 text-base font-semibold text-neutral-600">
-                  {order.fileName}
-                </div>
-              )}
-
-              <div className="mt-2 break-all font-mono text-xs text-neutral-400">
-                {order.id}
-              </div>
-            </div>
-
-            <div className="rounded-2xl bg-[#FFAE00]/15 px-5 py-4">
-              <div className="text-xs font-bold uppercase tracking-wide text-neutral-600">
-                Stav
-              </div>
-              <div className="mt-1 text-xl font-extrabold text-neutral-900">
-                {order.status}
-              </div>
-            </div>
-          </div>
+        {/* Hlavička — jeden riadok s tým najdôležitejším */}
+        <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-2xl border border-neutral-200 bg-white px-4 py-3">
+          <h1 className="text-xl font-extrabold tracking-tight">{order.orderNumber ?? order.fileName}</h1>
+          <span className="rounded-full border border-neutral-300 bg-neutral-100 px-2.5 py-0.5 text-xs font-bold text-neutral-800">
+            {STATUS_LABEL_SK[order.status] ?? order.status}
+          </span>
+          <span className="text-sm font-semibold">{total !== null ? formatPaidTotal(total) : "—"}</span>
+          <span className="text-xs text-neutral-500">{formatDateSK(order.createdAt)}</span>
+          <span className="min-w-0 truncate text-xs text-neutral-500">{order.customerEmail ?? ""}</span>
+          <span className="ml-auto break-all font-mono text-[11px] text-neutral-400">{order.id}</span>
+        </div>
 
           {config.allowModelAdjustments && (
-            <div className="mt-6 rounded-2xl border border-amber-300 bg-amber-50 px-5 py-4">
+            <div className="mb-3 rounded-2xl border border-amber-300 bg-amber-50 px-5 py-4">
               <div className="text-sm font-extrabold text-amber-900">
                 ⚠ Zákazník súhlasí s miernou úpravou modelu
               </div>
@@ -158,14 +149,14 @@ export default async function AdminOrderDetailPage({
           )}
 
           {typeof pricing.promoPercent === "number" && (
-            <div className="mt-6 rounded-2xl border border-[#FFAE00] bg-[#FFAE00]/10 px-5 py-4 text-sm">
+            <div className="mb-3 rounded-2xl border border-[#FFAE00] bg-[#FFAE00]/10 px-5 py-4 text-sm">
               <span className="font-extrabold text-neutral-900">Akciová zľava −{pricing.promoPercent} %</span>
               <span className="ml-2 text-neutral-700">(ceny nižšie sú už po zľave)</span>
             </div>
           )}
 
           {typeof pricing.couponCode === "string" && (
-            <div className="mt-6 rounded-2xl border border-[#FFAE00] bg-[#FFAE00]/10 px-5 py-4 text-sm">
+            <div className="mb-3 rounded-2xl border border-[#FFAE00] bg-[#FFAE00]/10 px-5 py-4 text-sm">
               <span className="font-extrabold text-neutral-900">Zľavový kupón {pricing.couponCode}</span>
               <span className="ml-2 text-neutral-700">
                 −{pricing.couponPercent} % z výroby (ceny nižšie sú už po zľave)
@@ -173,7 +164,15 @@ export default async function AdminOrderDetailPage({
             </div>
           )}
 
-          <div className="mt-8 grid gap-4 md:grid-cols-4">
+
+        <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white">
+          <Fold title="Stav objednávky" summary={STATUS_LABEL_SK[order.status] ?? order.status}>
+          <div>
+            <AdminStatusChanger orderId={order.id} currentStatus={order.status} />
+          </div>
+          </Fold>
+          <Fold title="Súhrn, ceny a súbory" summary={`${total !== null ? formatPaidTotal(total) : "—"} · ${order.shippingMethod ?? "—"}`}>
+          <div className="grid gap-3 md:grid-cols-4">
             <InfoCard label="Vytvorené" value={formatDateSK(order.createdAt)} />
             <InfoCard
               label="Celkom zaplatené"
@@ -262,12 +261,9 @@ export default async function AdminOrderDetailPage({
             <CopyOrderButton text={copyText} />
           </div>
 
-          <div className="mt-6">
-            <AdminStatusChanger orderId={order.id} currentStatus={order.status} />
-          </div>
-        </section>
-
-        <section className="mt-6 grid gap-6 lg:grid-cols-2">
+          </Fold>
+          <Fold title="Zákazník a firma" summary={order.customerEmail ?? "—"}>
+        <div className="grid gap-4 lg:grid-cols-2">
           <Panel title="Zákazník">
             <InfoCard
               label="Meno"
@@ -296,9 +292,10 @@ export default async function AdminOrderDetailPage({
             <EditableField orderId={order.id} label="DIČ" value={order.dic ?? ""} field="dic" />
             <EditableField orderId={order.id} label="IČ DPH" value={order.icDph ?? ""} field="icDph" />
           </Panel>
-        </section>
-
-        <section className="mt-6 grid gap-6 lg:grid-cols-2">
+        </div>
+          </Fold>
+          <Fold title="Adresy">
+        <div className="grid gap-4 lg:grid-cols-2">
           <Panel title="Dodacia adresa zo Stripe">
             <EditableField orderId={order.id} label="Meno" value={getValue(rawShipping.name)} jsonField="shippingAddress" jsonKey="name" />
             <EditableField orderId={order.id} label="Telefón" value={getValue(rawShipping.phone)} jsonField="shippingAddress" jsonKey="phone" />
@@ -317,39 +314,20 @@ export default async function AdminOrderDetailPage({
             <EditableField orderId={order.id} label="PSČ" value={getValue(rawDelivery.zip)} jsonField="deliveryAddress" jsonKey="zip" />
             <EditableField orderId={order.id} label="Krajina" value={getValue(rawDelivery.country)} jsonField="deliveryAddress" jsonKey="country" />
           </Panel>
-        </section>
-
-        <section className="mt-6 grid gap-6 lg:grid-cols-2">
+        </div>
+        <div className="mt-4 grid gap-4 lg:grid-cols-2">
           <Panel title="Fakturačná adresa z účtu">
             <EditableField orderId={order.id} label="Ulica" value={getValue(billingAddress.street)} jsonField="billingAddress" jsonKey="street" />
             <EditableField orderId={order.id} label="Mesto" value={getValue(billingAddress.city)} jsonField="billingAddress" jsonKey="city" />
             <EditableField orderId={order.id} label="PSČ" value={getValue(billingAddress.zip)} jsonField="billingAddress" jsonKey="zip" />
             <EditableField orderId={order.id} label="Krajina" value={getValue(billingAddress.country)} jsonField="billingAddress" jsonKey="country" />
           </Panel>
-        </section>
-
-        <section className="mt-6 grid gap-6 lg:grid-cols-2">
-          <Panel title="Stripe údaje">
-            <InfoCard
-              label="Stripe session"
-              value={order.stripeSessionId ?? "—"}
-              mono
-            />
-            <InfoCard
-              label="Payment intent"
-              value={order.stripePaymentIntentId ?? "—"}
-              mono
-            />
-          </Panel>
-        </section>
-
-        {/* OrderItems — always shown when items exist */}
-        {order.orderItems.length > 0 && (
-          <section className="mt-6 rounded-3xl bg-white p-6 shadow-[0_12px_40px_rgba(0,0,0,0.06)]">
-            <h2 className="text-lg font-extrabold text-neutral-900">
-              Modely v objednávke ({order.orderItems.length})
-            </h2>
-            <div className="mt-4 space-y-4">
+        </div>
+          </Fold>
+          {order.orderItems.length > 0 && (
+          <Fold title={`Modely v objednávke (${order.orderItems.length})`}>
+          <div>
+            <div className="space-y-3">
               {order.orderItems.map((item, idx) => {
                 const ic = item.config as Record<string, any>;
                 const ip = item.pricing as Record<string, any>;
@@ -415,10 +393,11 @@ export default async function AdminOrderDetailPage({
                 );
               })}
             </div>
-          </section>
-        )}
-
-        <section className="mt-6 grid gap-6 lg:grid-cols-2">
+          </div>
+          </Fold>
+          )}
+          <Fold title="Konfigurácia tlače a analýza">
+        <div className="grid gap-4 lg:grid-cols-2">
           {/* Objednávka nesie nastavenia prvého modelu. Pri viacerých modeloch to
               treba pomenovať, inak to vyzerá ako nastavenie celej objednávky —
               záväzné sú karty jednotlivých modelov vyššie. */}
@@ -467,15 +446,17 @@ export default async function AdminOrderDetailPage({
               }
             />
           </Panel>
-        </section>
-
+        </div>
+          </Fold>
+          <Fold title="Packeta — štítok na balík" summary={packetaShipment ? `✓ ${packetaShipment.barcodeText}` : "zásielka nevytvorená"} id="packeta">
         <PacketaSection
           orderId={order.id}
           draft={packetDraft}
           shipment={packetaShipment}
           configured={isPacketaConfigured()}
         />
-
+          </Fold>
+          <Fold title="FLOWii" summary={flowiiSync ? "zákazka vytvorená" : "nevytvorená"}>
         <FlowiiPreview
           draft={flowiiDraft}
           sync={flowiiSync}
@@ -483,13 +464,38 @@ export default async function AdminOrderDetailPage({
           autoEnabled={isFlowiiAutoEnabled()}
           canCreate={["PAID", "IN_PRODUCTION", "SHIPPED", "DELIVERED"].includes(order.status)}
         />
-
-        <section className="mt-6 rounded-3xl bg-white p-6 shadow-[0_12px_40px_rgba(0,0,0,0.06)]">
-          <div className="text-lg font-extrabold text-neutral-900">
-            Technické dáta objednávky
-          </div>
-
-          <div className="mt-4 grid gap-4 lg:grid-cols-3">
+          </Fold>
+          <Fold title="Faktúry" summary={invoices.length ? `${invoices.length} ks` : "žiadna"}>
+        <InvoiceSection
+          orderId={order.id}
+          initialInvoices={invoices.map((inv: any) => ({
+            id: inv.id,
+            invoiceNumber: inv.invoiceNumber,
+            type: inv.type,
+            isTest: inv.isTest,
+            issuedAt: inv.issuedAt.toISOString(),
+            totalGross: inv.totalGross,
+            creditNotes: (inv.creditNotes ?? []) as { id: string; invoiceNumber: string }[],
+          }))}
+        />
+          </Fold>
+          <Fold title="Stripe a technické dáta">
+        <div className="grid gap-4 lg:grid-cols-2">
+          <Panel title="Stripe údaje">
+            <InfoCard
+              label="Stripe session"
+              value={order.stripeSessionId ?? "—"}
+              mono
+            />
+            <InfoCard
+              label="Payment intent"
+              value={order.stripePaymentIntentId ?? "—"}
+              mono
+            />
+          </Panel>
+        </div>
+        <div className="mt-4">
+          <div className="grid gap-4 lg:grid-cols-3">
             <JsonBox title="Pricing JSON (order)" value={formatJson(pricing)} />
             <JsonBox title="Config JSON (order)" value={formatJson(config)} />
             <JsonBox title="Shipping JSON" value={formatJson(rawShipping)} />
@@ -505,20 +511,9 @@ export default async function AdminOrderDetailPage({
               ))}
             </div>
           )}
-        </section>
-
-        <InvoiceSection
-          orderId={order.id}
-          initialInvoices={invoices.map((inv: any) => ({
-            id: inv.id,
-            invoiceNumber: inv.invoiceNumber,
-            type: inv.type,
-            isTest: inv.isTest,
-            issuedAt: inv.issuedAt.toISOString(),
-            totalGross: inv.totalGross,
-            creditNotes: (inv.creditNotes ?? []) as { id: string; invoiceNumber: string }[],
-          }))}
-        />
+        </div>
+          </Fold>
+        </div>
       </div>
     </main>
   );
@@ -532,9 +527,9 @@ function Panel({
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-3xl bg-white p-6 shadow-[0_12px_40px_rgba(0,0,0,0.06)]">
-      <h2 className="text-lg font-extrabold text-neutral-900">{title}</h2>
-      <div className="mt-5 grid gap-4 md:grid-cols-2">{children}</div>
+    <section className="rounded-2xl border border-neutral-200 p-4">
+      <h3 className="text-sm font-extrabold text-neutral-900">{title}</h3>
+      <div className="mt-3 grid gap-3 md:grid-cols-2">{children}</div>
     </section>
   );
 }
@@ -549,8 +544,8 @@ function InfoCard({
   mono?: boolean;
 }) {
   return (
-    <div className="rounded-2xl bg-neutral-50 p-4">
-      <div className="text-xs font-bold uppercase tracking-wide text-neutral-500">
+    <div className="rounded-xl bg-neutral-50 px-3 py-2.5">
+      <div className="text-[11px] font-bold uppercase tracking-wide text-neutral-500">
         {label}
       </div>
       <div
@@ -598,7 +593,7 @@ function FlowiiPreview({
   const p = draft.partner;
   const addr = p.billingAddress;
   return (
-    <section className="mt-6 rounded-3xl border border-dashed border-neutral-300 bg-white p-6 shadow-[0_12px_40px_rgba(0,0,0,0.06)]">
+    <section>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-lg font-extrabold text-neutral-900">FLOWii — zákazka</h2>
@@ -731,7 +726,7 @@ function PacketaSection({
   configured: boolean;
 }) {
   return (
-    <section id="packeta" className="mt-6 scroll-mt-28 rounded-3xl border border-[#BA1B02]/20 bg-white p-6 shadow-[0_12px_40px_rgba(0,0,0,0.06)]">
+    <section>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="flex items-center gap-3 text-lg font-extrabold text-neutral-900">

@@ -88,9 +88,9 @@ export default function InvoiceSection({
   }
 
   return (
-    <section className="mt-6 rounded-3xl bg-white p-6 shadow-[0_12px_40px_rgba(0,0,0,0.06)]">
+    <section>
       <div className="flex items-center justify-between gap-4">
-        <h2 className="text-lg font-extrabold text-neutral-900">Faktúry</h2>
+        <span className="text-xs text-neutral-500">Faktúry a dobropisy k objednávke</span>
 
         {!creating && (
           <button

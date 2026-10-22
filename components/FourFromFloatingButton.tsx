@@ -1,8 +1,12 @@
 "use client";
 
 import Image from "next/image";
+import { usePathname } from "next/navigation";
 
 export default function FourFromFloatingButton() {
+  const pathname = usePathname() ?? "/";
+  // V administrácii by zakrývalo riadky objednávok.
+  if (pathname.startsWith("/admin")) return null;
   return (
     <a
       href="https://www.4from.media/?gad_source=1&gad_campaignid=21391373681&gbraid=0AAAAADyxKkl3uOWw6VN6UM8ekC4FAegi_"
