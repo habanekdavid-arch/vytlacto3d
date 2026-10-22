@@ -251,20 +251,20 @@ const messages: Messages = {
     hu: "Stabil tartó telefonhoz vagy kis tablethez",
     de: "Stabiler Ständer für Handy oder kleines Tablet",
   },
-  "Stojan s mierne zakloneným opierkom na sledovanie videí alebo videohovory. Spredu má zarážku, aby telefón nekĺzal. Pre väčší tablet zväčšite mierku.": {
-    en: "A stand with a slightly reclined back for watching videos or video calls. A front lip keeps the phone from sliding. Increase the scale for a larger tablet.",
-    hu: "Enyhén hátradöntött támaszú tartó videónézéshez vagy videohívásokhoz. Elöl ütköző akadályozza a telefon csúszását. Nagyobb tablethez növelje a méretarányt.",
-    de: "Ein Ständer mit leicht geneigter Lehne für Videos oder Videoanrufe. Eine Kante vorne verhindert das Rutschen. Für ein größeres Tablet den Maßstab erhöhen.",
+  "Stojan s mierne zakloneným opierkom na sledovanie videí alebo videohovory. Spredu má zarážku, aby telefón nekĺzal, a zozadu vzperu, ktorá opierku drží pevne. Pre väčší tablet zväčšite mierku.": {
+    en: "A stand with a slightly reclined back for watching videos or video calls. A front lip keeps the phone from sliding and a rear brace holds the back firmly. Increase the scale for a larger tablet.",
+    hu: "Enyhén hátradöntött támaszú tartó videónézéshez vagy videohívásokhoz. Elöl ütköző akadályozza a telefon csúszását, hátul merevítő tartja szilárdan a támaszt. Nagyobb tablethez növelje a méretarányt.",
+    de: "Ein Ständer mit leicht geneigter Lehne für Videos oder Videoanrufe. Eine Kante vorne verhindert das Rutschen, eine Strebe hinten hält die Lehne stabil. Für ein größeres Tablet den Maßstab erhöhen.",
   },
   "Telefón aj malý tablet": {
     en: "Phone and small tablet",
     hu: "Telefon és kis tablet",
     de: "Handy und kleines Tablet",
   },
-  "Pevný aj s nízkou výplňou": {
-    en: "Sturdy even with low infill",
-    hu: "Alacsony kitöltéssel is erős",
-    de: "Stabil auch mit wenig Füllung",
+  "Zadná vzpera — opierka sa neprehne": {
+    en: "Rear brace — the back won't bend",
+    hu: "Hátsó merevítő — a támasz nem hajlik meg",
+    de: "Hintere Strebe — die Lehne biegt sich nicht",
   },
   "Mierka 120 % pre tablet": {
     en: "120% scale for a tablet",

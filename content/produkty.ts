@@ -89,13 +89,13 @@ export const PRODUCTS: Product[] = [
     name: "Stojan na mobil",
     subtitle: "Stabilný stojan na telefón alebo malý tablet",
     description:
-      "Stojan s mierne zakloneným opierkom na sledovanie videí alebo videohovory. Spredu má zarážku, aby telefón nekĺzal. Pre väčší tablet zväčšite mierku.",
+      "Stojan s mierne zakloneným opierkom na sledovanie videí alebo videohovory. Spredu má zarážku, aby telefón nekĺzal, a zozadu vzperu, ktorá opierku drží pevne. Pre väčší tablet zväčšite mierku.",
     category: "Kancelária",
     file: "/produkty/stojan-na-mobil.stl",
-    analysis: { dimsXmm: 72, dimsYmm: 90, dimsZmm: 95, volumeCm3: 119.88, surfaceAreaCm2: 319.76, supportCm3: 0, printHeightMm: 72 },
+    analysis: { dimsXmm: 72, dimsYmm: 90, dimsZmm: 95, volumeCm3: 152.14, surfaceAreaCm2: 387.39, supportCm3: 0, printHeightMm: 72 },
     image: "/produkty/stojan-na-mobil.jpg",
     dimsMm: [72, 90, 95],
-    highlights: ["Telefón aj malý tablet", "Pevný aj s nízkou výplňou", "Mierka 120 % pre tablet"],
+    highlights: ["Telefón aj malý tablet", "Zadná vzpera — opierka sa neprehne", "Mierka 120 % pre tablet"],
     defaults: { material: "PLA", quality: "STANDARD", infillPct: 20, color: "gray" },
   },
 ];
