@@ -4,6 +4,7 @@ import Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
 import { isColorAllowed, isMaterial, isQuality, quote, scaledGeometry } from "@/lib/pricing";
 import { isMulticolor, validatePartColors } from "@/lib/multicolor";
+import { modelFeeForFileKey } from "@/content/produkty";
 import { createOrderWithNumber } from "@/lib/order-number";
 import { COLOR_LABELS, materialLabel, qualityLabel } from "@/lib/print-options";
 import { addVat } from "@/lib/vat";
@@ -171,6 +172,7 @@ export async function POST(req: NextRequest) {
         materialFlexible,
         colorFlexible,
         multicolor,
+        modelFeeEur: modelFeeForFileKey(item.fileKey),
         promoPercent: promo?.percent,
       });
 

@@ -931,6 +931,16 @@ const messages: Messages = {
     hu: "Többszínű nyomtatásnál a színeket Ön választja — kapcsolja ki a „Nem számít a szín” opciót.",
     de: "Beim mehrfarbigen Druck wählen Sie die Farben selbst — deaktivieren Sie „Farbe ist mir egal“.",
   },
+  "Poplatok za model": {
+    en: "Model fee",
+    hu: "Modelldíj",
+    de: "Modellgebühr",
+  },
+  "hotový model z našej ponuky, raz za položku": {
+    en: "a ready-made model from our range, once per item",
+    hu: "kész modell a kínálatunkból, tételenként egyszer",
+    de: "fertiges Modell aus unserem Angebot, einmal pro Position",
+  },
 };
 
 export default messages;

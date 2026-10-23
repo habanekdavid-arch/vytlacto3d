@@ -37,11 +37,76 @@ export type Product = {
    * model analyzuje pri vložení.
    */
   analysis?: ProductAnalysis;
-  /** Odporúčané nastavenie, s ktorým sa produkt otvorí v konfigurátore. */
-  defaults?: Partial<Pick<CartItemConfig, "material" | "quality" | "infillPct" | "color">>;
+  /**
+   * Odporúčané nastavenie, s ktorým sa produkt otvorí v konfigurátore.
+   * `partColors` = viacfarebný produkt: farby dielov v poradí od najväčšieho
+   * (lib/model-parts), len PLA; účtuje sa poplatok za viacfarebnú tlač.
+   */
+  defaults?: Partial<Pick<CartItemConfig, "material" | "quality" | "infillPct" | "color" | "partColors">>;
+  /** Poplatok za model (€ bez DPH); chýba → PRODUCT_MODEL_FEE_EUR, 0 = bez poplatku. */
+  modelFeeEur?: number;
 };
 
+/** Poplatok za hotový model z katalógu — € bez DPH, raz za položku (nie za kus). */
+export const PRODUCT_MODEL_FEE_EUR = 5;
+
 export const PRODUCTS: Product[] = [
+  {
+    slug: "roztomily-duch",
+    name: "Roztomilý duch",
+    subtitle: "Viacfarebná halloweenska dekorácia",
+    description:
+      "Usmiaty duch na poličku, stôl alebo do okna. Telo tlačíme v bielej, oči a ústa v čiernej — každý diel vo vlastnej farbe, bez farbenia. Farby dielov si v konfigurátore zmeníte podľa seba.",
+    category: "Halloween",
+    file: "/produkty/roztomily-duch.stl",
+    analysis: { dimsXmm: 74.89, dimsYmm: 72.77, dimsZmm: 80, volumeCm3: 236.15, surfaceAreaCm2: 209.55, supportCm3: 2.73, printHeightMm: 80 },
+    image: "/produkty/roztomily-duch.jpg",
+    dimsMm: [75, 73, 80],
+    highlights: ["Viacfarebná tlač bez farbenia", "Oči a ústa sú samostatné diely", "Darček aj dekorácia na Halloween"],
+    defaults: { material: "PLA", quality: "STANDARD", infillPct: 15, color: "white", partColors: ["white", "black", "black", "black"] },
+  },
+  {
+    slug: "roztomily-netopier",
+    name: "Roztomilý netopier",
+    subtitle: "Viacfarebný netopier s tesákmi",
+    description:
+      "Malý netopier s veľkými očami a dvoma tesákmi. Telo tlačíme vo fialovej, oči a ústa v bielej — každý diel vo vlastnej farbe, bez farbenia. V konfigurátore mu jedným klikom dáte napríklad čierne telo.",
+    category: "Halloween",
+    file: "/produkty/roztomily-netopier.stl",
+    analysis: { dimsXmm: 73.38, dimsYmm: 62.12, dimsZmm: 70.71, volumeCm3: 150.48, surfaceAreaCm2: 153.8, supportCm3: 3, printHeightMm: 70.71 },
+    image: "/produkty/roztomily-netopier.jpg",
+    dimsMm: [73, 62, 71],
+    highlights: ["Viacfarebná tlač bez farbenia", "Fialový alebo čierny — vyberiete si", "Hodí sa k duchovi a tekvici"],
+    defaults: { material: "PLA", quality: "STANDARD", infillPct: 15, color: "purple", partColors: ["purple", "white", "white", "white"] },
+  },
+  {
+    slug: "halloweenska-tekvica",
+    name: "Halloweenska tekvica",
+    subtitle: "Usmiata tekvica so stonkou a lístkom",
+    description:
+      "Klasická halloweenska tekvica s vyrezanou tvárou. Tekvicu tlačíme v oranžovej, stonku so lístkom v zelenej a tvár v čiernej — každý diel vo vlastnej farbe, bez farbenia. Farby si v konfigurátore zmeníte podľa seba.",
+    category: "Halloween",
+    file: "/produkty/halloweenska-tekvica.stl",
+    analysis: { dimsXmm: 96.73, dimsYmm: 94.94, dimsZmm: 69.98, volumeCm3: 293.05, surfaceAreaCm2: 253.55, supportCm3: 20.18, printHeightMm: 94.94 },
+    image: "/produkty/halloweenska-tekvica.jpg",
+    dimsMm: [97, 95, 70],
+    highlights: ["Tri farby: tekvica, stonka a tvár", "Viacfarebná tlač bez farbenia", "Najznámejší symbol Halloweenu"],
+    defaults: { material: "PLA", quality: "STANDARD", infillPct: 15, color: "orange", partColors: ["orange", "green", "black", "black", "black"] },
+  },
+  {
+    slug: "carodejnicky-kotlik",
+    name: "Čarodejnícky kotlík",
+    subtitle: "Kotlík s bublajúcim elixírom",
+    description:
+      "Čierny kotlík na troch nožičkách, plný bublajúceho elixíru. Kotlík tlačíme v čiernej, elixír v zelenej — dá sa zmeniť napríklad na fialový alebo oranžový. Hodí sa ako dekorácia aj miska na drobné sladkosti pri stole.",
+    category: "Halloween",
+    file: "/produkty/carodejnicky-kotlik.stl",
+    analysis: { dimsXmm: 82.45, dimsYmm: 82.45, dimsZmm: 54.25, volumeCm3: 209.73, surfaceAreaCm2: 271.78, supportCm3: 36.59, printHeightMm: 54.25 },
+    image: "/produkty/carodejnicky-kotlik.jpg",
+    dimsMm: [82, 82, 54],
+    highlights: ["Elixír v inej farbe ako kotlík", "Zelený, fialový alebo oranžový elixír", "Doplnok k duchovi, netopierovi a tekvici"],
+    defaults: { material: "PLA", quality: "STANDARD", infillPct: 15, color: "black", partColors: ["black", "green"] },
+  },
   {
     slug: "skrutena-vaza",
     name: "Skrútená váza",
@@ -102,4 +167,25 @@ export const PRODUCTS: Product[] = [
 
 export function getProduct(slug: string | null | undefined): Product | null {
   return PRODUCTS.find((p) => p.slug === slug) ?? null;
+}
+
+export function productModelFee(product: Product): number {
+  return product.modelFeeEur ?? PRODUCT_MODEL_FEE_EUR;
+}
+
+/**
+ * Poplatok za model podľa súboru položky. Produkt sa do košíka vkladá s plnou
+ * adresou súboru (https://…/produkty/x.stl) — server tak pozná, že ide
+ * o hotový model, a poplatok nezávisí od toho, čo pošle prehliadač.
+ */
+export function modelFeeForFileKey(fileKey: unknown): number {
+  if (typeof fileKey !== "string" || !fileKey) return 0;
+  let path = fileKey;
+  try {
+    path = new URL(fileKey, "https://vytlacto3d.sk").pathname;
+  } catch {
+    return 0;
+  }
+  const product = PRODUCTS.find((p) => p.file === path);
+  return product ? productModelFee(product) : 0;
 }
