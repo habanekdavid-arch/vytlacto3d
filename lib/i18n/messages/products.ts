@@ -341,6 +341,86 @@ const messages: Messages = {
     hu: "Minden részt a saját színében nyomtatunk. A konfigurátorban a 3D előnézet vödör ikonjával módosíthatja őket.",
     de: "Jedes Teil wird in eigener Farbe gedruckt. Im Konfigurator ändern Sie die Farben mit dem Farbeimer in der 3D-Vorschau.",
   },
+  "Roztomilý netopier": {
+    en: "Cute bat",
+    hu: "Aranyos denevér",
+    de: "Süße Fledermaus",
+  },
+  "Viacfarebný netopier s tesákmi": {
+    en: "Multicolour bat with fangs",
+    hu: "Többszínű denevér agyarakkal",
+    de: "Mehrfarbige Fledermaus mit Reißzähnen",
+  },
+  "Malý netopier s veľkými očami a dvoma tesákmi. Telo tlačíme vo fialovej, oči a ústa v bielej — každý diel vo vlastnej farbe, bez farbenia. V konfigurátore mu jedným klikom dáte napríklad čierne telo.": {
+    en: "A little bat with big eyes and two fangs. The body is printed in purple, the eyes and mouth in white — each part in its own colour, no painting needed. In the configurator you can give it a black body with one click.",
+    hu: "Kis denevér nagy szemekkel és két agyarral. A testet lilában, a szemeket és a szájat fehérben nyomtatjuk — minden rész a saját színében, festés nélkül. A konfigurátorban egy kattintással például fekete testet adhat neki.",
+    de: "Eine kleine Fledermaus mit großen Augen und zwei Reißzähnen. Der Körper wird lila, Augen und Mund weiß gedruckt — jedes Teil in eigener Farbe, ganz ohne Bemalen. Im Konfigurator geben Sie ihr mit einem Klick z. B. einen schwarzen Körper.",
+  },
+  "Fialový alebo čierny — vyberiete si": {
+    en: "Purple or black — your choice",
+    hu: "Lila vagy fekete — Ön választ",
+    de: "Lila oder schwarz — Sie wählen",
+  },
+  "Hodí sa k duchovi a tekvici": {
+    en: "Goes with the ghost and pumpkin",
+    hu: "Illik a szellemhez és a tökhöz",
+    de: "Passt zu Gespenst und Kürbis",
+  },
+  "Halloweenska tekvica": {
+    en: "Halloween pumpkin",
+    hu: "Halloweeni tök",
+    de: "Halloween-Kürbis",
+  },
+  "Usmiata tekvica so stonkou a lístkom": {
+    en: "Smiling pumpkin with a stem and leaf",
+    hu: "Mosolygó tök szárral és levéllel",
+    de: "Lächelnder Kürbis mit Stiel und Blatt",
+  },
+  "Klasická halloweenska tekvica s vyrezanou tvárou. Tekvicu tlačíme v oranžovej, stonku so lístkom v zelenej a tvár v čiernej — každý diel vo vlastnej farbe, bez farbenia. Farby si v konfigurátore zmeníte podľa seba.": {
+    en: "A classic Halloween pumpkin with a carved face. The pumpkin is printed in orange, the stem and leaf in green and the face in black — each part in its own colour, no painting needed. You can change the colours in the configurator.",
+    hu: "Klasszikus halloweeni tök faragott arccal. A tököt narancssárgában, a szárat a levéllel zöldben, az arcot feketében nyomtatjuk — minden rész a saját színében, festés nélkül. A színeket a konfigurátorban módosíthatja.",
+    de: "Ein klassischer Halloween-Kürbis mit geschnitztem Gesicht. Der Kürbis wird orange, Stiel und Blatt grün und das Gesicht schwarz gedruckt — jedes Teil in eigener Farbe, ganz ohne Bemalen. Die Farben ändern Sie im Konfigurator.",
+  },
+  "Tri farby: tekvica, stonka a tvár": {
+    en: "Three colours: pumpkin, stem and face",
+    hu: "Három szín: tök, szár és arc",
+    de: "Drei Farben: Kürbis, Stiel und Gesicht",
+  },
+  "Najznámejší symbol Halloweenu": {
+    en: "The best-known symbol of Halloween",
+    hu: "A Halloween legismertebb jelképe",
+    de: "Das bekannteste Halloween-Symbol",
+  },
+  "Čarodejnícky kotlík": {
+    en: "Witch's cauldron",
+    hu: "Boszorkányüst",
+    de: "Hexenkessel",
+  },
+  "Kotlík s bublajúcim elixírom": {
+    en: "Cauldron with a bubbling potion",
+    hu: "Üst bugyogó varázsitallal",
+    de: "Kessel mit blubberndem Zaubertrank",
+  },
+  "Čierny kotlík na troch nožičkách, plný bublajúceho elixíru. Kotlík tlačíme v čiernej, elixír v zelenej — dá sa zmeniť napríklad na fialový alebo oranžový. Hodí sa ako dekorácia aj miska na drobné sladkosti pri stole.": {
+    en: "A black cauldron on three little legs, full of bubbling potion. The cauldron is printed in black and the potion in green — you can change it to purple or orange, for example. A great decoration or a table-top dish for small sweets.",
+    hu: "Fekete üst három kis lábon, tele bugyogó varázsitallal. Az üstöt feketében, az italt zöldben nyomtatjuk — lecserélheti például lilára vagy narancssárgára. Dekorációnak és apró édességek tálkájának is jó.",
+    de: "Ein schwarzer Kessel auf drei Füßchen, voll mit blubberndem Zaubertrank. Der Kessel wird schwarz, der Trank grün gedruckt — z. B. auch lila oder orange möglich. Als Deko oder Schälchen für kleine Süßigkeiten.",
+  },
+  "Elixír v inej farbe ako kotlík": {
+    en: "The potion in a different colour",
+    hu: "Az ital más színű, mint az üst",
+    de: "Trank in anderer Farbe als der Kessel",
+  },
+  "Zelený, fialový alebo oranžový elixír": {
+    en: "Green, purple or orange potion",
+    hu: "Zöld, lila vagy narancssárga ital",
+    de: "Grüner, lila oder oranger Trank",
+  },
+  "Doplnok k duchovi, netopierovi a tekvici": {
+    en: "Goes with the ghost, bat and pumpkin",
+    hu: "Illik a szellemhez, a denevérhez és a tökhöz",
+    de: "Passt zu Gespenst, Fledermaus und Kürbis",
+  },
 };
 
 export default messages;
