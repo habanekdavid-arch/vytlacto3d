@@ -457,7 +457,7 @@ export default function Configurator({
                 <PriceLine label={t("Cena s DPH")} value={formatEur(addVat(quote.total))} bold />
               </div>
               <a
-                href="/blog/co-ovplyvnuje-cenu-3d-tlace-manipulacny-poplatok"
+                href="/blog/co-ovplyvnuje-cenu-3d-tlace"
                 target="_blank"
                 className="mt-3 inline-block text-xs font-semibold text-neutral-500 underline decoration-[#FFAE00] decoration-2 underline-offset-4 hover:text-neutral-900"
               >
