@@ -6,6 +6,8 @@ import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { STLLoader } from "three/examples/jsm/loaders/STLLoader.js";
 import { getColor } from "@/components/StlViewer";
+import { splitIntoParts } from "@/lib/model-parts";
+import { MULTICOLOR_MAX_PARTS, isMulticolor } from "@/lib/multicolor";
 import { useT } from "@/lib/i18n/client";
 import type { Product } from "@/content/produkty";
 
@@ -34,8 +36,32 @@ function loadGeometry(url: string) {
   return promise;
 }
 
+// Viacfarebný produkt: diely modelu (poradie ako v lib/model-parts).
+const partsCache = new Map<string, Promise<THREE.BufferGeometry[] | null>>();
+
+function loadParts(url: string) {
+  let promise = partsCache.get(url);
+  if (!promise) {
+    promise = loadGeometry(url).then((g) => splitIntoParts(g, MULTICOLOR_MAX_PARTS)?.map((p) => p.geometry) ?? null);
+    partsCache.set(url, promise);
+  }
+  return promise;
+}
+
 /** Otáčajúci sa 3D model cez celú plochu náhľadu (bez ovládania myšou). */
-function SpinningModel({ url, color, onReady }: { url: string; color: string; onReady: () => void }) {
+function SpinningModel({
+  url,
+  color,
+  partColors,
+  onReady,
+}: {
+  url: string;
+  color: string;
+  /** Farby dielov viacfarebného produktu (id farieb). */
+  partColors?: string[];
+  onReady: () => void;
+}) {
+  const partColorsKey = partColors?.join(",") ?? "";
   const mountRef = useRef<HTMLDivElement>(null);
   const onReadyRef = useRef(onReady);
 
@@ -95,14 +121,25 @@ function SpinningModel({ url, color, onReady }: { url: string; color: string; on
       renderer.render(scene, camera);
     };
 
-    loadGeometry(url)
-      .then((geometry) => {
+    const colors = partColorsKey ? partColorsKey.split(",") : [];
+    const partMaterials: THREE.Material[] = [];
+    Promise.all([loadGeometry(url), colors.length ? loadParts(url) : Promise.resolve(null)])
+      .then(([geometry, parts]) => {
         if (disposed) return;
         const box = geometry.boundingBox!;
         const dims = new THREE.Vector3();
         box.getSize(dims);
         const maxDim = Math.max(dims.x, dims.y, dims.z) || 1;
-        turntable.add(new THREE.Mesh(geometry, material));
+        if (parts && parts.length >= 2) {
+          parts.forEach((part, i) => {
+            const m = material.clone();
+            m.color.set(colors[i] ? getColor(colors[i]) : color);
+            partMaterials.push(m);
+            turntable.add(new THREE.Mesh(part, m));
+          });
+        } else {
+          turntable.add(new THREE.Mesh(geometry, material));
+        }
         const distance = maxDim * 1.95;
         camera.position.set(distance * 0.85, dims.y * 0.5 + distance * 0.5, distance * 0.95);
         camera.near = Math.max(0.1, maxDim / 200);
@@ -131,11 +168,12 @@ function SpinningModel({ url, color, onReady }: { url: string; color: string; on
       cancelAnimationFrame(frame);
       ro.disconnect();
       material.dispose();
+      partMaterials.forEach((m) => m.dispose());
       renderer.dispose();
       renderer.domElement.remove();
       // Geometriu nemažeme — je v cache pre ďalšie prejdenie myšou.
     };
-  }, [url, color]);
+  }, [url, color, partColorsKey]);
 
   return <div ref={mountRef} className="absolute inset-0" />;
 }
@@ -205,7 +243,12 @@ export default function ProductCard({ product, priority = false }: { product: Pr
             ].join(" ")}
             aria-hidden
           >
-            <SpinningModel url={product.file} color={getColor(product.defaults?.color ?? "gray")} onReady={() => setReady(true)} />
+            <SpinningModel
+              url={product.file}
+              color={getColor(product.defaults?.color ?? "gray")}
+              partColors={product.defaults?.partColors}
+              onReady={() => setReady(true)}
+            />
           </div>
         )}
 
@@ -216,9 +259,12 @@ export default function ProductCard({ product, priority = false }: { product: Pr
         {/* Celá plocha je odkaz na detail; 3D vrstva pod ním neprekáža kliknutiu. */}
         <Link href={href} className="absolute inset-0 z-10" aria-label={name} />
 
-        <span className="pointer-events-none absolute left-3 top-3 z-20 rounded-full bg-white/90 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-neutral-900 shadow-sm">
-          {t(product.category)}
-        </span>
+        <div className="pointer-events-none absolute left-3 top-3 z-20 flex flex-col items-start gap-1">
+          <span className="rounded-full bg-white/90 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-neutral-900 shadow-sm">
+            {t(product.category)}
+          </span>
+          {isMulticolor(product.defaults?.partColors) && <MulticolorBadge label={t("Viacfarebný")} />}
+        </div>
 
         <button
           type="button"
@@ -258,5 +304,19 @@ export default function ProductCard({ product, priority = false }: { product: Pr
         </div>
       </div>
     </article>
+  );
+}
+
+/** Štítok viacfarebného produktu — farebné bodky dúhy. */
+export function MulticolorBadge({ label }: { label: string }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-full bg-black/80 px-2.5 py-1 text-[11px] font-bold text-white shadow-sm">
+      <span className="flex -space-x-1" aria-hidden>
+        {["#F97316", "#16A34A", "#9333EA", "#2563EB"].map((c) => (
+          <span key={c} className="h-2.5 w-2.5 rounded-full ring-1 ring-black/40" style={{ background: c }} />
+        ))}
+      </span>
+      {label}
+    </span>
   );
 }

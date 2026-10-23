@@ -16,6 +16,9 @@ import {
 } from "@/lib/multicolor";
 import { COLOR_LABELS } from "@/lib/print-options";
 import { addVat, formatEur } from "@/lib/vat";
+import { getColor } from "@/lib/color-hex";
+
+export { getColor };
 
 type Props = {
   fileKey: string;
@@ -36,38 +39,13 @@ type Props = {
   multicolorBlockedReason?: string;
   /** Model sa rozdelil — objemy častí v cm³ (pri 100 %). */
   onPartsDetected?: (volumesCm3: number[]) => void;
+  /** Zoznam častí a ich farieb pod náhľadom (pre výrobu); na webe pre zákazníkov netreba. */
+  partLegend?: boolean;
 };
 
 // Farby, ktorými sa dá farbiť — rovnaké ako v konfigurátore.
 const BRUSH_COLORS = ["black", "white", "gray", "red", "blue", "green", "purple", "orange"];
 
-export function getColor(colorId: string) {
-  switch (colorId) {
-    case "white":
-      return "#E5E7EB";
-    case "gray":
-      return "#9CA3AF";
-    case "red":
-      return "#DC2626";
-    case "blue":
-      return "#2563EB";
-    case "green":
-      return "#16A34A";
-    case "yellow":
-      return "#EAB308";
-    case "orange":
-      return "#F97316";
-    case "purple":
-      return "#9333EA";
-    case "pink":
-      return "#EC4899";
-    case "transparent":
-      return "#D1D5DB";
-    case "black":
-    default:
-      return "#111111";
-  }
-}
 
 function isObjFile(fileKey: string) {
   return fileKey.toLowerCase().split("?")[0].endsWith(".obj");
@@ -99,6 +77,7 @@ export default function StlViewer({
   multicolorAllowed = true,
   multicolorBlockedReason,
   onPartsDetected,
+  partLegend = true,
 }: Props) {
   const t = useT();
   const mountRef = useRef<HTMLDivElement | null>(null);
@@ -128,7 +107,7 @@ export default function StlViewer({
   const paintActive = paintOpen && canPaint;
   // Len zobrazenie (administrácia): čísla častí a ich farby pod náhľadom.
   const [partVolumes, setPartVolumes] = useState<number[]>([]);
-  const showLegend = !onPartColorsChange && isMulticolor(partColors) && partCount >= 2;
+  const showLegend = partLegend && !onPartColorsChange && isMulticolor(partColors) && partCount >= 2;
   const hoverEnabled = paintActive || showLegend;
   const paintActiveRef = useRef(false);
   paintActiveRef.current = paintActive;

@@ -286,6 +286,61 @@ const messages: Messages = {
     hu: "PLA, PETG, ABS vagy PA6-CF anyag",
     de: "Material PLA, PETG, ABS oder PA6-CF",
   },
+  "Roztomilý duch": {
+    en: "Cute ghost",
+    hu: "Aranyos szellem",
+    de: "Süßes Gespenst",
+  },
+  "Viacfarebná halloweenska dekorácia": {
+    en: "Multicolour Halloween decoration",
+    hu: "Többszínű halloweeni dekoráció",
+    de: "Mehrfarbige Halloween-Deko",
+  },
+  "Usmiaty duch na poličku, stôl alebo do okna. Telo tlačíme v bielej, oči a ústa v čiernej — každý diel vo vlastnej farbe, bez farbenia. Farby dielov si v konfigurátore zmeníte podľa seba.": {
+    en: "A smiling ghost for a shelf, desk or window. The body is printed in white, the eyes and mouth in black — each part in its own colour, no painting needed. You can change the part colours in the configurator.",
+    hu: "Mosolygó szellem polcra, asztalra vagy ablakba. A testet fehérben, a szemeket és a szájat feketében nyomtatjuk — minden rész a saját színében, festés nélkül. A részek színét a konfigurátorban módosíthatja.",
+    de: "Ein lächelndes Gespenst für Regal, Schreibtisch oder Fenster. Der Körper wird weiß, Augen und Mund schwarz gedruckt — jedes Teil in eigener Farbe, ganz ohne Bemalen. Die Farben der Teile ändern Sie im Konfigurator.",
+  },
+  "Halloween": {
+    en: "Halloween",
+    hu: "Halloween",
+    de: "Halloween",
+  },
+  "Viacfarebná tlač bez farbenia": {
+    en: "Multicolour print, no painting",
+    hu: "Többszínű nyomtatás festés nélkül",
+    de: "Mehrfarbiger Druck ohne Bemalen",
+  },
+  "Oči a ústa sú samostatné diely": {
+    en: "Eyes and mouth are separate parts",
+    hu: "A szem és a száj külön rész",
+    de: "Augen und Mund sind eigene Teile",
+  },
+  "Darček aj dekorácia na Halloween": {
+    en: "A gift or Halloween decoration",
+    hu: "Ajándék vagy halloweeni dekoráció",
+    de: "Geschenk oder Halloween-Deko",
+  },
+  "Viacfarebný": {
+    en: "Multicolour",
+    hu: "Többszínű",
+    de: "Mehrfarbig",
+  },
+  "Viacfarebná tlač z PLA": {
+    en: "Multicolour PLA print",
+    hu: "Többszínű PLA nyomtatás",
+    de: "Mehrfarbiger PLA-Druck",
+  },
+  "Farbu každého dielu (najviac 4 farby)": {
+    en: "The colour of each part (up to 4 colours)",
+    hu: "Minden rész színét (legfeljebb 4 szín)",
+    de: "Die Farbe jedes Teils (bis zu 4 Farben)",
+  },
+  "Každý diel tlačíme vo vlastnej farbe. V konfigurátore ich kýblikom v 3D náhľade zmeníte podľa seba.": {
+    en: "Each part is printed in its own colour. In the configurator you can change them with the bucket in the 3D preview.",
+    hu: "Minden részt a saját színében nyomtatunk. A konfigurátorban a 3D előnézet vödör ikonjával módosíthatja őket.",
+    de: "Jedes Teil wird in eigener Farbe gedruckt. Im Konfigurator ändern Sie die Farben mit dem Farbeimer in der 3D-Vorschau.",
+  },
 };
 
 export default messages;

@@ -37,11 +37,29 @@ export type Product = {
    * model analyzuje pri vložení.
    */
   analysis?: ProductAnalysis;
-  /** Odporúčané nastavenie, s ktorým sa produkt otvorí v konfigurátore. */
-  defaults?: Partial<Pick<CartItemConfig, "material" | "quality" | "infillPct" | "color">>;
+  /**
+   * Odporúčané nastavenie, s ktorým sa produkt otvorí v konfigurátore.
+   * `partColors` = viacfarebný produkt: farby dielov v poradí od najväčšieho
+   * (lib/model-parts), len PLA; účtuje sa poplatok za viacfarebnú tlač.
+   */
+  defaults?: Partial<Pick<CartItemConfig, "material" | "quality" | "infillPct" | "color" | "partColors">>;
 };
 
 export const PRODUCTS: Product[] = [
+  {
+    slug: "roztomily-duch",
+    name: "Roztomilý duch",
+    subtitle: "Viacfarebná halloweenska dekorácia",
+    description:
+      "Usmiaty duch na poličku, stôl alebo do okna. Telo tlačíme v bielej, oči a ústa v čiernej — každý diel vo vlastnej farbe, bez farbenia. Farby dielov si v konfigurátore zmeníte podľa seba.",
+    category: "Halloween",
+    file: "/produkty/roztomily-duch.stl",
+    analysis: { dimsXmm: 74.89, dimsYmm: 72.77, dimsZmm: 80, volumeCm3: 236.15, surfaceAreaCm2: 209.55, supportCm3: 2.73, printHeightMm: 80 },
+    image: "/produkty/roztomily-duch.jpg",
+    dimsMm: [75, 73, 80],
+    highlights: ["Viacfarebná tlač bez farbenia", "Oči a ústa sú samostatné diely", "Darček aj dekorácia na Halloween"],
+    defaults: { material: "PLA", quality: "STANDARD", infillPct: 15, color: "white", partColors: ["white", "black", "black", "black"] },
+  },
   {
     slug: "skrutena-vaza",
     name: "Skrútená váza",
