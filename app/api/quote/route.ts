@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { activePromo } from "@/lib/promo";
 import { isMaterial, isQuality, quote } from "@/lib/pricing";
 import { multicolorAllowedFor } from "@/lib/multicolor";
+import { modelFeeForFileKey } from "@/content/produkty";
 
 export async function POST(req: NextRequest) {
   try {
@@ -75,6 +76,8 @@ export async function POST(req: NextRequest) {
       colorFlexible,
       // Viacfarebne tlačíme len PLA — pri inom materiáli sa poplatok nepočíta.
       multicolor: Boolean(body?.multicolor) && multicolorAllowedFor(material),
+      // Hotový model z katalógu — poplatok za model podľa súboru položky.
+      modelFeeEur: modelFeeForFileKey(body?.fileKey),
       promoPercent: activePromo()?.percent,
     });
 

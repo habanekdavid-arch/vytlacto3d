@@ -421,6 +421,11 @@ const messages: Messages = {
     hu: "Illik a szellemhez, a denevérhez és a tökhöz",
     de: "Passt zu Gespenst, Fledermaus und Kürbis",
   },
+  "K cene výtlačku sa pripočíta poplatok za model {fee} s DPH.": {
+    en: "A model fee of {fee} incl. VAT is added to the price of the print.",
+    hu: "A nyomat árához {fee} modelldíj (áfával) adódik.",
+    de: "Zum Preis des Drucks kommt eine Modellgebühr von {fee} inkl. MwSt. hinzu.",
+  },
 };
 
 export default messages;

@@ -384,6 +384,7 @@ export default async function AdminOrderDetailPage({
                         {typeof ip.machineCostPerPart === "number" && <InfoCard label="Stroj / ks" value={formatEur(ip.machineCostPerPart)} />}
                         {typeof ip.setupFee === "number" && <InfoCard label="Nastavenie" value={formatEur(ip.setupFee)} />}
                         {typeof ip.multicolorFee === "number" && ip.multicolorFee > 0 && <InfoCard label="Viacfarebná tlač" value={formatEur(ip.multicolorFee)} />}
+                        {typeof ip.modelFee === "number" && ip.modelFee > 0 && <InfoCard label="Poplatok za model" value={formatEur(ip.modelFee)} />}
                         {typeof ip.quantityDiscountPct === "number" && ip.quantityDiscountPct > 0 && <InfoCard label="Zľava množstvo" value={`${ip.quantityDiscountPct}%`} />}
                         {typeof ip.productionSubtotal === "number" && <InfoCard label="Výroba celkom" value={formatEur(ip.productionSubtotal)} />}
                         <InfoCard label="Cena bez DPH" value={formatEur(ip.total)} />

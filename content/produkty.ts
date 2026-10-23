@@ -43,7 +43,12 @@ export type Product = {
    * (lib/model-parts), len PLA; účtuje sa poplatok za viacfarebnú tlač.
    */
   defaults?: Partial<Pick<CartItemConfig, "material" | "quality" | "infillPct" | "color" | "partColors">>;
+  /** Poplatok za model (€ bez DPH); chýba → PRODUCT_MODEL_FEE_EUR, 0 = bez poplatku. */
+  modelFeeEur?: number;
 };
+
+/** Poplatok za hotový model z katalógu — € bez DPH, raz za položku (nie za kus). */
+export const PRODUCT_MODEL_FEE_EUR = 5;
 
 export const PRODUCTS: Product[] = [
   {
@@ -162,4 +167,25 @@ export const PRODUCTS: Product[] = [
 
 export function getProduct(slug: string | null | undefined): Product | null {
   return PRODUCTS.find((p) => p.slug === slug) ?? null;
+}
+
+export function productModelFee(product: Product): number {
+  return product.modelFeeEur ?? PRODUCT_MODEL_FEE_EUR;
+}
+
+/**
+ * Poplatok za model podľa súboru položky. Produkt sa do košíka vkladá s plnou
+ * adresou súboru (https://…/produkty/x.stl) — server tak pozná, že ide
+ * o hotový model, a poplatok nezávisí od toho, čo pošle prehliadač.
+ */
+export function modelFeeForFileKey(fileKey: unknown): number {
+  if (typeof fileKey !== "string" || !fileKey) return 0;
+  let path = fileKey;
+  try {
+    path = new URL(fileKey, "https://vytlacto3d.sk").pathname;
+  } catch {
+    return 0;
+  }
+  const product = PRODUCTS.find((p) => p.file === path);
+  return product ? productModelFee(product) : 0;
 }

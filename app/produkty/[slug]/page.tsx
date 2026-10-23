@@ -7,7 +7,7 @@ import { MulticolorBadge } from "@/components/ProductCard";
 import { COLOR_LABELS } from "@/lib/print-options";
 import { MULTICOLOR_FEE_EUR, distinctColors, isMulticolor } from "@/lib/multicolor";
 import { addVat, formatEur } from "@/lib/vat";
-import { PRODUCTS, getProduct } from "@/content/produkty";
+import { PRODUCTS, getProduct, productModelFee } from "@/content/produkty";
 import { getT } from "@/lib/i18n/server";
 import { getProductsWithImages } from "@/lib/product-images";
 
@@ -139,7 +139,11 @@ export default async function ProduktPage({ params }: Props) {
           >
             {t("Prispôsobiť a objednať")}
           </Link>
-          <p className="mt-2 text-xs text-neutral-500">{t("Cenu uvidíte hneď v konfigurátore, ešte pred objednávkou.")}</p>
+          <p className="mt-2 text-xs text-neutral-500">
+            {t("Cenu uvidíte hneď v konfigurátore, ešte pred objednávkou.")}
+            {productModelFee(product) > 0 &&
+              " " + t("K cene výtlačku sa pripočíta poplatok za model {fee} s DPH.", { fee: formatEur(addVat(productModelFee(product))) })}
+          </p>
         </section>
       </div>
 

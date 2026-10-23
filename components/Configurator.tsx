@@ -32,6 +32,7 @@ type Quote = {
   quantityDiscountAmount: number;
   flexibleDiscountEur: number;
   multicolorFee?: number;
+  modelFee?: number;
   total: number;
   /** Len počas akcie (lib/promo). */
   promoPercent?: number;
@@ -57,6 +58,7 @@ export default function Configurator({
   onQuote,
   partColors,
   onPartColorsChange,
+  fileKey,
 }: {
   analysis: Analysis;
   initialConfig?: ConfigState;
@@ -64,6 +66,8 @@ export default function Configurator({
   /** Farby častí z 3D náhľadu (viacfarebná tlač) — vlastní ich stránka. */
   partColors?: string[];
   onPartColorsChange?: (colors: string[] | undefined) => void;
+  /** Súbor položky — hotový model z katalógu má poplatok za model (počíta server). */
+  fileKey?: string;
 }) {
   const t = useT();
   const [config, setConfig] = useState<ConfigState>(
@@ -130,8 +134,9 @@ export default function Configurator({
       materialFlexible: config.materialFlexible,
       colorFlexible: config.colorFlexible,
       multicolor,
+      fileKey,
     }),
-    [geometry, config, multicolor]
+    [geometry, config, multicolor, fileKey]
   );
 
   useEffect(() => {
@@ -408,6 +413,16 @@ export default function Configurator({
                 {t("Rozpis ceny")}
               </div>
               <div className="space-y-2">
+                {(quote.modelFee ?? 0) > 0 && (
+                  <>
+                    <PriceLine
+                      label={t("Poplatok za model")}
+                      hint={t("hotový model z našej ponuky, raz za položku")}
+                      value={`+${formatEur(addVat(quote.modelFee ?? 0))}`}
+                    />
+                    <div className="my-1 border-t border-neutral-200" />
+                  </>
+                )}
                 {(quote.multicolorFee ?? 0) > 0 && (
                   <>
                     <PriceLine

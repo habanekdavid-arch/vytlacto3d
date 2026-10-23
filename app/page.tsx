@@ -1059,6 +1059,7 @@ export default function Home() {
                     onQuote={handleQuote}
                     partColors={activeItem.config.partColors}
                     onPartColorsChange={handlePartColors}
+                    fileKey={activeItem.fileKey}
                   />
                 </div>
 

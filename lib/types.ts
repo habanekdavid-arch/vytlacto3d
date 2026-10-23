@@ -39,6 +39,7 @@ export type CartItemPricing = {
   flexibleDiscountEur: number;
   /** Poplatok za viacfarebnú tlač (bez DPH); staršie položky ho nemajú. */
   multicolorFee?: number;
+  modelFee?: number;
   total: number;
   /** Len počas akcie (lib/promo). */
   promoPercent?: number;

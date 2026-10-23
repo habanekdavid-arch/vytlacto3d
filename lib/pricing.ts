@@ -77,6 +77,8 @@ type QuoteInput = {
   colorFlexible?: boolean;
   /** Viacfarebná tlač (aspoň dve farby na modeli) — poplatok raz za položku. */
   multicolor?: boolean;
+  /** Poplatok za hotový model z katalógu (bez DPH, raz za položku) — content/produkty. */
+  modelFeeEur?: number;
   /** Akciová zľava v % (lib/promo) — z celej ceny výroby. */
   promoPercent?: number;
 };
@@ -94,6 +96,8 @@ type QuoteResult = {
   flexibleDiscountEur: number;
   /** Poplatok za viacfarebnú tlač (bez DPH), 0 pri jednej farbe. */
   multicolorFee: number;
+  /** Poplatok za hotový model z katalógu (bez DPH), 0 pri vlastnom modeli. */
+  modelFee: number;
   total: number;
   /** Len počas akcie: cena pred akciovou zľavou a výška zľavy (bez DPH). */
   promoPercent?: number;
@@ -275,7 +279,8 @@ export function quote(input: QuoteInput): QuoteResult {
   );
 
   const multicolorFeeRaw = input.multicolor ? MULTICOLOR_FEE_EUR : 0;
-  const totalRaw = totalBeforeFlexibleDiscountRaw - flexibleDiscountRaw + multicolorFeeRaw;
+  const modelFeeRaw = Math.max(0, Number(input.modelFeeEur) || 0);
+  const totalRaw = totalBeforeFlexibleDiscountRaw - flexibleDiscountRaw + multicolorFeeRaw + modelFeeRaw;
 
   return {
     gramsPerPart:           round2(gramsPerPartRaw),
@@ -289,6 +294,7 @@ export function quote(input: QuoteInput): QuoteResult {
     quantityDiscountAmount: round2(quantityDiscountAmountRaw),
     flexibleDiscountEur:    round2(flexibleDiscountRaw),
     multicolorFee:          multicolorFeeRaw,
+    modelFee:               modelFeeRaw,
     total:                  round2(totalRaw),
     ...promoFields(round2(totalRaw), input.promoPercent),
   };
