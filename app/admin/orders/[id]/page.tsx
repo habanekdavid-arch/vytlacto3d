@@ -161,6 +161,17 @@ export default async function AdminOrderDetailPage({
           )}
 
 
+        <PriceBreakdown
+          items={
+            order.orderItems.length > 0
+              ? order.orderItems.map((item) => ({ name: item.fileName, config: item.config, pricing: item.pricing }))
+              : [{ name: order.fileName, config: order.config, pricing: order.pricing }]
+          }
+          shippingCostEur={shippingCostEur}
+          paidTotalEur={typeof order.paidTotalEur === "number" ? order.paidTotalEur : null}
+          shippingMethod={order.shippingMethod}
+        />
+
         <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white">
           <Fold title="Stav objednávky" summary={STATUS_LABEL_SK[order.status] ?? order.status}>
           <div>
@@ -513,6 +524,116 @@ export default async function AdminOrderDetailPage({
         </div>
       </div>
     </main>
+  );
+}
+
+type PriceItem = { name: string; config: unknown; pricing: unknown };
+
+function Row({ label, hint, value, minus, strong }: { label: string; hint?: string; value: number; minus?: boolean; strong?: boolean }) {
+  return (
+    <div className={["flex items-baseline justify-between gap-3", strong ? "font-bold text-neutral-900" : "text-neutral-700"].join(" ")}>
+      <span>
+        {label}
+        {hint && <span className="ml-1.5 text-xs font-normal text-neutral-400">{hint}</span>}
+      </span>
+      <span className="whitespace-nowrap font-semibold">{minus ? `−${formatEur(value)}` : formatEur(value)}</span>
+    </div>
+  );
+}
+
+/**
+ * Rozpis ceny „čo je za čo“ — vždy viditeľný, nad rozbaľovacími sekciami.
+ * Riadky idú v poradí, v akom ich počíta lib/pricing (quote) a lib/coupons.
+ */
+function PriceBreakdown({
+  items,
+  shippingCostEur,
+  paidTotalEur,
+  shippingMethod,
+}: {
+  items: PriceItem[];
+  shippingCostEur: number | null;
+  paidTotalEur: number | null;
+  shippingMethod: string | null;
+}) {
+  const n = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : null);
+  const priced = items.filter((it) => n((it.pricing as Record<string, unknown> | null)?.total) !== null);
+  if (priced.length === 0) return null;
+  const productionNet = priced.reduce((s, it) => s + (n((it.pricing as Record<string, unknown>).total) ?? 0), 0);
+
+  return (
+    <section className="mb-3 rounded-2xl border border-neutral-200 bg-white px-5 py-4 text-sm">
+      <div className="mb-3 text-xs font-bold uppercase tracking-wide text-neutral-500">Rozpis ceny (bez DPH, ak nie je uvedené inak)</div>
+      <div className="space-y-4">
+        {priced.map((it, idx) => {
+          const p = it.pricing as Record<string, unknown>;
+          const c = (it.config ?? {}) as Record<string, unknown>;
+          const qty = n(c.quantity) ?? 1;
+          const perPart = n(p.subtotalPerPart);
+          const production = n(p.productionSubtotal);
+          const qtyPct = n(p.quantityDiscountPct) ?? 0;
+          const qtyAmount = n(p.quantityDiscountAmount) ?? 0;
+          const setup = n(p.setupFee);
+          const flexible = n(p.flexibleDiscountEur) ?? 0;
+          const multicolor = n(p.multicolorFee) ?? 0;
+          const modelFee = n(p.modelFee) ?? 0;
+          const promo = n(p.promoDiscountEur) ?? 0;
+          const coupon = n(p.couponDiscountEur) ?? 0;
+          const total = n(p.total)!;
+          return (
+            <div key={idx} className={priced.length > 1 ? "rounded-xl bg-neutral-50 p-3" : ""}>
+              {priced.length > 1 && (
+                <div className="mb-2 font-bold text-neutral-900">
+                  {idx + 1}. {it.name}
+                </div>
+              )}
+              <div className="space-y-1">
+                {production !== null && (
+                  <Row
+                    label={`Výroba ${qty} ks`}
+                    hint={
+                      perPart !== null
+                        ? `${formatEur(perPart)} / ks (materiál ${formatEur(n(p.materialCostPerPart) ?? 0)} + stroj ${formatEur(n(p.machineCostPerPart) ?? 0)})`
+                        : undefined
+                    }
+                    value={production}
+                  />
+                )}
+                {qtyPct > 0 && <Row label={`Množstevná zľava −${qtyPct} %`} value={qtyAmount} minus />}
+                {setup !== null && <Row label="Manipulačný poplatok" hint="príprava tlače, raz za položku" value={setup} />}
+                {flexible > 0 && <Row label="Zľava za flexibilitu materiálu/farby" value={flexible} minus />}
+                {multicolor > 0 && <Row label="Viacfarebná tlač" value={multicolor} />}
+                {modelFee > 0 && <Row label="Poplatok za model" hint="hotový produkt z katalógu" value={modelFee} />}
+                {promo > 0 && <Row label={`Akciová zľava −${n(p.promoPercent) ?? ""} %`} value={promo} minus />}
+                {coupon > 0 && <Row label={`Kupón ${String(p.couponCode ?? "")} −${n(p.couponPercent) ?? ""} %`} value={coupon} minus />}
+                <div className="border-t border-neutral-200 pt-1">
+                  <Row label={priced.length > 1 ? "Položka spolu" : "Výroba spolu"} value={total} strong />
+                </div>
+              </div>
+            </div>
+          );
+        })}
+
+        <div className="space-y-1 border-t border-neutral-300 pt-3">
+          {priced.length > 1 && <Row label="Výroba spolu (všetky položky)" value={productionNet} />}
+          <Row label="DPH 23 % z výroby" value={vatAmount(productionNet)} />
+          <Row label="Výroba s DPH" value={addVat(productionNet)} />
+          {shippingCostEur !== null && <Row label={`Doprava s DPH${shippingMethod ? ` (${shippingMethod})` : ""}`} value={shippingCostEur} />}
+          {/* Staršie objednávky nemajú uloženú cenu dopravy — dopočíta sa zo zaplatenej sumy. */}
+          {shippingCostEur === null && paidTotalEur !== null && paidTotalEur - addVat(productionNet) > 0.005 && (
+            <Row label="Doprava s DPH" hint="dopočítané zo zaplatenej sumy" value={paidTotalEur - addVat(productionNet)} />
+          )}
+          <div className="border-t border-neutral-200 pt-1">
+            <Row
+              label="Celkom s DPH"
+              hint={paidTotalEur !== null ? "zaplatená / fakturovaná suma" : undefined}
+              value={paidTotalEur ?? addVat(productionNet) + (shippingCostEur ?? 0)}
+              strong
+            />
+          </div>
+        </div>
+      </div>
+    </section>
   );
 }
 
