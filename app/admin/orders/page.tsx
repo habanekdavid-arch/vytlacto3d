@@ -64,6 +64,28 @@ function getModels(order: {
     });
 }
 
+type AccountName = { name: string; contactPerson: string | null; companyName: string | null };
+
+/**
+ * Meno klienta pre prehľad: kontaktná osoba / fakturačné meno z objednávky,
+ * inak meno z účtu (staršie objednávky meno nemajú), firma v zátvorke.
+ */
+function customerName(
+  order: { contactPerson: string | null; companyName: string | null; billingAddress: unknown },
+  account: AccountName | undefined
+) {
+  const billingName = (order.billingAddress as { name?: unknown } | null)?.name;
+  const person =
+    order.contactPerson?.trim() ||
+    (typeof billingName === "string" ? billingName.trim() : "") ||
+    account?.contactPerson?.trim() ||
+    account?.name?.trim() ||
+    "";
+  const company = order.companyName?.trim() || account?.companyName?.trim();
+  if (person && company && person !== company) return `${person} (${company})`;
+  return person || company || null;
+}
+
 export default async function AdminOrdersPage() {
   const session = await getSafeServerSession();
   const sessionUser = session?.user as { email?: string | null } | undefined;
@@ -96,6 +118,19 @@ export default async function AdminOrdersPage() {
   });
   const packetaByOrder = new Map(packetaShipments.map((p) => [p.orderId, p.barcodeText]));
 
+  // Účty zákazníkov — podľa prepojenia alebo e-mailu (objednávky bez prihlásenia).
+  const accounts = await prisma.user.findMany({
+    where: {
+      OR: [
+        { id: { in: ordersRaw.map((o) => o.userId).filter((id): id is string => Boolean(id)) } },
+        { email: { in: ordersRaw.map((o) => o.customerEmail).filter((e): e is string => Boolean(e)) } },
+      ],
+    },
+    select: { id: true, email: true, name: true, contactPerson: true, companyName: true },
+  });
+  const accountById = new Map(accounts.map((a) => [a.id, a]));
+  const accountByEmail = new Map(accounts.map((a) => [a.email.toLowerCase(), a]));
+
   const orders = ordersRaw.map((order) => ({
     id: order.id,
     orderNumber: order.orderNumber ?? null,
@@ -103,6 +138,11 @@ export default async function AdminOrdersPage() {
     fileKey: order.fileKey,
     status: order.status,
     customerEmail: order.customerEmail ?? "—",
+    customerName: customerName(
+      order,
+      (order.customerEmail ? accountByEmail.get(order.customerEmail.toLowerCase()) : undefined) ??
+        (order.userId ? accountById.get(order.userId) : undefined)
+    ),
     shippingMethod: order.shippingMethod ?? "—",
     stripeSessionId: order.stripeSessionId ?? null,
     paidTotalEur: order.paidTotalEur ?? null,

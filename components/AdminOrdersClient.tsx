@@ -15,6 +15,8 @@ type Order = {
   fileKey: string;
   status: string;
   customerEmail: string;
+  /** Meno klienta; chýba → v prehľade sa ukáže e-mail. */
+  customerName: string | null;
   shippingMethod: string;
   stripeSessionId: string | null;
   paidTotalEur: number | null;
@@ -330,8 +332,11 @@ export default function AdminOrdersClient({
                       {order.allowModelAdjustments && <span className="ml-1 text-amber-600" title="Súhlasí s úpravou modelu">⚠</span>}
                       {order.packetaBarcodeText && <span className="ml-1 text-green-600" title={`Štítok Packeta ${order.packetaBarcodeText}`}>✓</span>}
                     </span>
-                    <span className="col-start-2 row-start-2 truncate text-xs text-neutral-500 lg:col-start-auto lg:row-start-auto lg:text-sm lg:text-neutral-700">
-                      {order.customerEmail}
+                    <span
+                      className="col-start-2 row-start-2 truncate text-xs text-neutral-500 lg:col-start-auto lg:row-start-auto lg:text-sm lg:text-neutral-700"
+                      title={order.customerEmail}
+                    >
+                      {order.customerName ?? order.customerEmail}
                     </span>
                     <span className="hidden truncate text-neutral-600 lg:block">
                       {order.fileName}
