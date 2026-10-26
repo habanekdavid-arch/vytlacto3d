@@ -529,6 +529,18 @@ export default async function AdminOrderDetailPage({
 
 type PriceItem = { name: string; config: unknown; pricing: unknown };
 
+function Row({ label, hint, value, minus, strong }: { label: string; hint?: string; value: number; minus?: boolean; strong?: boolean }) {
+  return (
+    <div className={["flex items-baseline justify-between gap-3", strong ? "font-bold text-neutral-900" : "text-neutral-700"].join(" ")}>
+      <span>
+        {label}
+        {hint && <span className="ml-1.5 text-xs font-normal text-neutral-400">{hint}</span>}
+      </span>
+      <span className="whitespace-nowrap font-semibold">{minus ? `−${formatEur(value)}` : formatEur(value)}</span>
+    </div>
+  );
+}
+
 /**
  * Rozpis ceny „čo je za čo“ — vždy viditeľný, nad rozbaľovacími sekciami.
  * Riadky idú v poradí, v akom ich počíta lib/pricing (quote) a lib/coupons.
@@ -548,16 +560,6 @@ function PriceBreakdown({
   const priced = items.filter((it) => n((it.pricing as Record<string, unknown> | null)?.total) !== null);
   if (priced.length === 0) return null;
   const productionNet = priced.reduce((s, it) => s + (n((it.pricing as Record<string, unknown>).total) ?? 0), 0);
-
-  const Row = ({ label, hint, value, minus, strong }: { label: string; hint?: string; value: number; minus?: boolean; strong?: boolean }) => (
-    <div className={["flex items-baseline justify-between gap-3", strong ? "font-bold text-neutral-900" : "text-neutral-700"].join(" ")}>
-      <span>
-        {label}
-        {hint && <span className="ml-1.5 text-xs font-normal text-neutral-400">{hint}</span>}
-      </span>
-      <span className="whitespace-nowrap font-semibold">{minus ? `−${formatEur(value)}` : formatEur(value)}</span>
-    </div>
-  );
 
   return (
     <section className="mb-3 rounded-2xl border border-neutral-200 bg-white px-5 py-4 text-sm">
