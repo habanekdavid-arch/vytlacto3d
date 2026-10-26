@@ -451,6 +451,9 @@ export default async function AdminOrderDetailPage({
           </Panel>
         </div>
           </Fold>
+          {/* Kuriér (DPD) ide mimo Packety — sekciu so štítkom ukážeme len pri
+              výdajnom mieste alebo pri zásielke, ktorá už v Packete existuje. */}
+          {packetDraft.isPacketa || packetaShipment ? (
           <Fold title="Packeta — štítok na balík" summary={packetaShipment ? `✓ ${packetaShipment.barcodeText}` : "zásielka nevytvorená"} id="packeta">
         <PacketaSection
           orderId={order.id}
@@ -459,6 +462,11 @@ export default async function AdminOrderDetailPage({
           configured={isPacketaConfigured()}
         />
           </Fold>
+          ) : (
+            <div className="rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-600">
+              🚚 Doprava kuriérom (DPD) — zásielka v Packete sa k tejto objednávke nevytvára.
+            </div>
+          )}
           <Fold title="FLOWii" summary={flowiiSync ? "zákazka vytvorená" : "nevytvorená"}>
         <FlowiiPreview
           draft={flowiiDraft}
