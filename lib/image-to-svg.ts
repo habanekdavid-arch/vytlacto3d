@@ -22,10 +22,10 @@ export function isRasterImage(name: string): boolean {
 
 // Pracovné rozlíšenie (najdlhšia strana). Malé obrázky sa zväčšia — hrana
 // sa potom vystopuje jemnejšie; väčšie by len spomalili prevod.
-const TRACE_TARGET_PX = 1200;
+export const TRACE_TARGET_PX = 1200;
 const MAX_UPSCALE = 4;
 // Najdlhšia strana výsledného modelu; zmeniť sa dá mierkou v konfigurátore.
-const OUTPUT_LONGEST_MM = 100;
+export const OUTPUT_LONGEST_MM = 100;
 // Šírka prechodu jasu okolo prahu — z nej vznikne plynulá hrana.
 const LUM_SOFTNESS = 28;
 // Rozmazanie poľa pokrytia v pixeloch PÔVODNÉHO obrázka — zahladí šum JPG
@@ -49,9 +49,9 @@ const CURVE_STEP = 2.5;
 const CORNER_DEG = 40;
 const CORNER_SPAN_SRC = 3;
 
-type Point = [number, number];
+export type Point = [number, number];
 
-async function loadPixels(file: File) {
+export async function loadPixels(file: File) {
   const bitmap = await createImageBitmap(file).catch(() => {
     throw new Error("Obrázok sa nepodarilo načítať. Skúste PNG alebo JPG.");
   });
@@ -137,7 +137,7 @@ function coverageField(w: number, h: number, data: Uint8ClampedArray): Float32Ar
 }
 
 /** Separabilné Gaussovo rozmazanie poľa. */
-function blur(field: Float32Array, w: number, h: number, sigma: number): Float32Array {
+export function blur(field: Float32Array, w: number, h: number, sigma: number): Float32Array {
   const r = Math.max(1, Math.ceil(sigma * 3));
   const kernel: number[] = [];
   let ksum = 0;
@@ -253,7 +253,7 @@ function marchingSquares(field: Float32Array, w: number, h: number): Point[][] {
   return loops;
 }
 
-function area(loop: Point[]): number {
+export function area(loop: Point[]): number {
   let s = 0;
   for (let i = 0; i < loop.length; i++) {
     const [x1, y1] = loop[i];
@@ -455,15 +455,16 @@ function fitCurve(pts: Point[], corner: boolean[]): Point[] {
   return out;
 }
 
-/** Z pixelov (RGBA) vytvorí SVG s vyplnenými tvarmi (evenodd); bez DOM — dá sa testovať. */
-export function pixelsToSvg(w: number, h: number, data: Uint8ClampedArray, scale = 1): string {
-  const field = blur(coverageField(w, h, data), w, h, Math.max(0.8, BLUR_SIGMA_SRC * scale));
+/**
+ * Hladké obrysy poľa pokrytia 0–1 (už rozmazaného) v pracovných pixeloch.
+ * `scale` = zväčšenie pôvodného obrázka, `mmPerWorkPx` = veľkosť pixela v mm.
+ */
+export function traceLoops(field: Float32Array, w: number, h: number, scale: number, mmPerWorkPx: number): Point[][] {
   const minArea = Math.max(20, w * h * 0.0003); // drobné zrnká a šum preč
   // Tolerancia v pracovných pixeloch: ~0,75 px pôvodného obrázka, no nikdy
   // nie hrubšia ako ~0,12 mm (malé obrázky sú zväčšené, detail by sa stratil).
-  const mmPerWorkPx = OUTPUT_LONGEST_MM / Math.max(w, h);
   const fitEps = Math.min(FIT_EPS_SRC * Math.max(1, scale), 0.12 / mmPerWorkPx);
-  const loops = marchingSquares(field, w, h)
+  return marchingSquares(field, w, h)
     .filter((l) => Math.abs(area(l)) >= minArea)
     .map((l) => {
       const smoothed = smooth(resample(l, RESAMPLE_STEP), SMOOTH_PASSES, scale);
@@ -471,6 +472,17 @@ export function pixelsToSvg(w: number, h: number, data: Uint8ClampedArray, scale
       return fitCurve(s.pts, s.corners);
     })
     .filter((l) => l.length >= 3);
+}
+
+/** Rozmazanie poľa tak, ako ho používa prevod obrázka (podľa zväčšenia). */
+export function blurForTrace(field: Float32Array, w: number, h: number, scale: number): Float32Array {
+  return blur(field, w, h, Math.max(0.8, BLUR_SIGMA_SRC * scale));
+}
+
+/** Z pixelov (RGBA) vytvorí SVG s vyplnenými tvarmi (evenodd); bez DOM — dá sa testovať. */
+export function pixelsToSvg(w: number, h: number, data: Uint8ClampedArray, scale = 1): string {
+  const field = blurForTrace(coverageField(w, h, data), w, h, scale);
+  const loops = traceLoops(field, w, h, scale, OUTPUT_LONGEST_MM / Math.max(w, h));
 
   if (!loops.length) {
     throw new Error("V obrázku sa nenašiel žiadny tvar. Skúste logo alebo kresbu s kontrastným pozadím.");
