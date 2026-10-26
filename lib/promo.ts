@@ -6,9 +6,9 @@
  * pásmom: +02:00 letný čas, +01:00 zimný).
  */
 export const PROMO = {
-  percent: 15,
-  startsAt: "2026-10-16T00:00:00+02:00",
-  endsAt: "2026-10-23T23:59:59+02:00",
+  percent: 10,
+  startsAt: "2026-10-26T00:00:00+01:00",
+  endsAt: "2026-10-31T23:59:59+01:00",
   /** Vzhľad bannera: "halloween" = fialovo-oranžový s grafikou, inak čierna lišta. */
   theme: "halloween" as "halloween" | "default",
 };
