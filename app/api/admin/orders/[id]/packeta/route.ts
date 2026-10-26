@@ -47,6 +47,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   }
 
   const draft = buildPacketDraft(order);
+  if (!draft.isPacketa) {
+    return NextResponse.json(
+      { error: "Objednávka ide kuriérom (DPD) — zásielka v Packete sa nevytvára." },
+      { status: 400 }
+    );
+  }
   if (!draft.ready) return NextResponse.json({ error: draft.warnings.join(" ") }, { status: 400 });
 
   try {
