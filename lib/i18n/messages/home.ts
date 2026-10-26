@@ -941,6 +941,51 @@ const messages: Messages = {
     hu: "kész modell a kínálatunkból, tételenként egyszer",
     de: "fertiges Modell aus unserem Angebot, einmal pro Position",
   },
+  "Model má priveľa samostatných častí na automatické zafarbenie — vytlačíme ho v jednej farbe.": {
+    en: "The model has too many separate parts to colour automatically — we'll print it in one colour.",
+    hu: "A modellnek túl sok különálló része van az automatikus színezéshez — egy színben nyomtatjuk.",
+    de: "Das Modell hat zu viele einzelne Teile für die automatische Einfärbung — wir drucken es einfarbig.",
+  },
+  "Farby a výšky": {
+    en: "Colours and heights",
+    hu: "Színek és magasságok",
+    de: "Farben und Höhen",
+  },
+  "V obrázku sme našli {n} farby. Každej nastavte výšku (mm) a farbu, v ktorej ju vytlačíme.": {
+    en: "We found {n} colours in the image. Set a height (mm) and the print colour for each.",
+    hu: "A képen {n} színt találtunk. Mindegyiknek állítson be magasságot (mm) és nyomtatási színt.",
+    de: "Wir haben im Bild {n} Farben gefunden. Legen Sie für jede die Höhe (mm) und die Druckfarbe fest.",
+  },
+  "Tlačiť túto farbu": {
+    en: "Print this colour",
+    hu: "Ezt a színt nyomtatni",
+    de: "Diese Farbe drucken",
+  },
+  "Pozadie ako podložka": {
+    en: "Background as a base plate",
+    hu: "Háttér alaplapként",
+    de: "Hintergrund als Grundplatte",
+  },
+  "Farba tlače": {
+    en: "Print colour",
+    hu: "Nyomtatási szín",
+    de: "Druckfarbe",
+  },
+  "Výška (mm)": {
+    en: "Height (mm)",
+    hu: "Magasság (mm)",
+    de: "Höhe (mm)",
+  },
+  "↺ Použiť výšky a farby": {
+    en: "↺ Apply heights and colours",
+    hu: "↺ Magasságok és színek alkalmazása",
+    de: "↺ Höhen und Farben übernehmen",
+  },
+  "Viac farieb = viacfarebná tlač z PLA (+{fee} s DPH).": {
+    en: "More colours = multicolour PLA print (+{fee} incl. VAT).",
+    hu: "Több szín = többszínű PLA nyomtatás (+{fee} áfával).",
+    de: "Mehrere Farben = mehrfarbiger PLA-Druck (+{fee} inkl. MwSt.).",
+  },
 };
 
 export default messages;

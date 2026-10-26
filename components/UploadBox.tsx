@@ -4,7 +4,13 @@ import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "re
 import { upload } from "@vercel/blob/client";
 import { useT } from "@/lib/i18n/client";
 import { relaxAcceptOnMobile } from "@/lib/file-accept";
-import { isRasterImage, rasterImageToSvgFile } from "@/lib/image-to-svg";
+import { OUTPUT_LONGEST_MM, isRasterImage, loadPixels, rasterImageToSvgFile } from "@/lib/image-to-svg";
+import { PALETTE_HEX, extractColorLayers, loadSvgPixels, type ColorLayer } from "@/lib/color-layers";
+import { buildLayeredStl, type LayerSetting } from "@/lib/layer-extrude";
+import { COLOR_LABELS } from "@/lib/print-options";
+import { MULTICOLOR_FEE_EUR } from "@/lib/multicolor";
+import { addVat, formatEur } from "@/lib/vat";
+import type { CartItemConfig } from "@/lib/types";
 import type { BuildPhase } from "@/components/ModelBuildAnimation";
 
 type Uploaded = {
@@ -19,6 +25,10 @@ type Uploaded = {
     surfaceAreaCm2?: number;
     supportCm3?: number;
   };
+  /** Nastavenie, s ktorým sa model vloží do kalkulátora (farby dielov z obrázka). */
+  configDefaults?: Partial<Pick<CartItemConfig, "material" | "color" | "partColors">>;
+  /** Prepočet toho istého modelu — nahradí aktívnu položku, nepridá novú. */
+  replaceActive?: boolean;
 };
 
 export type UploadBoxHandle = { triggerOpen: () => void };
@@ -53,12 +63,16 @@ const UploadBox = forwardRef<UploadBoxHandle, {
   const [svgThicknessMm, setSvgThicknessMm] = useState(10);
 
   const [originalSvgFile, setOriginalSvgFile] = useState<File | null>(null);
+  // Viacfarebný obrázok/SVG: farebné vrstvy a ich výška a farba tlače.
+  const [colorLayers, setColorLayers] = useState<{ layers: ColorLayer[]; name: string } | null>(null);
+  const [layerSettings, setLayerSettings] = useState<LayerSetting[]>([]);
+  const [layerNotice, setLayerNotice] = useState<string>("");
   const [isReconverting, setIsReconverting] = useState(false);
   const [uploadedFileName, setUploadedFileName] = useState<string>("");
 
   // Zobraz panel hrúbky len ak nie je ešte uploadnutý súbor, alebo ak bol uploadnutý SVG.
   // Keď je v kalkulátore už iný model (napr. hotový produkt), panel nepatrí k nemu.
-  const isSvgMode = originalSvgFile !== null;
+  const isSvgMode = originalSvgFile !== null && colorLayers === null;
   const showThicknessInput = isSvgMode || (!uploadedFileName && !hideDropzone);
 
   function sanitizeFileName(name: string): string {
@@ -96,7 +110,7 @@ const UploadBox = forwardRef<UploadBoxHandle, {
     return stlFile;
   }
 
-  async function uploadAndAnalyze(file: File): Promise<void> {
+  async function uploadAndAnalyze(file: File, extra?: Pick<Uploaded, "configDefaults" | "replaceActive">): Promise<void> {
     if (file.size > MAX_MODEL_MB * 1024 * 1024) {
       throw new Error(
         t("Súbor má {size} MB, maximum je {max} MB. Skúste znížiť počet trojuholníkov modelu.", {
@@ -142,13 +156,55 @@ const UploadBox = forwardRef<UploadBoxHandle, {
       fileName: safeName,
       fileSize: file.size,
       analysis: analyzeData.analysis,
+      ...extra,
     });
 
     setUploadedFileName(file.name);
   }
 
+  /**
+   * Viacfarebný obrázok alebo SVG → vrstvy. Vráti null pri jednej farbe
+   * (vtedy ide doterajší jednofarebný prevod).
+   */
+  async function detectColorLayers(file: File) {
+    const name = file.name.toLowerCase();
+    if (name.endsWith(".svg")) {
+      const px = await loadSvgPixels(file).catch(() => null);
+      return px ? extractColorLayers(px.w, px.h, px.data, px.scale, px.mmPerPx) : null;
+    }
+    const px = await loadPixels(file);
+    return extractColorLayers(px.w, px.h, px.data, px.scale, OUTPUT_LONGEST_MM / Math.max(px.w, px.h));
+  }
+
+  async function buildLayersAndUpload(
+    layers: ColorLayer[],
+    settings: LayerSetting[],
+    name: string,
+    replaceActive: boolean
+  ) {
+    onPreviewFile?.(null);
+    onProgress?.("convert", 0);
+    // Nech sa stihne vykresliť priebeh — výpočet beží v hlavnom vlákne.
+    await new Promise((r) => setTimeout(r, 30));
+    const model = buildLayeredStl(layers, settings, sanitizeFileName(name));
+    setLayerNotice(
+      model.tooManyParts
+        ? t("Model má priveľa samostatných častí na automatické zafarbenie — vytlačíme ho v jednej farbe.")
+        : ""
+    );
+    onPreviewFile?.(model.file);
+    const firstColor = settings.find((s) => s.enabled)?.colorId ?? "black";
+    await uploadAndAnalyze(model.file, {
+      configDefaults: model.partColors
+        ? { material: "PLA", color: model.partColors[0], partColors: model.partColors }
+        : { color: firstColor },
+      replaceActive,
+    });
+  }
+
   async function handleFile(originalFile: File) {
     setError("");
+    setLayerNotice("");
     onUploadingChange?.(true);
 
     try {
@@ -162,7 +218,24 @@ const UploadBox = forwardRef<UploadBoxHandle, {
 
       if (!isAllowed) throw new Error(t("Podporujeme STL, OBJ, SVG a obrázky PNG alebo JPG."));
 
-      if (isRasterImage(originalFileName)) {
+      // Viacfarebný obrázok/SVG: každá farba vlastná vrstva s vlastnou výškou.
+      const multi =
+        isRasterImage(originalFileName) || originalFileName.endsWith(".svg")
+          ? (onPreviewFile?.(null), onProgress?.("convert", 0), await detectColorLayers(originalFile))
+          : null;
+
+      if (multi) {
+        const settings = multi.layers.map((l) => ({
+          heightMm: l.background ? 2 : svgThicknessMm,
+          colorId: l.colorId,
+          enabled: !l.background,
+        }));
+        setOriginalSvgFile(null);
+        setColorLayers({ layers: multi.layers, name: originalFile.name });
+        setLayerSettings(settings);
+        await buildLayersAndUpload(multi.layers, settings, originalFile.name, false);
+      } else if (isRasterImage(originalFileName)) {
+        setColorLayers(null);
         // Obrázok → obrys (SVG) v prehliadači → rovnaké vytiahnutie ako SVG.
         // SVG obrys si pamätáme, aby „Použiť novú výšku“ fungovalo aj tu.
         onPreviewFile?.(null);
@@ -172,10 +245,12 @@ const UploadBox = forwardRef<UploadBoxHandle, {
         const stlFile = await convertSvgToStl(svgFile);
         await uploadAndAnalyze(stlFile);
       } else if (originalFileName.endsWith(".svg")) {
+        setColorLayers(null);
         setOriginalSvgFile(originalFile);
         const stlFile = await convertSvgToStl(originalFile);
         await uploadAndAnalyze(stlFile);
       } else {
+        setColorLayers(null);
         setOriginalSvgFile(null);
         onPreviewFile?.(originalFile);
         await uploadAndAnalyze(originalFile);
@@ -189,13 +264,17 @@ const UploadBox = forwardRef<UploadBoxHandle, {
   }
 
   async function handleReconvert() {
-    if (!originalSvgFile) return;
+    if (!originalSvgFile && !colorLayers) return;
     setIsReconverting(true);
     setError("");
     onUploadingChange?.(true);
     try {
-      const stlFile = await convertSvgToStl(originalSvgFile);
-      await uploadAndAnalyze(stlFile);
+      if (colorLayers) {
+        await buildLayersAndUpload(colorLayers.layers, layerSettings, colorLayers.name, true);
+      } else if (originalSvgFile) {
+        const stlFile = await convertSvgToStl(originalSvgFile);
+        await uploadAndAnalyze(stlFile, { replaceActive: true });
+      }
     } catch (e: any) {
       setError(e?.message || "Chyba pri konverzii.");
     } finally {
@@ -252,7 +331,89 @@ const UploadBox = forwardRef<UploadBoxHandle, {
         </div>
       )}
 
-      {showThicknessInput && (
+      {colorLayers && (
+        <div className="mt-4 rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
+          <div className="text-sm font-semibold text-neutral-800">{t("Farby a výšky")}</div>
+          <div className="mt-1 text-xs text-neutral-500">
+            {t("V obrázku sme našli {n} farby. Každej nastavte výšku (mm) a farbu, v ktorej ju vytlačíme.", {
+              n: colorLayers.layers.filter((l) => !l.background).length,
+            })}
+          </div>
+          <div className="mt-3 space-y-2">
+            {colorLayers.layers.map((layer, i) => {
+              const s = layerSettings[i];
+              if (!s) return null;
+              const update = (patch: Partial<LayerSetting>) =>
+                setLayerSettings((prev) => prev.map((x, k) => (k === i ? { ...x, ...patch } : x)));
+              return (
+                <div
+                  key={i}
+                  className={[
+                    "flex flex-wrap items-center gap-2 rounded-xl border bg-white px-3 py-2",
+                    s.enabled ? "border-neutral-200" : "border-dashed border-neutral-200 opacity-60",
+                  ].join(" ")}
+                >
+                  <input
+                    type="checkbox"
+                    checked={s.enabled}
+                    onChange={(e) => update({ enabled: e.target.checked })}
+                    aria-label={t("Tlačiť túto farbu")}
+                    className="h-4 w-4 accent-[#FFAE00]"
+                  />
+                  <span
+                    className="h-6 w-6 shrink-0 rounded-md border border-black/10"
+                    style={{ background: layer.hex }}
+                    title={layer.hex}
+                  />
+                  <span className="min-w-0 flex-1 text-xs text-neutral-600">
+                    {layer.background ? t("Pozadie ako podložka") : `${Math.round(layer.share * 100)} %`}
+                    <span className="ml-1 text-neutral-400">{layer.hex.toUpperCase()}</span>
+                  </span>
+                  <select
+                    value={s.colorId}
+                    onChange={(e) => update({ colorId: e.target.value })}
+                    aria-label={t("Farba tlače")}
+                    className="rounded-lg border border-neutral-200 bg-white px-2 py-1 text-xs font-semibold"
+                    style={{ boxShadow: `inset 4px 0 0 ${PALETTE_HEX[s.colorId]}` }}
+                  >
+                    {Object.keys(PALETTE_HEX).map((id) => (
+                      <option key={id} value={id}>
+                        {t(COLOR_LABELS[id] ?? id)}
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    type="number"
+                    min={0.4}
+                    max={200}
+                    step={0.2}
+                    value={s.heightMm}
+                    onChange={(e) => update({ heightMm: Math.max(0.4, Math.min(200, Number(e.target.value) || 0.4)) })}
+                    aria-label={t("Výška (mm)")}
+                    className="w-20 rounded-lg border border-neutral-200 bg-white px-2 py-1 text-sm outline-none focus:border-[#FFAE00]"
+                  />
+                  <span className="text-xs text-neutral-500">mm</span>
+                </div>
+              );
+            })}
+          </div>
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <button
+              onClick={handleReconvert}
+              disabled={isReconverting}
+              className="rounded-xl bg-[#FFAE00] px-4 py-2 text-sm font-bold text-black transition hover:bg-[#e09d00] disabled:opacity-60"
+            >
+              {isReconverting ? t("Prepočítavam...") : t("↺ Použiť výšky a farby")}
+            </button>
+            <span className="text-xs text-neutral-500">
+              {t("Viac farieb = viacfarebná tlač z PLA (+{fee} s DPH).", { fee: formatEur(addVat(MULTICOLOR_FEE_EUR)) })}
+            </span>
+          </div>
+          {layerNotice && <p className="mt-2 text-xs font-semibold text-amber-700">{layerNotice}</p>}
+        </div>
+      )}
+
+      {showThicknessInput && !colorLayers && (
         <div className="mt-4 rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
           <div className="text-sm font-semibold text-neutral-800">
             {t("Výška modelu zo SVG alebo obrázka")}

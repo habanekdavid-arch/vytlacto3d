@@ -37,8 +37,10 @@ type Uploaded = {
     supportCm3?: number;
     printHeightMm?: number;
   };
-  /** Odporúčané nastavenie hotového produktu z katalógu. */
+  /** Odporúčané nastavenie hotového produktu z katalógu (alebo farby z obrázka). */
   configDefaults?: Product["defaults"];
+  /** Prepočet toho istého modelu (nová výška) — nahradí aktívnu položku. */
+  replaceActive?: boolean;
 };
 
 type ContactForm = {
@@ -301,6 +303,32 @@ export default function Home() {
   }
 
   function addToCart(uploaded: Uploaded) {
+    // Nová výška / farby toho istého modelu: položka ostane jedna, nastavenie
+    // (materiál, kvalita, počet…) sa zachová, zmenia sa len súbor a farby dielov.
+    if (uploaded.replaceActive && activeItemId && cartItems.some((i) => i.id === activeItemId)) {
+      const { partColors, color } = uploaded.configDefaults ?? {};
+      setCartItems((prev) =>
+        prev.map((item) =>
+          item.id === activeItemId
+            ? {
+                ...item,
+                fileKey: uploaded.fileKey,
+                fileName: uploaded.fileName,
+                fileSize: uploaded.fileSize,
+                analysis: uploaded.analysis,
+                config: {
+                  ...item.config,
+                  ...(partColors ? { material: "PLA" as const } : {}),
+                  ...(color ? { color } : {}),
+                  partColors,
+                },
+                pricing: null,
+              }
+            : item
+        )
+      );
+      return;
+    }
     const id = String(Date.now());
     const newItem: CartItem = {
       id,
@@ -1045,7 +1073,7 @@ export default function Home() {
                     <div className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-semibold text-neutral-600">{t("aktuálne")}</div>
                   </div>
                   <Configurator
-                    key={activeItemId}
+                    key={`${activeItemId}-${activeItem.fileKey}`}
                     analysis={{
                       volumeCm3: activeItem.analysis.volumeCm3,
                       dimsXmm: activeItem.analysis.dimsXmm,
