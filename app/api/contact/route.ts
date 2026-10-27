@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sendContactFormEmail } from "@/lib/email-contact";
 import { parseInquiryType } from "@/lib/contact-inquiry";
+import { verifyRecaptcha } from "@/lib/recaptcha";
 import {
   CONTACT_BLOB_PREFIX,
   CONTACT_MAX_FILES,
@@ -62,6 +63,19 @@ export async function POST(req: NextRequest) {
 
   if (honeypot) {
     return NextResponse.json({ ok: true });
+  }
+
+  const captcha = await verifyRecaptcha(
+    body?.recaptcha,
+    "contact",
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
+  );
+  if (!captcha.ok) {
+    console.warn("Contact form blocked by reCAPTCHA:", captcha.reason);
+    return NextResponse.json(
+      { error: "Overenie proti spamu sa nepodarilo. Obnovte stránku a skúste to znova, prípadne nám napíšte e-mail." },
+      { status: 400 }
+    );
   }
 
   if (!name || name.length > 200) {

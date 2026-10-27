@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { relaxAcceptOnMobile } from "@/lib/file-accept";
 import {
@@ -15,6 +16,7 @@ import {
 } from "@/lib/contact-attachments";
 import { useT } from "@/lib/i18n/client";
 import { INQUIRY_TYPES, type InquiryType } from "@/lib/contact-inquiry";
+import { RECAPTCHA_SITE_KEY, loadRecaptcha, recaptchaToken } from "@/lib/recaptcha-client";
 
 type AttachmentItem = {
   id: string;
@@ -174,6 +176,8 @@ export default function ContactForm({
     setError(null);
 
     try {
+      // Neviditeľné overenie proti botom (Google reCAPTCHA v3).
+      const recaptcha = await recaptchaToken("contact");
       const res = await fetch("/api/contact", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -184,6 +188,7 @@ export default function ContactForm({
           subject,
           message,
           website,
+          recaptcha,
           attachments: attachments.flatMap((a) => (a.uploaded ? [a.uploaded] : [])),
         }),
       });
@@ -295,9 +300,9 @@ export default function ContactForm({
             <li>{t("Stiahnite súbor modelu (STL alebo 3MF).")}</li>
             <li>
               {t("Vložte ho nižšie do príloh — alebo ho rovno nahrajte do")}{" "}
-              <a href="/#kalkulator" className="font-semibold underline">
+              <Link href="/#kalkulator" className="font-semibold underline">
                 {t("kalkulátora")}
-              </a>{" "}
+              </Link>{" "}
               {t("a cenu uvidíte hneď.")}
             </li>
           </ol>
@@ -308,7 +313,7 @@ export default function ContactForm({
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="mx-auto mt-8 grid max-w-2xl gap-4 sm:grid-cols-2">
+      <form onSubmit={handleSubmit} onFocus={() => void loadRecaptcha()} className="mx-auto mt-8 grid max-w-2xl gap-4 sm:grid-cols-2">
         <input
           type="text"
           tabIndex={-1}
@@ -496,6 +501,20 @@ export default function ContactForm({
             {status === "sending" ? "Odosielam..." : uploading ? t("Nahrávam prílohy...") : t("Odoslať správu")}
           </button>
         </div>
+
+        {RECAPTCHA_SITE_KEY && (
+          // Odznak reCAPTCHA je skrytý (globals.css) — Google vtedy vyžaduje tento text.
+          <p className="text-center text-[11px] leading-relaxed text-neutral-400 sm:col-span-2">
+            {t("Formulár chráni Google reCAPTCHA.")}{" "}
+            <a href="https://policies.google.com/privacy" target="_blank" rel="noreferrer" className="underline">
+              {t("Ochrana súkromia Google")}
+            </a>
+            {" · "}
+            <a href="https://policies.google.com/terms" target="_blank" rel="noreferrer" className="underline">
+              {t("Podmienky Google")}
+            </a>
+          </p>
+        )}
       </form>
     </div>
   );

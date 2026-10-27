@@ -1116,6 +1116,21 @@ const messages: Messages = {
     hu: "Olyan modellt válasszon, amelynek licence megengedi a megrendelésre történő nyomtatást (pl. CC0, CC BY, CC BY-SA). A „nem kereskedelmi” (NC) vagy „csak személyes használatra” jelölésű modelleket csak a szerző engedélyével nyomtathatjuk.",
     de: "Wählen Sie ein Modell, dessen Lizenz den Druck auf Bestellung erlaubt (z. B. CC0, CC BY, CC BY-SA). Modelle mit dem Vermerk „nicht kommerziell“ (NC) oder „nur für den persönlichen Gebrauch“ dürfen wir nur mit Zustimmung des Autors drucken.",
   },
+  "Formulár chráni Google reCAPTCHA.": {
+    en: "This form is protected by Google reCAPTCHA.",
+    hu: "Az űrlapot a Google reCAPTCHA védi.",
+    de: "Dieses Formular ist durch Google reCAPTCHA geschützt.",
+  },
+  "Ochrana súkromia Google": {
+    en: "Google Privacy Policy",
+    hu: "Google adatvédelem",
+    de: "Google-Datenschutz",
+  },
+  "Podmienky Google": {
+    en: "Google Terms",
+    hu: "Google feltételek",
+    de: "Google-Nutzungsbedingungen",
+  },
 };
 
 export default messages;
