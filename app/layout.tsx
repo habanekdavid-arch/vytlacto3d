@@ -2,7 +2,6 @@ import "./globals.css";
 import Script from "next/script";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import CookieBanner from "@/components/CookieBanner";
 import Providers from "@/components/Providers";
 import FourFromFloatingButton from "@/components/FourFromFloatingButton";
 import PromoTipPopup from "@/components/PromoTipPopup";
@@ -95,6 +94,23 @@ export default async function RootLayout({
         </noscript>
         {/* End Google Tag Manager (noscript) */}
 
+        {/* Google Consent Mode v2 — kým návštevník nesúhlasí, Google nič neukladá.
+            Súhlas zbiera CookieScript (šablóna v GTM, spúšťač Consent Initialization)
+            a stav po kliknutí prepne. Musí byť pred GTM a Google Analytics. */}
+        <Script id="consent-default" strategy="beforeInteractive">
+          {`window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('consent', 'default', {
+            ad_storage: 'denied',
+            ad_user_data: 'denied',
+            ad_personalization: 'denied',
+            analytics_storage: 'denied',
+            functionality_storage: 'granted',
+            security_storage: 'granted',
+            wait_for_update: 500
+          });`}
+        </Script>
+
         {/* Google Tag Manager */}
         <Script id="google-tag-manager" strategy="beforeInteractive">
           {`(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
@@ -124,7 +140,6 @@ export default async function RootLayout({
           <Navbar />
           <main className="flex-1">{children}</main>
           <Footer />
-          <CookieBanner />
           <FourFromFloatingButton />
           <PromoTipPopup />
           <RegisterNudgePopup />
