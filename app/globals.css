@@ -100,3 +100,7 @@ body {
   color: #18181b;
   font-weight: 700;
 }
+/* Odznak reCAPTCHA v3 je skrytý — pod kontaktným formulárom je o nej text (podmienka Google). */
+.grecaptcha-badge {
+  visibility: hidden;
+}
