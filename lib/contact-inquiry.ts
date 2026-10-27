@@ -4,13 +4,13 @@ export type InquiryType = (typeof INQUIRY_TYPES)[number];
 
 export const INQUIRY_LABELS: Record<InquiryType, string> = {
   "mam-model": "Mám 3D model",
-  "hladat-model": "Nemám 3D model — dohľadať na internete",
+  "hladat-model": "Nemám vlastný 3D model — stiahnutý z internetu",
 };
 
 /** Krátky štítok do predmetu e-mailu. */
 export const INQUIRY_SUBJECT_TAG: Record<InquiryType, string> = {
   "mam-model": "Mám model",
-  "hladat-model": "Dohľadať model",
+  "hladat-model": "Model z internetu",
 };
 
 export function parseInquiryType(value: unknown): InquiryType {

@@ -1061,10 +1061,50 @@ const messages: Messages = {
     hu: "3D modell és egyéb mellékletek",
     de: "3D-Modell und weitere Anhänge",
   },
-  "Vyberte, či už 3D model máte, alebo vám ho máme dohľadať. Odpovieme čo najskôr.": {
-    en: "Choose whether you already have a 3D model or want us to find one. We'll reply as soon as possible.",
-    hu: "Válassza ki, hogy van-e már 3D modellje, vagy keressük meg Önnek. Hamarosan válaszolunk.",
-    de: "Wählen Sie, ob Sie bereits ein 3D-Modell haben oder ob wir eines suchen sollen. Wir antworten so schnell wie möglich.",
+  "Vyberte, či 3D model už máte, alebo si ho najprv stiahnete z internetu. Odpovieme čo najskôr.": {
+    en: "Choose whether you already have a 3D model or will first download one from the internet. We'll reply as soon as possible.",
+    hu: "Válassza ki, hogy van-e már 3D modellje, vagy előbb letölt egyet az internetről. Hamarosan válaszolunk.",
+    de: "Wählen Sie, ob Sie bereits ein 3D-Modell haben oder zuerst eines aus dem Internet herunterladen. Wir antworten so schnell wie möglich.",
+  },
+  "Nájdite si ho na internete, stiahnite a vložte sem.": {
+    en: "Find one online, download it and add it here.",
+    hu: "Keresse meg az interneten, töltse le, és töltse fel ide.",
+    de: "Suchen Sie es im Internet, laden Sie es herunter und fügen Sie es hier ein.",
+  },
+  "Ako na to:": {
+    en: "How it works:",
+    hu: "Hogyan működik:",
+    de: "So geht's:",
+  },
+  "Nájdite model na internete, napr. na": {
+    en: "Find a model online, e.g. on",
+    hu: "Keressen modellt az interneten, pl. itt:",
+    de: "Suchen Sie ein Modell im Internet, z. B. auf",
+  },
+  "Stiahnite súbor modelu (STL alebo 3MF).": {
+    en: "Download the model file (STL or 3MF).",
+    hu: "Töltse le a modellfájlt (STL vagy 3MF).",
+    de: "Laden Sie die Modelldatei herunter (STL oder 3MF).",
+  },
+  "Vložte ho nižšie do príloh — alebo ho rovno nahrajte do": {
+    en: "Add it to the attachments below — or upload it straight to the",
+    hu: "Csatolja lent a mellékletekhez — vagy töltse fel egyenesen a",
+    de: "Fügen Sie es unten als Anhang ein — oder laden Sie es direkt in den",
+  },
+  "kalkulátora": {
+    en: "calculator",
+    hu: "kalkulátorba",
+    de: "Rechner",
+  },
+  "a cenu uvidíte hneď.": {
+    en: "and see the price right away.",
+    hu: "és azonnal látja az árat.",
+    de: "und sehen sofort den Preis.",
+  },
+  "Stiahnutý 3D model": {
+    en: "Downloaded 3D model",
+    hu: "Letöltött 3D modell",
+    de: "Heruntergeladenes 3D-Modell",
   },
 };
 

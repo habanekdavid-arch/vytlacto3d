@@ -57,8 +57,6 @@ export async function POST(req: NextRequest) {
   const subject = String(body?.subject ?? "").trim();
   const message = String(body?.message ?? "").trim();
   const inquiryType = parseInquiryType(body?.inquiryType);
-  // Pri hľadaní modelu: odkaz alebo názov, podľa ktorého ho máme dohľadať.
-  const modelReference = String(body?.modelReference ?? "").trim().slice(0, 500);
   // Hidden field — real users never fill it in, bots usually do.
   const honeypot = String(body?.website ?? "").trim();
 
@@ -85,7 +83,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    await sendContactFormEmail({ name, email, subject, message, attachments, inquiryType, modelReference });
+    await sendContactFormEmail({ name, email, subject, message, attachments, inquiryType });
   } catch (err) {
     console.error("Contact form email failed:", err);
     return NextResponse.json(
