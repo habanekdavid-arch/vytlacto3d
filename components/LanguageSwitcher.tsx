@@ -6,9 +6,18 @@ import { LOCALES, LOCALE_COOKIE, LOCALE_INFO, type Locale } from "@/lib/i18n/con
 import { useLocale, useT } from "@/lib/i18n/client";
 import FlagIcon from "@/components/FlagIcon";
 
+type CookieScriptApi = { instance?: { applyTranslationByCode?: (code: string) => void; applyTranslation?: (code: string) => void } };
+
 function saveLocale(locale: Locale) {
   document.cookie = `${LOCALE_COOKIE}=${locale}; path=/; max-age=31536000; samesite=lax`;
   document.documentElement.lang = locale;
+  // Cookie lišta (CookieScript z GTM) prepne jazyk hneď, bez obnovenia stránky.
+  const cs = (window as unknown as { CookieScript?: CookieScriptApi }).CookieScript?.instance;
+  try {
+    (cs?.applyTranslationByCode ?? cs?.applyTranslation)?.call(cs, locale);
+  } catch {
+    // lišta sa prepne pri ďalšom načítaní stránky podľa <html lang>
+  }
 }
 
 /** Prepínač jazyka v pravom hornom rohu. Voľba sa uloží do cookie na rok. */
