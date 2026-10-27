@@ -14,6 +14,7 @@ import {
   type ContactAttachment,
 } from "@/lib/contact-attachments";
 import { useT } from "@/lib/i18n/client";
+import { INQUIRY_TYPES, type InquiryType } from "@/lib/contact-inquiry";
 
 type AttachmentItem = {
   id: string;
@@ -36,8 +37,30 @@ function PaperclipIcon({ className = "h-5 w-5" }: { className?: string }) {
 const inputClasses =
   "mt-2 w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-900 shadow-sm transition-all duration-200 hover:border-neutral-300 focus:border-[#FFAE00] focus:outline-none focus:ring-4 focus:ring-[#FFAE00]/15";
 
-export default function ContactForm() {
+// Výber typu dopytu — dve karty nad formulárom.
+const INQUIRY_CARDS: Record<InquiryType, { title: string; text: string; icon: string }> = {
+  "mam-model": {
+    title: "Mám 3D model",
+    text: "Pošlite súbor (STL, OBJ, 3MF, STEP…) a napíšte, čo potrebujete.",
+    icon: "📦",
+  },
+  "hladat-model": {
+    title: "Nemám 3D model",
+    text: "Popíšte, čo chcete vytlačiť — model dohľadáme na internete.",
+    icon: "🔎",
+  },
+};
+
+export default function ContactForm({
+  title = "Nenašli ste odpoveď?",
+  subtitle = "Napíšte nám priamo cez formulár nižšie, odpovieme vám čo najskôr.",
+}: {
+  title?: string;
+  subtitle?: string;
+} = {}) {
   const t = useT();
+  const [inquiryType, setInquiryType] = useState<InquiryType>("mam-model");
+  const [modelReference, setModelReference] = useState("");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [subject, setSubject] = useState("");
@@ -51,6 +74,12 @@ export default function ContactForm() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   // Na mobile by 3D súbory boli vo výbere zosivené (pozri lib/file-accept).
   useEffect(() => relaxAcceptOnMobile(fileInputRef.current), []);
+  // Odkaz ?dopyt=hladat-model otvorí formulár rovno na hľadanie modelu.
+  useEffect(() => {
+    const fromUrl = new URLSearchParams(window.location.search).get("dopyt");
+    if (INQUIRY_TYPES.includes(fromUrl as InquiryType)) setInquiryType(fromUrl as InquiryType);
+  }, []);
+  const searching = inquiryType === "hladat-model";
 
   const uploading = attachments.some((a) => a.status === "uploading");
 
@@ -143,6 +172,8 @@ export default function ContactForm() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          inquiryType,
+          modelReference: searching ? modelReference : "",
           name,
           email,
           subject,
@@ -164,6 +195,7 @@ export default function ContactForm() {
       setEmail("");
       setSubject("");
       setMessage("");
+      setModelReference("");
       setAttachments([]);
       setAttachError(null);
     } catch {
@@ -204,12 +236,48 @@ export default function ContactForm() {
         </div>
 
         <h3 className="mt-6 text-2xl font-extrabold tracking-tight text-neutral-900 sm:text-3xl">
-          {t("Nenašli ste odpoveď?")}
+          {t(title)}
         </h3>
         <p className="mt-3 text-sm leading-relaxed text-neutral-600">
-          {t("Napíšte nám priamo cez formulár nižšie, odpovieme vám čo najskôr.")}
+          {t(subtitle)}
         </p>
       </div>
+
+      <div className="mx-auto mt-8 grid max-w-2xl gap-3 sm:grid-cols-2" role="radiogroup" aria-label={t("Typ dopytu")}>
+        {INQUIRY_TYPES.map((type) => {
+          const card = INQUIRY_CARDS[type];
+          const active = inquiryType === type;
+          return (
+            <button
+              key={type}
+              type="button"
+              role="radio"
+              aria-checked={active}
+              onClick={() => setInquiryType(type)}
+              className={[
+                "flex items-start gap-3 rounded-2xl border-2 p-4 text-left transition",
+                active
+                  ? "border-[#FFAE00] bg-[#FFAE00]/10 shadow-sm"
+                  : "border-neutral-200 bg-white hover:border-neutral-300",
+              ].join(" ")}
+            >
+              <span className="text-2xl leading-none" aria-hidden>
+                {card.icon}
+              </span>
+              <span>
+                <span className="block text-sm font-extrabold text-neutral-900">{t(card.title)}</span>
+                <span className="mt-1 block text-xs leading-relaxed text-neutral-600">{t(card.text)}</span>
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {searching && (
+        <div className="mx-auto mt-4 max-w-2xl rounded-2xl border border-violet-200 bg-violet-50 px-4 py-3 text-xs leading-relaxed text-violet-900">
+          {t("Napíšte, čo chcete vytlačiť: názov alebo popis, približné rozmery a na čo to má slúžiť. Vhodný model dohľadáme na internete (napr. Printables, Thingiverse, MakerWorld) a pošleme vám cenovú ponuku. Ak máte fotku alebo nákres, priložte ho.")}
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="mx-auto mt-8 grid max-w-2xl gap-4 sm:grid-cols-2">
         <input
@@ -251,24 +319,49 @@ export default function ContactForm() {
             required
             value={subject}
             onChange={(e) => setSubject(e.target.value)}
+            placeholder={searching ? t("napr. Držiak na bicykel") : t("napr. Tlač 10 kusov držiaka")}
             className={inputClasses}
           />
         </div>
 
+        {searching && (
+          <div className="sm:col-span-2">
+            <label className="text-sm font-semibold text-neutral-700">
+              {t("Odkaz alebo názov modelu")} <span className="font-normal text-neutral-400">{t("(nepovinné)")}</span>
+            </label>
+            <input
+              type="text"
+              value={modelReference}
+              onChange={(e) => setModelReference(e.target.value)}
+              placeholder={t("napr. odkaz na produkt alebo presný názov dielu")}
+              maxLength={500}
+              className={inputClasses}
+            />
+          </div>
+        )}
+
         <div className="sm:col-span-2">
-          <label className="text-sm font-semibold text-neutral-700">{t("Správa *")}</label>
+          <label className="text-sm font-semibold text-neutral-700">
+            {searching ? t("Čo potrebujete vytlačiť? *") : t("Správa *")}
+          </label>
           <textarea
             required
             rows={5}
             value={message}
             onChange={(e) => setMessage(e.target.value)}
+            placeholder={
+              searching
+                ? t("Popis, rozmery, počet kusov, materiál alebo farba…")
+                : t("Materiál, farba, počet kusov, termín…")
+            }
             className={inputClasses}
           />
         </div>
 
         <div className="sm:col-span-2">
           <label className="text-sm font-semibold text-neutral-700">
-            {t("Prílohy")} <span className="font-normal text-neutral-400">{t("(nepovinné)")}</span>
+            {searching ? t("Fotka alebo nákres") : t("3D model a ďalšie prílohy")}{" "}
+            <span className="font-normal text-neutral-400">{t("(nepovinné)")}</span>
           </label>
 
           <div

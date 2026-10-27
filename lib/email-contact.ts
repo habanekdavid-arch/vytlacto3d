@@ -5,6 +5,7 @@ import {
   formatFileSize,
   type ContactAttachment,
 } from "@/lib/contact-attachments";
+import { INQUIRY_LABELS, INQUIRY_SUBJECT_TAG, type InquiryType } from "@/lib/contact-inquiry";
 
 function escapeHtml(value: string) {
   return value
@@ -46,12 +47,16 @@ export async function sendContactFormEmail({
   subject,
   message,
   attachments = [],
+  inquiryType = "mam-model",
+  modelReference = "",
 }: {
   name: string;
   email: string;
   subject: string;
   message: string;
   attachments?: ContactAttachment[];
+  inquiryType?: InquiryType;
+  modelReference?: string;
 }) {
   if (!hasMailCredentials()) {
     throw new Error("Missing SMTP_USER/SMTP_PASSWORD — contact form email not sent.");
@@ -82,10 +87,23 @@ export async function sendContactFormEmail({
 
         <h1 style="margin:14px 0 16px;font-size:24px;color:#111;">Nová správa z kontaktného formulára</h1>
 
+        <div style="display:inline-block;margin-bottom:16px;padding:6px 14px;border-radius:999px;font-size:13px;font-weight:800;${
+          inquiryType === "hladat-model" ? "background:#7c3aed;color:#fff;" : "background:#FFAE00;color:#111;"
+        }">${escapeHtml(INQUIRY_LABELS[inquiryType])}</div>
+
         <table style="border-collapse:collapse;width:100%;margin-bottom:20px;">
           <tr><td style="padding:6px 12px 6px 0;color:#777;font-size:14px;white-space:nowrap;">Meno</td><td style="padding:6px 0;font-size:14px;color:#111;font-weight:600;">${escapeHtml(name)}</td></tr>
           <tr><td style="padding:6px 12px 6px 0;color:#777;font-size:14px;white-space:nowrap;">Email</td><td style="padding:6px 0;font-size:14px;color:#111;font-weight:600;">${escapeHtml(email)}</td></tr>
           <tr><td style="padding:6px 12px 6px 0;color:#777;font-size:14px;white-space:nowrap;">Predmet</td><td style="padding:6px 0;font-size:14px;color:#111;font-weight:600;">${escapeHtml(subject)}</td></tr>
+          ${
+            modelReference
+              ? `<tr><td style="padding:6px 12px 6px 0;color:#777;font-size:14px;white-space:nowrap;">Odkaz / názov</td><td style="padding:6px 0;font-size:14px;color:#111;font-weight:600;word-break:break-all;">${
+                  /^https?:\/\//i.test(modelReference)
+                    ? `<a href="${escapeHtml(modelReference)}" style="color:#111;">${escapeHtml(modelReference)}</a>`
+                    : escapeHtml(modelReference)
+                }</td></tr>`
+              : ""
+          }
         </table>
 
         <div style="background:#fafafa;border:1px solid #eee;border-radius:14px;padding:16px 20px;">
@@ -105,7 +123,7 @@ export async function sendContactFormEmail({
     from: FROM,
     to,
     replyTo: email,
-    subject: `[Kontaktný formulár] ${subject}${attachments.length ? ` 📎${attachments.length}` : ""}`,
+    subject: `[${INQUIRY_SUBJECT_TAG[inquiryType]}] ${subject}${attachments.length ? ` 📎${attachments.length}` : ""}`,
     html,
     attachments: parts,
   });
