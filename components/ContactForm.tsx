@@ -46,10 +46,17 @@ const INQUIRY_CARDS: Record<InquiryType, { title: string; text: string; icon: st
   },
   "hladat-model": {
     title: "Nemám 3D model",
-    text: "Popíšte, čo chcete vytlačiť — model dohľadáme na internete.",
+    text: "Nájdite si ho na internete, stiahnite a vložte sem.",
     icon: "🔎",
   },
 };
+
+// Stránky s 3D modelmi na stiahnutie — pre zákazníka, ktorý model nemá.
+const MODEL_SITES = [
+  { name: "Printables", url: "https://www.printables.com/" },
+  { name: "Thingiverse", url: "https://www.thingiverse.com/" },
+  { name: "MakerWorld", url: "https://makerworld.com/" },
+];
 
 export default function ContactForm({
   title = "Nenašli ste odpoveď?",
@@ -60,7 +67,6 @@ export default function ContactForm({
 } = {}) {
   const t = useT();
   const [inquiryType, setInquiryType] = useState<InquiryType>("mam-model");
-  const [modelReference, setModelReference] = useState("");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [subject, setSubject] = useState("");
@@ -173,7 +179,6 @@ export default function ContactForm({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           inquiryType,
-          modelReference: searching ? modelReference : "",
           name,
           email,
           subject,
@@ -195,7 +200,6 @@ export default function ContactForm({
       setEmail("");
       setSubject("");
       setMessage("");
-      setModelReference("");
       setAttachments([]);
       setAttachError(null);
     } catch {
@@ -275,7 +279,28 @@ export default function ContactForm({
 
       {searching && (
         <div className="mx-auto mt-4 max-w-2xl rounded-2xl border border-violet-200 bg-violet-50 px-4 py-3 text-xs leading-relaxed text-violet-900">
-          {t("Napíšte, čo chcete vytlačiť: názov alebo popis, približné rozmery a na čo to má slúžiť. Vhodný model dohľadáme na internete (napr. Printables, Thingiverse, MakerWorld) a pošleme vám cenovú ponuku. Ak máte fotku alebo nákres, priložte ho.")}
+          <div className="font-bold">{t("Ako na to:")}</div>
+          <ol className="mt-1 list-decimal space-y-0.5 pl-4">
+            <li>
+              {t("Nájdite model na internete, napr. na")}{" "}
+              {MODEL_SITES.map((site, i) => (
+                <span key={site.url}>
+                  <a href={site.url} target="_blank" rel="noreferrer" className="font-semibold underline">
+                    {site.name}
+                  </a>
+                  {i < MODEL_SITES.length - 1 ? ", " : "."}
+                </span>
+              ))}
+            </li>
+            <li>{t("Stiahnite súbor modelu (STL alebo 3MF).")}</li>
+            <li>
+              {t("Vložte ho nižšie do príloh — alebo ho rovno nahrajte do")}{" "}
+              <a href="/#kalkulator" className="font-semibold underline">
+                {t("kalkulátora")}
+              </a>{" "}
+              {t("a cenu uvidíte hneď.")}
+            </li>
+          </ol>
         </div>
       )}
 
@@ -324,22 +349,6 @@ export default function ContactForm({
           />
         </div>
 
-        {searching && (
-          <div className="sm:col-span-2">
-            <label className="text-sm font-semibold text-neutral-700">
-              {t("Odkaz alebo názov modelu")} <span className="font-normal text-neutral-400">{t("(nepovinné)")}</span>
-            </label>
-            <input
-              type="text"
-              value={modelReference}
-              onChange={(e) => setModelReference(e.target.value)}
-              placeholder={t("napr. odkaz na produkt alebo presný názov dielu")}
-              maxLength={500}
-              className={inputClasses}
-            />
-          </div>
-        )}
-
         <div className="sm:col-span-2">
           <label className="text-sm font-semibold text-neutral-700">
             {searching ? t("Čo potrebujete vytlačiť? *") : t("Správa *")}
@@ -360,7 +369,7 @@ export default function ContactForm({
 
         <div className="sm:col-span-2">
           <label className="text-sm font-semibold text-neutral-700">
-            {searching ? t("Fotka alebo nákres") : t("3D model a ďalšie prílohy")}{" "}
+            {searching ? t("Stiahnutý 3D model") : t("3D model a ďalšie prílohy")}{" "}
             <span className="font-normal text-neutral-400">{t("(nepovinné)")}</span>
           </label>
 

@@ -55,7 +55,7 @@ export default async function KontaktPage() {
 
         <ContactForm
           title="Napíšte nám"
-          subtitle="Vyberte, či už 3D model máte, alebo vám ho máme dohľadať. Odpovieme čo najskôr."
+          subtitle="Vyberte, či 3D model už máte, alebo si ho najprv stiahnete z internetu. Odpovieme čo najskôr."
         />
       </div>
     </main>

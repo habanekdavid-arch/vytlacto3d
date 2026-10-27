@@ -48,7 +48,6 @@ export async function sendContactFormEmail({
   message,
   attachments = [],
   inquiryType = "mam-model",
-  modelReference = "",
 }: {
   name: string;
   email: string;
@@ -56,7 +55,6 @@ export async function sendContactFormEmail({
   message: string;
   attachments?: ContactAttachment[];
   inquiryType?: InquiryType;
-  modelReference?: string;
 }) {
   if (!hasMailCredentials()) {
     throw new Error("Missing SMTP_USER/SMTP_PASSWORD — contact form email not sent.");
@@ -95,15 +93,6 @@ export async function sendContactFormEmail({
           <tr><td style="padding:6px 12px 6px 0;color:#777;font-size:14px;white-space:nowrap;">Meno</td><td style="padding:6px 0;font-size:14px;color:#111;font-weight:600;">${escapeHtml(name)}</td></tr>
           <tr><td style="padding:6px 12px 6px 0;color:#777;font-size:14px;white-space:nowrap;">Email</td><td style="padding:6px 0;font-size:14px;color:#111;font-weight:600;">${escapeHtml(email)}</td></tr>
           <tr><td style="padding:6px 12px 6px 0;color:#777;font-size:14px;white-space:nowrap;">Predmet</td><td style="padding:6px 0;font-size:14px;color:#111;font-weight:600;">${escapeHtml(subject)}</td></tr>
-          ${
-            modelReference
-              ? `<tr><td style="padding:6px 12px 6px 0;color:#777;font-size:14px;white-space:nowrap;">Odkaz / názov</td><td style="padding:6px 0;font-size:14px;color:#111;font-weight:600;word-break:break-all;">${
-                  /^https?:\/\//i.test(modelReference)
-                    ? `<a href="${escapeHtml(modelReference)}" style="color:#111;">${escapeHtml(modelReference)}</a>`
-                    : escapeHtml(modelReference)
-                }</td></tr>`
-              : ""
-          }
         </table>
 
         <div style="background:#fafafa;border:1px solid #eee;border-radius:14px;padding:16px 20px;">
