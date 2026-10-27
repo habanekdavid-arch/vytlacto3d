@@ -4,7 +4,11 @@ import Image from "next/image";
 import { useT } from "@/lib/i18n/client";
 import { CONTACT_EMAIL } from "@/lib/contact";
 
-const OPEN_EVENT = "vytlacto3d:open-cookie-banner";
+/** Okno nastavení cookies od CookieScript (načíta ho GTM). */
+function openCookieSettings() {
+  const cs = (window as unknown as { CookieScript?: { instance?: { show?: () => void } } }).CookieScript;
+  cs?.instance?.show?.();
+}
 
 export default function Footer() {
   const t = useT();
@@ -112,7 +116,7 @@ export default function Footer() {
 
           <button
             type="button"
-            onClick={() => window.dispatchEvent(new Event(OPEN_EVENT))}
+            onClick={openCookieSettings}
             className="transition hover:text-black"
           >
             {t("Nastavenia cookies")}
