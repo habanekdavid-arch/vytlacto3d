@@ -301,6 +301,10 @@ export default function ContactForm({
               {t("a cenu uvidíte hneď.")}
             </li>
           </ol>
+          <p className="mt-2 border-t border-violet-200 pt-2">
+            <span className="font-bold">{t("Licencia modelu:")}</span>{" "}
+            {t("Vyberte model, ktorého licencia dovoľuje tlač na objednávku (napr. CC0, CC BY, CC BY-SA). Modely označené „nekomerčné“ (NC) alebo „len na osobné použitie“ môžeme vytlačiť len so súhlasom autora.")}
+          </p>
         </div>
       )}
 
