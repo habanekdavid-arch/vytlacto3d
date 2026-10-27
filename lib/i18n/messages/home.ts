@@ -1106,6 +1106,16 @@ const messages: Messages = {
     hu: "Letöltött 3D modell",
     de: "Heruntergeladenes 3D-Modell",
   },
+  "Licencia modelu:": {
+    en: "Model licence:",
+    hu: "A modell licence:",
+    de: "Lizenz des Modells:",
+  },
+  "Vyberte model, ktorého licencia dovoľuje tlač na objednávku (napr. CC0, CC BY, CC BY-SA). Modely označené „nekomerčné“ (NC) alebo „len na osobné použitie“ môžeme vytlačiť len so súhlasom autora.": {
+    en: "Choose a model whose licence allows printing to order (e.g. CC0, CC BY, CC BY-SA). Models marked “non-commercial” (NC) or “personal use only” can only be printed with the author's permission.",
+    hu: "Olyan modellt válasszon, amelynek licence megengedi a megrendelésre történő nyomtatást (pl. CC0, CC BY, CC BY-SA). A „nem kereskedelmi” (NC) vagy „csak személyes használatra” jelölésű modelleket csak a szerző engedélyével nyomtathatjuk.",
+    de: "Wählen Sie ein Modell, dessen Lizenz den Druck auf Bestellung erlaubt (z. B. CC0, CC BY, CC BY-SA). Modelle mit dem Vermerk „nicht kommerziell“ (NC) oder „nur für den persönlichen Gebrauch“ dürfen wir nur mit Zustimmung des Autors drucken.",
+  },
 };
 
 export default messages;
