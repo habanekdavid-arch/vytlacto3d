@@ -1,5 +1,6 @@
 import { getT } from "@/lib/i18n/server";
 import { CONTACT_EMAIL } from "@/lib/contact";
+import ContactForm from "@/components/ContactForm";
 export default async function KontaktPage() {
   const { t } = await getT();
   return (
@@ -51,6 +52,11 @@ export default async function KontaktPage() {
             </a>
           </div>
         </div>
+
+        <ContactForm
+          title="Napíšte nám"
+          subtitle="Vyberte, či už 3D model máte, alebo vám ho máme dohľadať. Odpovieme čo najskôr."
+        />
       </div>
     </main>
   );

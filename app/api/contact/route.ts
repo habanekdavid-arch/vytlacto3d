@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sendContactFormEmail } from "@/lib/email-contact";
+import { parseInquiryType } from "@/lib/contact-inquiry";
 import {
   CONTACT_BLOB_PREFIX,
   CONTACT_MAX_FILES,
@@ -55,6 +56,9 @@ export async function POST(req: NextRequest) {
   const email = String(body?.email ?? "").trim();
   const subject = String(body?.subject ?? "").trim();
   const message = String(body?.message ?? "").trim();
+  const inquiryType = parseInquiryType(body?.inquiryType);
+  // Pri hľadaní modelu: odkaz alebo názov, podľa ktorého ho máme dohľadať.
+  const modelReference = String(body?.modelReference ?? "").trim().slice(0, 500);
   // Hidden field — real users never fill it in, bots usually do.
   const honeypot = String(body?.website ?? "").trim();
 
@@ -81,7 +85,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    await sendContactFormEmail({ name, email, subject, message, attachments });
+    await sendContactFormEmail({ name, email, subject, message, attachments, inquiryType, modelReference });
   } catch (err) {
     console.error("Contact form email failed:", err);
     return NextResponse.json(

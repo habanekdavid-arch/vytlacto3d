@@ -986,6 +986,86 @@ const messages: Messages = {
     hu: "Több szín = többszínű PLA nyomtatás (+{fee} áfával).",
     de: "Mehrere Farben = mehrfarbiger PLA-Druck (+{fee} inkl. MwSt.).",
   },
+  "Typ dopytu": {
+    en: "Inquiry type",
+    hu: "Megkeresés típusa",
+    de: "Art der Anfrage",
+  },
+  "Mám 3D model": {
+    en: "I have a 3D model",
+    hu: "Van 3D modellem",
+    de: "Ich habe ein 3D-Modell",
+  },
+  "Pošlite súbor (STL, OBJ, 3MF, STEP…) a napíšte, čo potrebujete.": {
+    en: "Send the file (STL, OBJ, 3MF, STEP…) and tell us what you need.",
+    hu: "Küldje el a fájlt (STL, OBJ, 3MF, STEP…), és írja meg, mire van szüksége.",
+    de: "Senden Sie die Datei (STL, OBJ, 3MF, STEP…) und schreiben Sie, was Sie brauchen.",
+  },
+  "Nemám 3D model": {
+    en: "I don't have a 3D model",
+    hu: "Nincs 3D modellem",
+    de: "Ich habe kein 3D-Modell",
+  },
+  "Popíšte, čo chcete vytlačiť — model dohľadáme na internete.": {
+    en: "Describe what you want to print — we'll find a model online.",
+    hu: "Írja le, mit szeretne nyomtatni — a modellt megkeressük az interneten.",
+    de: "Beschreiben Sie, was Sie drucken möchten — wir suchen das Modell im Internet.",
+  },
+  "Napíšte, čo chcete vytlačiť: názov alebo popis, približné rozmery a na čo to má slúžiť. Vhodný model dohľadáme na internete (napr. Printables, Thingiverse, MakerWorld) a pošleme vám cenovú ponuku. Ak máte fotku alebo nákres, priložte ho.": {
+    en: "Tell us what you want to print: a name or description, approximate dimensions and what it's for. We'll find a suitable model online (e.g. Printables, Thingiverse, MakerWorld) and send you a quote. If you have a photo or sketch, attach it.",
+    hu: "Írja meg, mit szeretne nyomtatni: nevet vagy leírást, hozzávetőleges méreteket és a felhasználást. Megfelelő modellt keresünk az interneten (pl. Printables, Thingiverse, MakerWorld), és árajánlatot küldünk. Ha van fotója vagy vázlata, csatolja.",
+    de: "Schreiben Sie, was Sie drucken möchten: Name oder Beschreibung, ungefähre Maße und Verwendungszweck. Wir suchen ein passendes Modell im Internet (z. B. Printables, Thingiverse, MakerWorld) und senden Ihnen ein Angebot. Haben Sie ein Foto oder eine Skizze, hängen Sie sie an.",
+  },
+  "napr. Držiak na bicykel": {
+    en: "e.g. Bicycle holder",
+    hu: "pl. Kerékpártartó",
+    de: "z. B. Fahrradhalter",
+  },
+  "napr. Tlač 10 kusov držiaka": {
+    en: "e.g. Printing 10 holders",
+    hu: "pl. 10 db tartó nyomtatása",
+    de: "z. B. Druck von 10 Haltern",
+  },
+  "Odkaz alebo názov modelu": {
+    en: "Link or model name",
+    hu: "Link vagy a modell neve",
+    de: "Link oder Modellname",
+  },
+  "napr. odkaz na produkt alebo presný názov dielu": {
+    en: "e.g. a product link or the exact part name",
+    hu: "pl. termék linkje vagy az alkatrész pontos neve",
+    de: "z. B. Produktlink oder genaue Teilebezeichnung",
+  },
+  "Čo potrebujete vytlačiť? *": {
+    en: "What do you need printed? *",
+    hu: "Mit szeretne nyomtatni? *",
+    de: "Was möchten Sie drucken lassen? *",
+  },
+  "Popis, rozmery, počet kusov, materiál alebo farba…": {
+    en: "Description, dimensions, quantity, material or colour…",
+    hu: "Leírás, méretek, darabszám, anyag vagy szín…",
+    de: "Beschreibung, Maße, Stückzahl, Material oder Farbe…",
+  },
+  "Materiál, farba, počet kusov, termín…": {
+    en: "Material, colour, quantity, deadline…",
+    hu: "Anyag, szín, darabszám, határidő…",
+    de: "Material, Farbe, Stückzahl, Termin…",
+  },
+  "Fotka alebo nákres": {
+    en: "Photo or sketch",
+    hu: "Fotó vagy vázlat",
+    de: "Foto oder Skizze",
+  },
+  "3D model a ďalšie prílohy": {
+    en: "3D model and other attachments",
+    hu: "3D modell és egyéb mellékletek",
+    de: "3D-Modell und weitere Anhänge",
+  },
+  "Vyberte, či už 3D model máte, alebo vám ho máme dohľadať. Odpovieme čo najskôr.": {
+    en: "Choose whether you already have a 3D model or want us to find one. We'll reply as soon as possible.",
+    hu: "Válassza ki, hogy van-e már 3D modellje, vagy keressük meg Önnek. Hamarosan válaszolunk.",
+    de: "Wählen Sie, ob Sie bereits ein 3D-Modell haben oder ob wir eines suchen sollen. Wir antworten so schnell wie möglich.",
+  },
 };
 
 export default messages;
