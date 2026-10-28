@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { isColorAllowed, isMaterial, isQuality, quote, scaledGeometry } from "@/lib/pricing";
 import { isMulticolor, validatePartColors } from "@/lib/multicolor";
 import { modelFeeForFileKey } from "@/content/produkty";
+import { drawingFeeForFileKey } from "@/lib/drawing-model";
 import { COLOR_LABELS } from "@/lib/print-options";
 import { createOrderWithNumber } from "@/lib/order-number";
 import { addVat } from "@/lib/vat";
@@ -140,6 +141,7 @@ export async function POST(req: NextRequest) {
         colorFlexible,
         multicolor,
         modelFeeEur: modelFeeForFileKey(item.fileKey),
+        drawingFeeEur: drawingFeeForFileKey(item.fileKey),
         promoPercent: promo?.percent,
       });
 

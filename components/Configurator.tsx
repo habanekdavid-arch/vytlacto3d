@@ -33,6 +33,7 @@ type Quote = {
   flexibleDiscountEur: number;
   multicolorFee?: number;
   modelFee?: number;
+  drawingFee?: number;
   total: number;
   /** Len počas akcie (lib/promo). */
   promoPercent?: number;
@@ -419,6 +420,16 @@ export default function Configurator({
                       label={t("Poplatok za model")}
                       hint={t("hotový model z našej ponuky, raz za položku")}
                       value={`+${formatEur(addVat(quote.modelFee ?? 0))}`}
+                    />
+                    <div className="my-1 border-t border-neutral-200" />
+                  </>
+                )}
+                {(quote.drawingFee ?? 0) > 0 && (
+                  <>
+                    <PriceLine
+                      label={t("Model z výkresu")}
+                      hint={t("vygenerovanie 3D modelu z technického výkresu, raz za položku")}
+                      value={`+${formatEur(addVat(quote.drawingFee ?? 0))}`}
                     />
                     <div className="my-1 border-t border-neutral-200" />
                   </>
