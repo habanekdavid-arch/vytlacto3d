@@ -70,7 +70,9 @@ function describeTokenError(body: string): string {
 // aby sa web neprihlasoval do FLOWii pri každom volaní.
 const tokenCache = new Map<string, { value: string; expiresAt: number }>();
 
-// FLOWii pri priveľa požiadavkách vráti 429. Čítanie počká a skúsi znova.
+// FLOWii pri priveľa požiadavkách vráti 429. Čítanie počká a skúsi znova —
+// pri 429 len s krátkym Retry-After; minútový limit sa za pár sekúnd neobnoví
+// a ďalšie pokusy by ho len míňali (prenos to rieši sám, lib/flowii/sync).
 const RETRY_STATUSES = new Set([429, 503]);
 const MAX_ATTEMPTS = 3;
 
@@ -79,6 +81,19 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 /** Zabudne uložené prihlásenie — test pripojenia tak vždy overí meno a heslo nanovo. */
 export function clearFlowiiTokenCache() {
   tokenCache.clear();
+}
+
+function retryAfterSeconds(res: Response): number | null {
+  const header = Number(res.headers.get("retry-after"));
+  return Number.isFinite(header) && header > 0 ? header : null;
+}
+
+function shouldRetry(res: Response): boolean {
+  if (res.status === 429) {
+    const wait = retryAfterSeconds(res);
+    return wait !== null && wait <= 10;
+  }
+  return RETRY_STATUSES.has(res.status);
 }
 
 function retryDelayMs(res: Response, attempt: number): number {
@@ -137,7 +152,7 @@ export class FlowiiClient {
           password: this.creds.password,
         }).toString(),
       });
-      if (!RETRY_STATUSES.has(res.status) || attempt === MAX_ATTEMPTS - 1) break;
+      if (!shouldRetry(res) || attempt === MAX_ATTEMPTS - 1) break;
       await sleep(retryDelayMs(res, attempt));
     }
 
@@ -202,7 +217,7 @@ export class FlowiiClient {
         body: body !== undefined ? JSON.stringify(body) : undefined,
       });
       if (res.status === 401) tokenCache.delete(this.tokenKey); // token vypršal skôr — pri ďalšom pokuse nový
-      const retry = RETRY_STATUSES.has(res.status) || (res.status === 401 && method === "GET");
+      const retry = shouldRetry(res) || (res.status === 401 && method === "GET");
       if (!retry || attempt === maxAttempts - 1) break;
       await sleep(res.status === 401 ? 0 : retryDelayMs(res, attempt));
     }

@@ -10,7 +10,8 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 });
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
+// Prenos do FLOWii beží po odpovedi (after) a pri limite FLOWii čaká až ~2 minúty.
+export const maxDuration = 300;
 
 // Stripe Checkout Sessions expire after 24h by default, so by this point an
 // unpaid PENDING order can no longer be paid via its original link.
