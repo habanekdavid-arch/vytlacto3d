@@ -40,6 +40,7 @@ export type CartItemPricing = {
   /** Poplatok za viacfarebnú tlač (bez DPH); staršie položky ho nemajú. */
   multicolorFee?: number;
   modelFee?: number;
+  drawingFee?: number;
   total: number;
   /** Len počas akcie (lib/promo). */
   promoPercent?: number;

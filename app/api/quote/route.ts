@@ -3,6 +3,7 @@ import { activePromo } from "@/lib/promo";
 import { isMaterial, isQuality, quote } from "@/lib/pricing";
 import { multicolorAllowedFor } from "@/lib/multicolor";
 import { modelFeeForFileKey } from "@/content/produkty";
+import { drawingFeeForFileKey } from "@/lib/drawing-model";
 
 export async function POST(req: NextRequest) {
   try {
@@ -78,6 +79,7 @@ export async function POST(req: NextRequest) {
       multicolor: Boolean(body?.multicolor) && multicolorAllowedFor(material),
       // Hotový model z katalógu — poplatok za model podľa súboru položky.
       modelFeeEur: modelFeeForFileKey(body?.fileKey),
+      drawingFeeEur: drawingFeeForFileKey(body?.fileKey),
       promoPercent: activePromo()?.percent,
     });
 

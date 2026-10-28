@@ -12,6 +12,7 @@ import { MULTICOLOR_FEE_EUR } from "@/lib/multicolor";
 import { addVat, formatEur } from "@/lib/vat";
 import type { CartItemConfig } from "@/lib/types";
 import type { BuildPhase } from "@/components/ModelBuildAnimation";
+import DrawingToModel from "@/components/DrawingToModel";
 
 type Uploaded = {
   fileKey: string;
@@ -69,6 +70,9 @@ const UploadBox = forwardRef<UploadBoxHandle, {
   const [layerNotice, setLayerNotice] = useState<string>("");
   const [isReconverting, setIsReconverting] = useState(false);
   const [uploadedFileName, setUploadedFileName] = useState<string>("");
+  // Model z technického výkresu (components/DrawingToModel)
+  const [drawingBusy, setDrawingBusy] = useState(false);
+  const [drawingReset, setDrawingReset] = useState(0);
 
   // Zobraz panel hrúbky len ak nie je ešte uploadnutý súbor, alebo ak bol uploadnutý SVG.
   // Keď je v kalkulátore už iný model (napr. hotový produkt), panel nepatrí k nemu.
@@ -203,8 +207,14 @@ const UploadBox = forwardRef<UploadBoxHandle, {
   }
 
   async function handleFile(originalFile: File) {
+    if (drawingBusy) return;
     setError("");
     setLayerNotice("");
+    setDrawingReset((n) => n + 1);
+    if (originalFile.name.toLowerCase().endsWith(".pdf")) {
+      setError("PDF výkres nahrajte nižšie v časti „Máte len technický výkres?“ — vygenerujeme z neho 3D model.");
+      return;
+    }
     onUploadingChange?.(true);
 
     try {
@@ -283,6 +293,21 @@ const UploadBox = forwardRef<UploadBoxHandle, {
     }
   }
 
+  /** Vygenerovaný model z výkresu → rovnaké nahranie a analýza ako pri STL. */
+  async function handleDrawingModel(stlFile: File, replace: boolean) {
+    setError("");
+    setLayerNotice("");
+    setColorLayers(null);
+    setOriginalSvgFile(null);
+    onUploadingChange?.(true);
+    try {
+      onPreviewFile?.(stlFile);
+      await uploadAndAnalyze(stlFile, { replaceActive: replace });
+    } finally {
+      onUploadingChange?.(false);
+    }
+  }
+
   function onDrop(e: React.DragEvent<HTMLDivElement>) {
     e.preventDefault();
     setDragging(false);
@@ -297,8 +322,9 @@ const UploadBox = forwardRef<UploadBoxHandle, {
           onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
           onDragLeave={() => setDragging(false)}
           onDrop={onDrop}
-          onClick={() => inputRef.current?.click()}
+          onClick={() => { if (!drawingBusy) inputRef.current?.click(); }}
           className={[
+            drawingBusy ? "pointer-events-none opacity-50" : "",
             "cursor-pointer rounded-3xl border-2 border-dashed p-8 text-center transition",
             dragging
               ? "border-[#FFAE00] bg-[#FFAE00]/10"
@@ -330,6 +356,13 @@ const UploadBox = forwardRef<UploadBoxHandle, {
           </p>
         </div>
       )}
+
+      <DrawingToModel
+        hideForm={hideDropzone}
+        resetSignal={drawingReset}
+        onBusyChange={setDrawingBusy}
+        onModel={handleDrawingModel}
+      />
 
       {colorLayers && (
         <div className="mt-4 rounded-2xl border border-neutral-200 bg-neutral-50 p-4">

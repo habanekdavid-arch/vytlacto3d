@@ -396,6 +396,7 @@ export default async function AdminOrderDetailPage({
                         {typeof ip.setupFee === "number" && <InfoCard label="Nastavenie" value={formatEur(ip.setupFee)} />}
                         {typeof ip.multicolorFee === "number" && ip.multicolorFee > 0 && <InfoCard label="Viacfarebná tlač" value={formatEur(ip.multicolorFee)} />}
                         {typeof ip.modelFee === "number" && ip.modelFee > 0 && <InfoCard label="Poplatok za model" value={formatEur(ip.modelFee)} />}
+                        {typeof ip.drawingFee === "number" && ip.drawingFee > 0 && <InfoCard label="Model z výkresu" value={formatEur(ip.drawingFee)} />}
                         {typeof ip.quantityDiscountPct === "number" && ip.quantityDiscountPct > 0 && <InfoCard label="Zľava množstvo" value={`${ip.quantityDiscountPct}%`} />}
                         {typeof ip.productionSubtotal === "number" && <InfoCard label="Výroba celkom" value={formatEur(ip.productionSubtotal)} />}
                         <InfoCard label="Cena bez DPH" value={formatEur(ip.total)} />
@@ -577,6 +578,7 @@ function PriceBreakdown({
           const flexible = n(p.flexibleDiscountEur) ?? 0;
           const multicolor = n(p.multicolorFee) ?? 0;
           const modelFee = n(p.modelFee) ?? 0;
+          const drawingFee = n(p.drawingFee) ?? 0;
           const promo = n(p.promoDiscountEur) ?? 0;
           const coupon = n(p.couponDiscountEur) ?? 0;
           const total = n(p.total)!;
@@ -604,6 +606,7 @@ function PriceBreakdown({
                 {flexible > 0 && <Row label="Zľava za flexibilitu materiálu/farby" value={flexible} minus />}
                 {multicolor > 0 && <Row label="Viacfarebná tlač" value={multicolor} />}
                 {modelFee > 0 && <Row label="Poplatok za model" hint="hotový produkt z katalógu" value={modelFee} />}
+                {drawingFee > 0 && <Row label="Model z výkresu" hint="vygenerovaný AI z technického výkresu" value={drawingFee} />}
                 {promo > 0 && <Row label={`Akciová zľava −${n(p.promoPercent) ?? ""} %`} value={promo} minus />}
                 {coupon > 0 && <Row label={`Kupón ${String(p.couponCode ?? "")} −${n(p.couponPercent) ?? ""} %`} value={coupon} minus />}
                 <div className="border-t border-neutral-200 pt-1">

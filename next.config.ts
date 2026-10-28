@@ -1,6 +1,11 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Geometria modelov z výkresov (lib/drawing-csg) — WASM sa načíta zo súboru.
+  serverExternalPackages: ["manifold-3d"],
+  outputFileTracingIncludes: {
+    "/api/drawing-to-model": ["./node_modules/manifold-3d/manifold.wasm"],
+  },
   images: {
     remotePatterns: [
       {

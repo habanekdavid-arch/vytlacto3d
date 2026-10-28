@@ -79,6 +79,8 @@ type QuoteInput = {
   multicolor?: boolean;
   /** Poplatok za hotový model z katalógu (bez DPH, raz za položku) — content/produkty. */
   modelFeeEur?: number;
+  /** Poplatok za vygenerovanie modelu z technického výkresu (bez DPH, raz za položku) — lib/drawing-model. */
+  drawingFeeEur?: number;
   /** Akciová zľava v % (lib/promo) — z celej ceny výroby. */
   promoPercent?: number;
 };
@@ -98,6 +100,8 @@ type QuoteResult = {
   multicolorFee: number;
   /** Poplatok za hotový model z katalógu (bez DPH), 0 pri vlastnom modeli. */
   modelFee: number;
+  /** Poplatok za model vygenerovaný z výkresu (bez DPH), inak 0. */
+  drawingFee: number;
   total: number;
   /** Len počas akcie: cena pred akciovou zľavou a výška zľavy (bez DPH). */
   promoPercent?: number;
@@ -280,7 +284,9 @@ export function quote(input: QuoteInput): QuoteResult {
 
   const multicolorFeeRaw = input.multicolor ? MULTICOLOR_FEE_EUR : 0;
   const modelFeeRaw = Math.max(0, Number(input.modelFeeEur) || 0);
-  const totalRaw = totalBeforeFlexibleDiscountRaw - flexibleDiscountRaw + multicolorFeeRaw + modelFeeRaw;
+  const drawingFeeRaw = Math.max(0, Number(input.drawingFeeEur) || 0);
+  const totalRaw =
+    totalBeforeFlexibleDiscountRaw - flexibleDiscountRaw + multicolorFeeRaw + modelFeeRaw + drawingFeeRaw;
 
   return {
     gramsPerPart:           round2(gramsPerPartRaw),
@@ -295,6 +301,7 @@ export function quote(input: QuoteInput): QuoteResult {
     flexibleDiscountEur:    round2(flexibleDiscountRaw),
     multicolorFee:          multicolorFeeRaw,
     modelFee:               modelFeeRaw,
+    drawingFee:             drawingFeeRaw,
     total:                  round2(totalRaw),
     ...promoFields(round2(totalRaw), input.promoPercent),
   };

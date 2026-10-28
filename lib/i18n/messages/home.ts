@@ -1131,6 +1131,196 @@ const messages: Messages = {
     hu: "Google feltételek",
     de: "Google-Nutzungsbedingungen",
   },
+  "Model z výkresu": {
+    en: "Model from drawing",
+    hu: "Modell rajzból",
+    de: "Modell aus Zeichnung",
+  },
+  "vygenerovanie 3D modelu z technického výkresu, raz za položku": {
+    en: "3D model generated from a technical drawing, once per item",
+    hu: "3D modell generálása műszaki rajzból, tételenként egyszer",
+    de: "Erstellung des 3D-Modells aus der technischen Zeichnung, einmal pro Position",
+  },
+  "Máte len technický výkres?": {
+    en: "Only have a technical drawing?",
+    hu: "Csak műszaki rajza van?",
+    de: "Sie haben nur eine technische Zeichnung?",
+  },
+  "Nahrajte výkres alebo náčrt s rozmermi (PDF, PNG, JPG) a AI z neho vygeneruje 3D model na tlač. K cene položky sa pripočíta {fee} s DPH za vygenerovanie modelu.": {
+    en: "Upload a drawing or a dimensioned sketch (PDF, PNG, JPG) and AI will generate a printable 3D model from it. {fee} incl. VAT for generating the model is added to the item price.",
+    hu: "Töltsön fel egy rajzot vagy méretezett vázlatot (PDF, PNG, JPG), és az MI nyomtatható 3D modellt készít belőle. A modell generálásáért {fee} (áfával) adódik a tétel árához.",
+    de: "Laden Sie eine Zeichnung oder bemaßte Skizze hoch (PDF, PNG, JPG) und die KI erstellt daraus ein druckbares 3D-Modell. Für die Modellerstellung kommen {fee} inkl. MwSt. zum Positionspreis hinzu.",
+  },
+  "Nahrať výkres": {
+    en: "Upload drawing",
+    hu: "Rajz feltöltése",
+    de: "Zeichnung hochladen",
+  },
+  "Poznámka k výkresu (nepovinné)": {
+    en: "Note on the drawing (optional)",
+    hu: "Megjegyzés a rajzhoz (nem kötelező)",
+    de: "Hinweis zur Zeichnung (optional)",
+  },
+  "Napr. hrúbka dosky 5 mm, otvory sú priechodné…": {
+    en: "E.g. plate thickness 5 mm, holes go all the way through…",
+    hu: "Pl. a lap vastagsága 5 mm, a furatok átmenők…",
+    de: "Z. B. Plattenstärke 5 mm, Bohrungen sind durchgehend…",
+  },
+  "AI číta výkres a skladá 3D model…": {
+    en: "AI is reading the drawing and building the 3D model…",
+    hu: "Az MI olvassa a rajzot és összeállítja a 3D modellt…",
+    de: "Die KI liest die Zeichnung und baut das 3D-Modell…",
+  },
+  "Zvyčajne to trvá 1–3 minúty. Nezatvárajte stránku.": {
+    en: "This usually takes 1–3 minutes. Please keep the page open.",
+    hu: "Ez általában 1–3 percig tart. Ne zárja be az oldalt.",
+    de: "Das dauert meist 1–3 Minuten. Bitte die Seite nicht schließen.",
+  },
+  "Zrušiť": {
+    en: "Cancel",
+    hu: "Mégse",
+    de: "Abbrechen",
+  },
+  "Vygenerovať 3D model": {
+    en: "Generate 3D model",
+    hu: "3D modell generálása",
+    de: "3D-Modell erstellen",
+  },
+  "Výkres spracuje AI (Claude od Anthropic) len na vygenerovanie modelu. Nahrajte iba výkresy, ktoré môžete použiť.": {
+    en: "The drawing is processed by AI (Claude by Anthropic) solely to generate the model. Only upload drawings you are allowed to use.",
+    hu: "A rajzot MI (az Anthropic Claude modellje) kizárólag a modell generálásához dolgozza fel. Csak olyan rajzot töltsön fel, amelyet felhasználhat.",
+    de: "Die Zeichnung wird von einer KI (Claude von Anthropic) nur zur Modellerstellung verarbeitet. Laden Sie nur Zeichnungen hoch, die Sie verwenden dürfen.",
+  },
+  "Model z výkresu:": {
+    en: "Model from drawing:",
+    hu: "Modell a rajzból:",
+    de: "Modell aus Zeichnung:",
+  },
+  "Odhadli sme:": {
+    en: "We estimated:",
+    hu: "Becsültük:",
+    de: "Geschätzt haben wir:",
+  },
+  "Upozornenie:": {
+    en: "Please note:",
+    hu: "Figyelem:",
+    de: "Hinweis:",
+  },
+  "Model je väčší ako naša tlačiareň ({max} mm). Zmenšite mierku alebo nás kontaktujte.": {
+    en: "The model is larger than our printer ({max} mm). Reduce the scale or contact us.",
+    hu: "A modell nagyobb a nyomtatónknál ({max} mm). Csökkentse a méretarányt, vagy vegye fel velünk a kapcsolatot.",
+    de: "Das Modell ist größer als unser Drucker ({max} mm). Verkleinern Sie den Maßstab oder kontaktieren Sie uns.",
+  },
+  "Výkres nebol úplne jasný.": {
+    en: "The drawing wasn't entirely clear.",
+    hu: "A rajz nem volt teljesen egyértelmű.",
+    de: "Die Zeichnung war nicht ganz eindeutig.",
+  },
+  "Skontrolujte prosím tvar a rozmery v 3D náhľade — vytlačíme model presne tak, ako ho vidíte. Ak niečo nesedí, doplňte poznámku a vygenerujte ho znova, alebo nám napíšte.": {
+    en: "Please check the shape and dimensions in the 3D preview — we print the model exactly as you see it. If something is off, add a note and generate it again, or write to us.",
+    hu: "Kérjük, ellenőrizze az alakot és a méreteket a 3D előnézetben — a modellt pontosan úgy nyomtatjuk, ahogy látja. Ha valami nem stimmel, egészítse ki a megjegyzést és generálja újra, vagy írjon nekünk.",
+    de: "Bitte prüfen Sie Form und Maße in der 3D-Vorschau — wir drucken das Modell genau so, wie Sie es sehen. Wenn etwas nicht passt, ergänzen Sie den Hinweis und erstellen Sie es neu, oder schreiben Sie uns.",
+  },
+  "Čo upraviť? Napr. otvor má mať Ø 8 mm…": {
+    en: "What should change? E.g. the hole should be Ø 8 mm…",
+    hu: "Mit módosítsunk? Pl. a furat legyen Ø 8 mm…",
+    de: "Was soll anders sein? Z. B. die Bohrung soll Ø 8 mm haben…",
+  },
+  "↺ Vygenerovať znova": {
+    en: "↺ Generate again",
+    hu: "↺ Újragenerálás",
+    de: "↺ Neu erstellen",
+  },
+  "Výkres nahrajte ako PDF, PNG, JPG alebo WEBP.": {
+    en: "Upload the drawing as PDF, PNG, JPG or WEBP.",
+    hu: "A rajzot PDF, PNG, JPG vagy WEBP formátumban töltse fel.",
+    de: "Laden Sie die Zeichnung als PDF, PNG, JPG oder WEBP hoch.",
+  },
+  "PDF má viac ako 4 MB. Uložte výkres ako obrázok (PNG alebo JPG) alebo PDF zmenšite.": {
+    en: "The PDF is larger than 4 MB. Save the drawing as an image (PNG or JPG) or reduce the PDF size.",
+    hu: "A PDF nagyobb 4 MB-nál. Mentse a rajzot képként (PNG vagy JPG), vagy csökkentse a PDF méretét.",
+    de: "Das PDF ist größer als 4 MB. Speichern Sie die Zeichnung als Bild (PNG oder JPG) oder verkleinern Sie das PDF.",
+  },
+  "Výkres je príliš veľký. Uložte ho ako JPG s menším rozlíšením.": {
+    en: "The drawing is too large. Save it as a JPG with a lower resolution.",
+    hu: "A rajz túl nagy. Mentse JPG-ként kisebb felbontással.",
+    de: "Die Zeichnung ist zu groß. Speichern Sie sie als JPG mit geringerer Auflösung.",
+  },
+  "Generovanie trvalo príliš dlho. Skúste to znova.": {
+    en: "Generating took too long. Please try again.",
+    hu: "A generálás túl sokáig tartott. Próbálja újra.",
+    de: "Die Erstellung hat zu lange gedauert. Bitte erneut versuchen.",
+  },
+  "Model sa nepodarilo vygenerovať.": {
+    en: "The model could not be generated.",
+    hu: "A modellt nem sikerült legenerálni.",
+    de: "Das Modell konnte nicht erstellt werden.",
+  },
+  "PDF výkres nahrajte nižšie v časti „Máte len technický výkres?“ — vygenerujeme z neho 3D model.": {
+    en: "Upload a PDF drawing below under “Only have a technical drawing?” — we'll generate a 3D model from it.",
+    hu: "A PDF rajzot lent, a „Csak műszaki rajza van?” résznél töltse fel — 3D modellt készítünk belőle.",
+    de: "Laden Sie eine PDF-Zeichnung unten unter „Sie haben nur eine technische Zeichnung?“ hoch — wir erstellen daraus ein 3D-Modell.",
+  },
+  "Generovanie modelu z výkresu je dočasne nedostupné. Pošlite nám výkres cez kontaktný formulár.": {
+    en: "Generating models from drawings is temporarily unavailable. Please send us the drawing via the contact form.",
+    hu: "A modellgenerálás rajzból átmenetileg nem érhető el. Küldje el a rajzot a kapcsolatfelvételi űrlapon.",
+    de: "Die Modellerstellung aus Zeichnungen ist vorübergehend nicht verfügbar. Senden Sie uns die Zeichnung über das Kontaktformular.",
+  },
+  "Nahrajte výkres (PDF, PNG alebo JPG).": {
+    en: "Upload a drawing (PDF, PNG or JPG).",
+    hu: "Töltsön fel egy rajzot (PDF, PNG vagy JPG).",
+    de: "Laden Sie eine Zeichnung hoch (PDF, PNG oder JPG).",
+  },
+  "Overenie proti spamu sa nepodarilo. Obnovte stránku a skúste to znova.": {
+    en: "The spam check failed. Reload the page and try again.",
+    hu: "A spamellenőrzés nem sikerült. Frissítse az oldalt, és próbálja újra.",
+    de: "Die Spam-Prüfung ist fehlgeschlagen. Laden Sie die Seite neu und versuchen Sie es erneut.",
+  },
+  "Výkres má viac ako 4 MB. Zmenšite ho alebo uložte ako JPG.": {
+    en: "The drawing is larger than 4 MB. Make it smaller or save it as a JPG.",
+    hu: "A rajz nagyobb 4 MB-nál. Kicsinyítse, vagy mentse JPG-ként.",
+    de: "Die Zeichnung ist größer als 4 MB. Verkleinern Sie sie oder speichern Sie sie als JPG.",
+  },
+  "Dosiahli ste limit generovaní modelov. Skúste to znova neskôr alebo nám pošlite výkres cez kontaktný formulár.": {
+    en: "You've reached the limit for generating models. Try again later or send us the drawing via the contact form.",
+    hu: "Elérte a modellgenerálási korlátot. Próbálja később, vagy küldje el a rajzot a kapcsolatfelvételi űrlapon.",
+    de: "Sie haben das Limit für Modellerstellungen erreicht. Versuchen Sie es später erneut oder senden Sie uns die Zeichnung über das Kontaktformular.",
+  },
+  "Generovanie modelov je dnes vyťažené. Skúste to zajtra alebo nám pošlite výkres cez kontaktný formulár.": {
+    en: "Model generation is at capacity today. Try again tomorrow or send us the drawing via the contact form.",
+    hu: "A modellgenerálás ma teljesen leterhelt. Próbálja holnap, vagy küldje el a rajzot a kapcsolatfelvételi űrlapon.",
+    de: "Die Modellerstellung ist heute ausgelastet. Versuchen Sie es morgen oder senden Sie uns die Zeichnung über das Kontaktformular.",
+  },
+  "AI je momentálne preťažená. Skúste to o pár minút znova.": {
+    en: "The AI is overloaded right now. Try again in a few minutes.",
+    hu: "Az MI jelenleg túlterhelt. Próbálja újra néhány perc múlva.",
+    de: "Die KI ist gerade überlastet. Versuchen Sie es in ein paar Minuten erneut.",
+  },
+  "Tento súbor sa nepodarilo prečítať. Skúste výkres uložiť ako PNG alebo JPG.": {
+    en: "This file couldn't be read. Try saving the drawing as PNG or JPG.",
+    hu: "Ezt a fájlt nem sikerült beolvasni. Próbálja a rajzot PNG vagy JPG formátumban menteni.",
+    de: "Diese Datei konnte nicht gelesen werden. Speichern Sie die Zeichnung als PNG oder JPG.",
+  },
+  "Model sa nepodarilo vygenerovať. Skúste to znova alebo nám pošlite výkres cez kontaktný formulár.": {
+    en: "The model could not be generated. Try again or send us the drawing via the contact form.",
+    hu: "A modellt nem sikerült legenerálni. Próbálja újra, vagy küldje el a rajzot a kapcsolatfelvételi űrlapon.",
+    de: "Das Modell konnte nicht erstellt werden. Versuchen Sie es erneut oder senden Sie uns die Zeichnung über das Kontaktformular.",
+  },
+  "Tento výkres nevieme spracovať automaticky. Pošlite nám ho cez kontaktný formulár.": {
+    en: "We can't process this drawing automatically. Please send it to us via the contact form.",
+    hu: "Ezt a rajzot nem tudjuk automatikusan feldolgozni. Küldje el a kapcsolatfelvételi űrlapon.",
+    de: "Diese Zeichnung können wir nicht automatisch verarbeiten. Senden Sie sie uns über das Kontaktformular.",
+  },
+  "Z výkresu sa nepodarilo poskladať model. Skúste ostrejší obrázok alebo pridajte poznámku s rozmermi.": {
+    en: "We couldn't build a model from the drawing. Try a sharper image or add a note with the dimensions.",
+    hu: "A rajzból nem sikerült modellt összeállítani. Próbáljon élesebb képet, vagy adjon meg megjegyzést a méretekkel.",
+    de: "Aus der Zeichnung konnte kein Modell erstellt werden. Versuchen Sie ein schärferes Bild oder ergänzen Sie einen Hinweis mit den Maßen.",
+  },
+  "Na súbore sme nenašli technický výkres súčiastky s rozmermi.": {
+    en: "We didn't find a dimensioned technical drawing of a part in this file.",
+    hu: "A fájlban nem találtunk méretezett műszaki rajzot alkatrészről.",
+    de: "In der Datei haben wir keine bemaßte technische Zeichnung eines Bauteils gefunden.",
+  },
 };
 
 export default messages;
