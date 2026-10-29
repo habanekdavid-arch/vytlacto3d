@@ -1131,6 +1131,26 @@ const messages: Messages = {
     hu: "Google feltételek",
     de: "Google-Nutzungsbedingungen",
   },
+  "Vyberte farbu a kliknite na časť modelu alebo na jej číslo nižšie.": {
+    en: "Pick a colour and click a part of the model or its number below.",
+    hu: "Válasszon színt, és kattintson a modell egy részére vagy alább a számára.",
+    de: "Wählen Sie eine Farbe und klicken Sie auf einen Teil des Modells oder unten auf seine Nummer.",
+  },
+  "Časti modelu ({n})": {
+    en: "Model parts ({n})",
+    hu: "A modell részei ({n})",
+    de: "Modellteile ({n})",
+  },
+  "Častí: {n}": {
+    en: "Parts: {n}",
+    hu: "Részek: {n}",
+    de: "Teile: {n}",
+  },
+  "Tu zmeníte celú farbu naraz. Jednotlivé časti prefarbíte v 3D náhľade cez „Viac farieb“.": {
+    en: "Change a whole colour at once here. Recolour individual parts in the 3D preview via “Multicolour”.",
+    hu: "Itt egyszerre módosíthat egy teljes színt. Az egyes részeket a 3D előnézetben a „Több szín” gombbal színezheti át.",
+    de: "Hier ändern Sie eine ganze Farbe auf einmal. Einzelne Teile färben Sie in der 3D-Vorschau über „Mehrfarbig“ um.",
+  },
 };
 
 export default messages;

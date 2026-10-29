@@ -13,11 +13,13 @@ export default function FloatingCta() {
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        setShow(!entry.isIntersecting);
+        // Len kým je kalkulátor ešte pod obrazovkou — v ňom ani za ním by
+        // tlačidlo zakrývalo polia (na mobile má kalkulátor niekoľko obrazoviek).
+        setShow(!entry.isIntersecting && entry.boundingClientRect.top > 0);
       },
       {
         root: null,
-        threshold: 0.15,
+        threshold: 0,
       }
     );
 
