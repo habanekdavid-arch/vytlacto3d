@@ -8,6 +8,7 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { useT } from "@/lib/i18n/client";
 import { splitIntoParts } from "@/lib/model-parts";
 import {
+  MULTICOLOR_COLORS,
   MULTICOLOR_FEE_EUR,
   MULTICOLOR_MAX_COLORS,
   MULTICOLOR_MAX_PARTS,
@@ -44,7 +45,6 @@ type Props = {
 };
 
 // Farby, ktorými sa dá farbiť — rovnaké ako v konfigurátore.
-const BRUSH_COLORS = ["black", "white", "gray", "red", "blue", "green", "purple", "orange"];
 
 
 function isObjFile(fileKey: string) {
@@ -117,6 +117,17 @@ export default function StlViewer({
   splitEnabledRef.current = splitEnabled;
   const onPartsDetectedRef = useRef(onPartsDetected);
   onPartsDetectedRef.current = onPartsDetected;
+
+  // Ťuknutie na číslo časti v zozname: časť na chvíľu zvýrazníme v náhľade.
+  const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const flashPart = (index: number) => {
+    setHovered(index);
+    if (flashTimer.current) clearTimeout(flashTimer.current);
+    flashTimer.current = setTimeout(() => setHovered(null), 1200);
+  };
+  useEffect(() => () => {
+    if (flashTimer.current) clearTimeout(flashTimer.current);
+  }, []);
 
   // Klik na časť — vždy s aktuálnymi farbami a štetcom.
   const paintPartRef = useRef<(index: number) => void>(() => {});
@@ -538,8 +549,100 @@ export default function StlViewer({
 
   const usedColors = distinctColors(partColors);
 
+  const paintPanel = (
+    <>
+    <div className="text-sm font-extrabold text-neutral-900">{t("Viacfarebná tlač")}</div>
+    {canPaint ? (
+      <>
+        <p className="mt-1 leading-relaxed">
+          {t("Vyberte farbu a kliknite na časť modelu alebo na jej číslo nižšie.")}
+        </p>
+        <div className="mt-2 flex flex-wrap gap-2 sm:gap-1.5">
+          {MULTICOLOR_COLORS.map((id) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setBrush(id)}
+              aria-label={t(COLOR_LABELS[id] ?? id)}
+              title={t(COLOR_LABELS[id] ?? id)}
+              className={[
+                "h-9 w-9 rounded-lg border transition sm:h-7 sm:w-7",
+                id === "white" ? "border-neutral-300" : "border-black/10",
+                brush === id ? "outline outline-2 outline-offset-1 outline-[#7C3AED]" : "",
+              ].join(" ")}
+              style={{ background: getColor(id) }}
+            />
+          ))}
+        </div>
+        <div className="mt-2 flex items-center justify-between">
+          <span>
+            {t("Použité farby")}: {Math.max(usedColors.length, 1)}/{MULTICOLOR_MAX_COLORS}
+          </span>
+          <span className="font-bold text-neutral-900">
+            +{formatEur(addVat(MULTICOLOR_FEE_EUR))}
+          </span>
+        </div>
+        <div className="mt-3 font-semibold text-neutral-900">{t("Časti modelu ({n})", { n: partCount })}</div>
+        <div className="mt-1.5 flex max-h-40 flex-wrap gap-1.5 overflow-y-auto sm:max-h-32">
+          {Array.from({ length: partCount }, (_, i) => {
+            const id = partColors?.[i] || colorId;
+            return (
+              <button
+                key={i}
+                type="button"
+                onClick={() => {
+                  paintPartRef.current(i);
+                  flashPart(i);
+                }}
+                onMouseEnter={() => setHovered(i)}
+                onMouseLeave={() => setHovered(null)}
+                aria-label={t("Časť {n}", { n: i + 1 })}
+                className={[
+                  "inline-flex min-h-9 items-center gap-1.5 rounded-lg border bg-white px-2 font-bold text-neutral-800 transition sm:min-h-7",
+                  hovered === i ? "border-[#FFAE00] ring-2 ring-[#FFAE00]/40" : "border-neutral-200",
+                ].join(" ")}
+              >
+                <span
+                  className={["h-3.5 w-3.5 rounded-full", id === "white" ? "border border-neutral-300" : ""].join(" ")}
+                  style={{ background: getColor(id) }}
+                />
+                {i + 1}
+              </button>
+            );
+          })}
+        </div>
+        {notice && <div className="mt-2 rounded-lg bg-red-50 px-2 py-1.5 font-semibold text-red-600">{notice}</div>}
+        <div className="mt-3 flex gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              onPartColorsChange?.(undefined);
+              setNotice(null);
+            }}
+            disabled={!partColors}
+            className="flex-1 rounded-lg border border-neutral-200 bg-white px-2 py-2 font-bold text-neutral-700 transition hover:bg-neutral-50 disabled:opacity-40 sm:py-1.5"
+          >
+            {t("Jedna farba")}
+          </button>
+          <button
+            type="button"
+            onClick={() => setPaintOpen(false)}
+            className="flex-1 rounded-lg bg-black px-2 py-2 font-bold text-white transition hover:bg-neutral-800 sm:py-1.5"
+          >
+            {t("Hotovo")}
+          </button>
+        </div>
+      </>
+    ) : (
+      <p className="mt-1 leading-relaxed">
+        {multicolorBlockedReason ?? t("Viacfarebnú tlač robíme len z PLA.")}
+      </p>
+    )}
+    </>
+  );
+
   return (
-    <div className="rounded-3xl border border-neutral-200 bg-white p-4">
+    <div className="rounded-3xl bg-white sm:border sm:border-neutral-200 sm:p-4">
       <div className="mb-4 flex items-start justify-between gap-3">
         <div>
           <div className="text-sm text-neutral-500">{t("3D náhľad")}</div>
@@ -592,71 +695,20 @@ export default function StlViewer({
             </button>
 
             {paintOpen && (
-              <div className="w-60 rounded-2xl bg-white/95 p-3 text-xs text-neutral-600 shadow-lg backdrop-blur">
-                <div className="text-sm font-extrabold text-neutral-900">{t("Viacfarebná tlač")}</div>
-                {canPaint ? (
-                  <>
-                    <p className="mt-1 leading-relaxed">
-                      {t("Vyberte farbu a kliknite na časť modelu.")}{" "}
-                      {t("Počet častí: {n}", { n: partCount })}
-                    </p>
-                    <div className="mt-2 flex flex-wrap gap-1.5">
-                      {BRUSH_COLORS.map((id) => (
-                        <button
-                          key={id}
-                          type="button"
-                          onClick={() => setBrush(id)}
-                          aria-label={t(COLOR_LABELS[id] ?? id)}
-                          title={t(COLOR_LABELS[id] ?? id)}
-                          className={[
-                            "h-7 w-7 rounded-lg border transition",
-                            id === "white" ? "border-neutral-300" : "border-black/10",
-                            brush === id ? "outline outline-2 outline-offset-1 outline-[#7C3AED]" : "",
-                          ].join(" ")}
-                          style={{ background: getColor(id) }}
-                        />
-                      ))}
-                    </div>
-                    <div className="mt-2 flex items-center justify-between">
-                      <span>
-                        {t("Použité farby")}: {Math.max(usedColors.length, 1)}/{MULTICOLOR_MAX_COLORS}
-                      </span>
-                      <span className="font-bold text-neutral-900">
-                        +{formatEur(addVat(MULTICOLOR_FEE_EUR))}
-                      </span>
-                    </div>
-                    {notice && <div className="mt-2 rounded-lg bg-red-50 px-2 py-1.5 font-semibold text-red-600">{notice}</div>}
-                    <div className="mt-3 flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          onPartColorsChange(undefined);
-                          setNotice(null);
-                        }}
-                        disabled={!partColors}
-                        className="flex-1 rounded-lg border border-neutral-200 px-2 py-1.5 font-bold text-neutral-700 transition hover:bg-neutral-50 disabled:opacity-40"
-                      >
-                        {t("Jedna farba")}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setPaintOpen(false)}
-                        className="flex-1 rounded-lg bg-black px-2 py-1.5 font-bold text-white transition hover:bg-neutral-800"
-                      >
-                        {t("Hotovo")}
-                      </button>
-                    </div>
-                  </>
-                ) : (
-                  <p className="mt-1 leading-relaxed">
-                    {multicolorBlockedReason ?? t("Viacfarebnú tlač robíme len z PLA.")}
-                  </p>
-                )}
+              <div className="hidden w-60 rounded-2xl bg-white/95 p-3 text-xs text-neutral-600 shadow-lg backdrop-blur sm:block">
+                {paintPanel}
               </div>
             )}
           </div>
         )}
       </div>
+
+      {/* Na mobile by panel cez náhľad zakryl celý model — ukážeme ho pod ním. */}
+      {paintOpen && onPartColorsChange && partCount >= 2 && !loading && !error && (
+        <div className="mt-3 rounded-2xl border border-neutral-200 bg-neutral-50 p-3 text-xs text-neutral-600 sm:hidden">
+          {paintPanel}
+        </div>
+      )}
 
       {showLegend && (
         <div className="mt-4 rounded-2xl bg-neutral-50 p-3 text-xs text-neutral-700">

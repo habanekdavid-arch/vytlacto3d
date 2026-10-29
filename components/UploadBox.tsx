@@ -365,9 +365,9 @@ const UploadBox = forwardRef<UploadBoxHandle, {
                     style={{ background: layer.hex }}
                     title={layer.hex}
                   />
-                  <span className="min-w-0 flex-1 text-xs text-neutral-600">
+                  <span className="min-w-0 flex-1 truncate text-xs text-neutral-600">
                     {layer.background ? t("Pozadie ako podložka") : `${Math.round(layer.share * 100)} %`}
-                    <span className="ml-1 text-neutral-400">{layer.hex.toUpperCase()}</span>
+                    <span className="ml-1 hidden text-neutral-400 sm:inline">{layer.hex.toUpperCase()}</span>
                   </span>
                   <select
                     value={s.colorId}

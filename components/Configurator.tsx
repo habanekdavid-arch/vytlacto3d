@@ -5,7 +5,7 @@ import ColorPalette, { COLOR_LABELS } from "@/components/ColorPalette";
 import { formatEur, addVat, vatAmount } from "@/lib/vat";
 import { allowedColors, scaledGeometry } from "@/lib/pricing";
 import { getColor } from "@/components/StlViewer";
-import { MULTICOLOR_FEE_EUR, distinctColors, isMulticolor, multicolorAllowedFor } from "@/lib/multicolor";
+import { MULTICOLOR_COLORS, MULTICOLOR_FEE_EUR, distinctColors, isMulticolor, multicolorAllowedFor } from "@/lib/multicolor";
 import { useT } from "@/lib/i18n/client";
 import type { TFunction } from "@/lib/i18n/config";
 
@@ -183,8 +183,9 @@ export default function Configurator({
   const scaleChips = [50, 75, 100, 125, 150, 200];
 
   return (
-    <div className="mt-6 rounded-[32px] bg-white p-6 shadow-[0_18px_60px_rgba(0,0,0,0.06)]">
-      <div className="flex flex-wrap items-start justify-between gap-4">
+    <div className="mt-4 rounded-[32px] bg-white sm:mt-6 sm:p-6 sm:shadow-[0_18px_60px_rgba(0,0,0,0.06)]">
+      {/* Na mobile ten istý nadpis už má „Krok 3“ nad konfigurátorom. */}
+      <div className="hidden flex-wrap items-start justify-between gap-4 sm:flex">
         <div>
           <div className="inline-flex items-center gap-2 rounded-full bg-[#FFAE00]/15 px-3 py-1 text-xs font-bold text-neutral-800">
             <span className="h-2 w-2 rounded-full bg-[#FFAE00]" />
@@ -205,7 +206,7 @@ export default function Configurator({
         </div>
       </div>
 
-      <div className="mt-6 grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 sm:mt-6 md:grid-cols-3">
         <Field label={t("Materiál")} hint={t("Výber materiálu pre konkrétne použitie.")}>
           <select
             className="w-full rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 outline-none transition focus:border-[#FFAE00]"
@@ -319,19 +320,37 @@ export default function Configurator({
                   +{formatEur(addVat(MULTICOLOR_FEE_EUR))}
                 </span>
               </div>
-              <div className="mt-2 flex flex-wrap gap-1.5">
+              {/* Zmena celej farby naraz — na mobile sa časti v 3D ťažko trafia. */}
+              <div className="mt-2 space-y-1.5">
                 {usedColors.map((id) => (
-                  <span key={id} className="inline-flex items-center gap-1.5 rounded-full bg-white px-2 py-1 font-semibold text-neutral-900">
+                  <label key={id} className="flex items-center gap-2 rounded-xl bg-white px-2.5 py-1.5">
                     <span
-                      className={["h-3 w-3 rounded-full", id === "white" ? "border border-neutral-300" : ""].join(" ")}
+                      className={["h-4 w-4 shrink-0 rounded-full", id === "white" ? "border border-neutral-300" : ""].join(" ")}
                       style={{ background: getColor(id) }}
                     />
-                    {t(COLOR_LABELS[id] ?? id)}
-                  </span>
+                    <span className="min-w-0 flex-1 text-[11px] text-neutral-500">
+                      {t("Častí: {n}", { n: (partColors ?? []).filter((c) => c === id).length })}
+                    </span>
+                    <select
+                      value={id}
+                      onChange={(e) => {
+                        const to = e.target.value;
+                        if (to !== id) onPartColorsChange?.((partColors ?? []).map((c) => (c === id ? to : c)));
+                      }}
+                      aria-label={t("Farba tlače")}
+                      className="rounded-lg border border-neutral-200 bg-white px-2 py-1.5 text-xs font-bold text-neutral-900 outline-none focus:border-[#FFAE00]"
+                    >
+                      {MULTICOLOR_COLORS.map((c) => (
+                        <option key={c} value={c}>
+                          {t(COLOR_LABELS[c] ?? c)}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
                 ))}
               </div>
               <p className="mt-2 leading-relaxed">
-                {t("Farby častí meníte v 3D náhľade cez kýblik vpravo hore.")}
+                {t("Tu zmeníte celú farbu naraz. Jednotlivé časti prefarbíte v 3D náhľade cez „Viac farieb“.")}
               </p>
               <button
                 type="button"
