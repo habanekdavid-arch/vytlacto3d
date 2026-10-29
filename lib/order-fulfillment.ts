@@ -15,14 +15,18 @@ function getShippingMethod(session: Stripe.Checkout.Session) {
   return shippingRate.display_name ?? shippingRate.id ?? null;
 }
 
+// Od API verzie 2025-03-31 („basil“) je doručovacia adresa v
+// session.collected_information.shipping_details; staré shipping_details už
+// Stripe neposiela. Čítame obe, aby fungovali aj staršie sessions.
 function getShippingAddress(session: Stripe.Checkout.Session) {
-  const shipping = (session as any).shipping_details;
+  const shipping =
+    (session as any).collected_information?.shipping_details ?? (session as any).shipping_details;
 
   if (!shipping?.address) return null;
 
   return {
     name: shipping.name ?? null,
-    phone: shipping.phone ?? null,
+    phone: shipping.phone ?? session.customer_details?.phone ?? null,
     street: shipping.address.line1 ?? null,
     line2: shipping.address.line2 ?? null,
     city: shipping.address.city ?? null,
@@ -287,4 +291,40 @@ export async function markOrderPaidFromCheckoutSession(
   });
 
   return updatedOrder;
+}
+
+/**
+ * Doplní doručovaciu adresu zo Stripe k zaplatenej objednávke kartou, ktorá
+ * ju nemá (do 10/2026 sa kvôli zmene v API Stripe neukladala — chýbalo meno
+ * pre Packetu a kuriér dostal fakturačnú adresu). Spúšťa sa pri otvorení
+ * objednávky v administrácii; chyby len zapíše do logu.
+ */
+export async function healStripeShippingAddress(stripe: Stripe, order: {
+  id: string;
+  status: string;
+  stripeSessionId: string | null;
+  shippingAddress: unknown;
+  deliveryAddress: unknown;
+}): Promise<boolean> {
+  if (!order.stripeSessionId || order.shippingAddress) return false;
+  if (order.status === "PENDING" || order.status === "CANCELLED") return false;
+  try {
+    const session = await stripe.checkout.sessions.retrieve(order.stripeSessionId);
+    const shippingAddress = getShippingAddress(session);
+    if (!shippingAddress) return false;
+    const delivery = (order.deliveryAddress ?? {}) as Record<string, unknown>;
+    const isPacketa = delivery.type === "packeta";
+    await prisma.order.update({
+      where: { id: order.id },
+      data: {
+        shippingAddress: shippingAddress as any,
+        // Kuriér: doručovacia adresa zo Stripe má prednosť pred fakturačnou.
+        ...(isPacketa ? {} : { deliveryAddress: shippingAddress as any }),
+      },
+    });
+    return true;
+  } catch (e) {
+    console.error("healStripeShippingAddress failed:", order.id, e);
+    return false;
+  }
 }

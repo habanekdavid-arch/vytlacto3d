@@ -57,6 +57,7 @@ type OrderForPacket = {
   config: unknown;
   deliveryAddress: unknown;
   shippingAddress: unknown;
+  billingAddress?: unknown;
   user?: { name: string | null } | null;
   orderItems?: { pricing: unknown; config: unknown }[];
 };
@@ -105,8 +106,16 @@ export function buildPacketDraft(order: OrderForPacket): PacketDraft {
   const shipping = rec(order.shippingAddress);
   const pointId = str(delivery.packetaPointId);
   const isPacketa = delivery.type === "packeta" || pointId !== null;
+  const billing = rec(order.billingAddress);
+  // Meno zo Stripe (doručovacie, potom fakturačné), potom z účtu.
   const recipient =
-    str(shipping.name) ?? str(order.user?.name) ?? str(order.contactPerson) ?? str(delivery.contact) ?? "";
+    str(shipping.name) ??
+    str(billing.name) ??
+    str(delivery.name) ??
+    str(order.user?.name) ??
+    str(order.contactPerson) ??
+    str(delivery.contact) ??
+    "";
   const email = str(order.customerEmail);
   const phone = str(order.phone) ?? str(shipping.phone);
   const pricing = rec(order.pricing);
