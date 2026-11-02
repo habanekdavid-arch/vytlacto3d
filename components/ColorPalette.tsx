@@ -31,7 +31,7 @@ export default function ColorPalette({
   onChange: (id: string) => void;
   // Zákazníkovi nezáleží na farbe — farby sú šedé a nedajú sa vybrať.
   disabled?: boolean;
-  // Materiál má len niektoré farby (napr. PA6-CF čierna a biela) — ostatné sa nezobrazia.
+  // Materiál má len niektoré farby (napr. PA6-CF len čierna) — ostatné sa nezobrazia.
   allowed?: readonly string[] | null;
 }) {
   const t = useT();

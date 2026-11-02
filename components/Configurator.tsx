@@ -214,7 +214,7 @@ export default function Configurator({
             onChange={(e) => {
               setConfig((c) => {
                 const material = e.target.value as ConfigState["material"];
-                // PA6-CF len v čiernej a bielej — inú farbu prepneme na prvú povolenú.
+                // PA6-CF len v čiernej — inú farbu prepneme na prvú povolenú.
                 const allowed = allowedColors(material);
                 const color = allowed && !allowed.includes(c.color) ? allowed[0] : c.color;
                 return { ...c, material, color };
@@ -229,7 +229,7 @@ export default function Configurator({
           </select>
           {config.material === "PA6-CF" && (
             <p className="mt-2 text-xs leading-relaxed text-neutral-500">
-              {t("Nylon s uhlíkovými vláknami — veľmi pevný, tuhý a tepelne odolný. Tlačíme ho len v čiernej a bielej farbe.")}
+              {t("Nylon s uhlíkovými vláknami — veľmi pevný, tuhý a tepelne odolný. Tlačíme ho len v čiernej farbe.")}
             </p>
           )}
 

@@ -836,15 +836,15 @@ const messages: Messages = {
     hu: "A képen nem található forma. Próbáljon logót vagy rajzot kontrasztos háttérrel.",
     de: "Im Bild wurde keine Form gefunden. Versuchen Sie ein Logo oder eine Zeichnung mit kontrastreichem Hintergrund.",
   },
-  "Nylon s uhlíkovými vláknami — veľmi pevný, tuhý a tepelne odolný. Tlačíme ho len v čiernej a bielej farbe.": {
-    en: "Nylon with carbon fibres — very strong, stiff and heat-resistant. We print it in black and white only.",
-    hu: "Szénszálas nejlon — nagyon erős, merev és hőálló. Csak fekete és fehér színben nyomtatjuk.",
-    de: "Nylon mit Kohlefasern — sehr fest, steif und hitzebeständig. Wir drucken es nur in Schwarz und Weiß.",
+  "Nylon s uhlíkovými vláknami — veľmi pevný, tuhý a tepelne odolný. Tlačíme ho len v čiernej farbe.": {
+    en: "Nylon with carbon fibres — very strong, stiff and heat-resistant. We print it in black only.",
+    hu: "Szénszálas nejlon — nagyon erős, merev és hőálló. Csak fekete színben nyomtatjuk.",
+    de: "Nylon mit Kohlefasern — sehr fest, steif und hitzebeständig. Wir drucken es nur in Schwarz.",
   },
-  "Nylon s uhlíkovými vláknami: najpevnejšie a najtuhšie technické diely, odolnosť voči teplu (len čierna a biela)": {
-    en: "Carbon-fibre nylon: the strongest and stiffest technical parts, heat resistance (black and white only)",
-    hu: "Szénszálas nejlon: a legerősebb és legmerevebb műszaki alkatrészek, hőállóság (csak fekete és fehér)",
-    de: "Kohlefaser-Nylon: festeste und steifste technische Teile, Hitzebeständigkeit (nur Schwarz und Weiß)",
+  "Nylon s uhlíkovými vláknami: najpevnejšie a najtuhšie technické diely, odolnosť voči teplu (len čierna)": {
+    en: "Carbon-fibre nylon: the strongest and stiffest technical parts, heat resistance (black only)",
+    hu: "Szénszálas nejlon: a legerősebb és legmerevebb műszaki alkatrészek, hőállóság (csak fekete)",
+    de: "Kohlefaser-Nylon: festeste und steifste technische Teile, Hitzebeständigkeit (nur Schwarz)",
   },
   "Na jednom modeli môžu byť najviac {n} farby.": {
     en: "A single model can have at most {n} colours.",
