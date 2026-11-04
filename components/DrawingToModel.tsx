@@ -55,7 +55,7 @@ export default function DrawingToModel({
   resetSignal: number;
   onBusyChange?: (busy: boolean) => void;
   /** Vložiť vygenerovaný model do kalkulátora; replace = prepočet toho istého modelu. */
-  onModel: (file: File, replace: boolean) => Promise<void>;
+  onModel: (file: File, replace: boolean, source: { drawingUrl?: string; description?: string }) => Promise<void>;
 }) {
   const t = useT();
   const locale = useLocale();
@@ -166,7 +166,12 @@ export default function DrawingToModel({
       setResult(r);
       setBusy(false);
       onBusyChange?.(false);
-      await onModel(stl, replace);
+      await onModel(stl, replace, {
+        drawingUrl: r.drawingUrl,
+        description: textMode
+          ? [description.trim(), note.trim() && `Úprava: ${note.trim()}`].filter(Boolean).join("\n")
+          : note.trim() || undefined,
+      });
     } catch (e) {
       if (e instanceof DOMException && e.name === "AbortError") return;
       setResult(null);

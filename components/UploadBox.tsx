@@ -27,7 +27,7 @@ type Uploaded = {
     supportCm3?: number;
   };
   /** Nastavenie, s ktorým sa model vloží do kalkulátora (farby dielov z obrázka). */
-  configDefaults?: Partial<Pick<CartItemConfig, "material" | "color" | "partColors">>;
+  configDefaults?: Partial<Pick<CartItemConfig, "material" | "color" | "partColors" | "sourceDrawingUrl" | "sourceDescription">>;
   /** Prepočet toho istého modelu — nahradí aktívnu položku, nepridá novú. */
   replaceActive?: boolean;
 };
@@ -294,7 +294,11 @@ const UploadBox = forwardRef<UploadBoxHandle, {
   }
 
   /** Vygenerovaný model z výkresu → rovnaké nahranie a analýza ako pri STL. */
-  async function handleDrawingModel(stlFile: File, replace: boolean) {
+  async function handleDrawingModel(
+    stlFile: File,
+    replace: boolean,
+    source: { drawingUrl?: string; description?: string }
+  ) {
     setError("");
     setLayerNotice("");
     setColorLayers(null);
@@ -302,7 +306,14 @@ const UploadBox = forwardRef<UploadBoxHandle, {
     onUploadingChange?.(true);
     try {
       onPreviewFile?.(stlFile);
-      await uploadAndAnalyze(stlFile, { replaceActive: replace });
+      // Podklad (výkres alebo popis) ide s položkou do objednávky — pre výrobu.
+      await uploadAndAnalyze(stlFile, {
+        replaceActive: replace,
+        configDefaults: {
+          ...(source.drawingUrl ? { sourceDrawingUrl: source.drawingUrl } : {}),
+          ...(source.description ? { sourceDescription: source.description } : {}),
+        },
+      });
     } finally {
       onUploadingChange?.(false);
     }

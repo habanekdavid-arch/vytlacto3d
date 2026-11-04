@@ -8,6 +8,7 @@ import { formatEur, addVat, vatAmount, formatPaidTotal } from "@/lib/vat";
 import CopyOrderButton from "@/components/CopyOrderButton";
 import AdminStatusChanger from "@/components/AdminStatusChanger";
 import Fold from "@/components/admin/Fold";
+import { isOurBlobUrl } from "@/lib/drawing-model";
 import EditableField from "@/components/EditableField";
 import ModelPreviewButton from "@/components/ModelPreviewButton";
 import ModelPreviewAllButton from "@/components/ModelPreviewAllButton";
@@ -385,6 +386,7 @@ export default async function AdminOrderDetailPage({
                         <span className="ml-auto text-sm font-extrabold text-neutral-900">{formatEur(ip.total)} bez DPH → {formatEur(addVat(ip.total))} s DPH</span>
                       )}
                     </div>
+                    <SourceOfModel config={ic} />
                     <div className="grid gap-2 text-xs sm:grid-cols-4">
                       <InfoCard label="Materiál" value={ic.materialFlexible ? `${materialLabel(ic.material)} · nezáleží` : materialLabel(ic.material)} />
                       <InfoCard label="Kvalita" value={qualityLabel(ic.quality)} />
@@ -646,6 +648,50 @@ function PriceBreakdown({
         </div>
       </div>
     </section>
+  );
+}
+
+/** Model vygenerovaný AI: výkres/obrázok, z ktorého vznikol, a popis zákazníka. */
+function SourceOfModel({ config }: { config: Record<string, any> }) {
+  const url = isOurBlobUrl(config?.sourceDrawingUrl) ? config.sourceDrawingUrl : null;
+  const description = typeof config?.sourceDescription === "string" ? config.sourceDescription.trim() : "";
+  if (!url && !description) return null;
+  const isImage = url ? /\.(png|jpe?g|webp)(\?|$)/i.test(url) : false;
+  return (
+    <div className="mb-3 flex flex-wrap items-start gap-3 rounded-xl border border-violet-200 bg-violet-50 p-3 text-xs">
+      {url &&
+        (isImage ? (
+          <a href={url} target="_blank" rel="noreferrer" className="shrink-0" title="Otvoriť podklad v plnej veľkosti">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={url} alt="Podklad modelu" className="h-28 w-28 rounded-lg border border-violet-200 bg-white object-contain" />
+          </a>
+        ) : (
+          <a href={url} target="_blank" rel="noreferrer" className="flex h-28 w-28 shrink-0 items-center justify-center rounded-lg border border-violet-200 bg-white text-sm font-extrabold text-red-600">
+            PDF
+          </a>
+        ))}
+      <div className="min-w-0 flex-1 space-y-1.5">
+        <div className="font-extrabold text-violet-900">
+          Model vygenerovaný AI {url ? "z výkresu / obrázka" : "z popisu"}
+        </div>
+        {description && (
+          <div className="whitespace-pre-wrap text-neutral-700">
+            <span className="font-semibold text-neutral-900">{url ? "Poznámka zákazníka: " : "Popis zákazníka: "}</span>
+            {description}
+          </div>
+        )}
+        {url && (
+          <div className="flex flex-wrap gap-2">
+            <a href={url} target="_blank" rel="noreferrer" className="rounded-full border border-violet-300 bg-white px-3 py-1 font-bold text-violet-900 hover:bg-violet-100">
+              Otvoriť podklad
+            </a>
+            <a href={`${url}${url.includes("?") ? "&" : "?"}download=1`} className="rounded-full border border-violet-300 bg-white px-3 py-1 font-bold text-violet-900 hover:bg-violet-100">
+              Stiahnuť
+            </a>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 

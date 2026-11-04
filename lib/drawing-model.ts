@@ -49,4 +49,17 @@ export type DrawingModelResult = {
   warnings: string[];
   confidence: "high" | "medium" | "low";
   dims: { x: number; y: number; z: number };
+  /** Uložený výkres/obrázok, z ktorého model vznikol (pre administráciu). */
+  drawingUrl?: string;
 };
+
+/** Adresa podkladu je naša (Vercel Blob) — inú v administrácii neodkazujeme. */
+export function isOurBlobUrl(url: unknown): url is string {
+  if (typeof url !== "string") return false;
+  try {
+    const u = new URL(url);
+    return u.protocol === "https:" && u.hostname.endsWith(".public.blob.vercel-storage.com");
+  } catch {
+    return false;
+  }
+}

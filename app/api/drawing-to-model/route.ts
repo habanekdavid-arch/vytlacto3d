@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
+import { put } from "@vercel/blob";
 import { prisma } from "@/lib/prisma";
 import { getSafeServerSession } from "@/lib/session";
 import { verifyRecaptcha } from "@/lib/recaptcha";
@@ -227,6 +228,23 @@ export async function POST(req: NextRequest) {
     return fail(cannotBuild, 422);
   }
 
+  // Podklad uložíme, aby ho výroba videla pri objednávke. Zlyhanie nevadí —
+  // model aj tak vrátime.
+  let drawingUrl: string | undefined;
+  if (data && mediaType) {
+    try {
+      const ext = { "application/pdf": "pdf", "image/png": "png", "image/jpeg": "jpg", "image/webp": "webp" }[mediaType];
+      const saved = await put(`vykresy/${slug(model.partName)}.${ext}`, data, {
+        access: "public",
+        addRandomSuffix: true,
+        contentType: mediaType,
+      });
+      drawingUrl = saved.url;
+    } catch (e) {
+      console.error("DRAWING SAVE ERROR:", e);
+    }
+  }
+
   await log("ok", `${model.partName} · ${built.dims.x.toFixed(1)}×${built.dims.y.toFixed(1)}×${built.dims.z.toFixed(1)} mm`, ai.usage);
 
   const result: DrawingModelResult = {
@@ -237,6 +255,7 @@ export async function POST(req: NextRequest) {
     assumptions: model.assumptions,
     warnings: model.warnings,
     confidence: model.confidence,
+    drawingUrl,
     dims: {
       x: Math.round(built.dims.x * 10) / 10,
       y: Math.round(built.dims.y * 10) / 10,
