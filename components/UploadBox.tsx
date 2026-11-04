@@ -64,6 +64,9 @@ const UploadBox = forwardRef<UploadBoxHandle, {
   const [svgThicknessMm, setSvgThicknessMm] = useState(10);
 
   const [originalSvgFile, setOriginalSvgFile] = useState<File | null>(null);
+  // Pôvodný obrázok/SVG uložený v Blobe — ide s položkou do objednávky, aby
+  // výroba videla, z čoho model vznikol.
+  const [sourceUrl, setSourceUrl] = useState<string | undefined>(undefined);
   // Viacfarebný obrázok/SVG: farebné vrstvy a ich výška a farba tlače.
   const [colorLayers, setColorLayers] = useState<{ layers: ColorLayer[]; name: string } | null>(null);
   const [layerSettings, setLayerSettings] = useState<LayerSetting[]>([]);
@@ -87,6 +90,23 @@ const UploadBox = forwardRef<UploadBoxHandle, {
       .replace(/_+/g, "_")
       .toLowerCase();
   }
+
+  /** Uloží pôvodný obrázok/SVG; zlyhanie nevadí (model sa spracuje aj tak). */
+  async function uploadSource(file: File): Promise<string | undefined> {
+    try {
+      const saved = await upload(`podklady/${sanitizeFileName(file.name)}`, file, {
+        access: "public",
+        handleUploadUrl: "/api/blob/upload",
+        contentType: file.type || undefined,
+      });
+      return saved.url;
+    } catch (e) {
+      console.error("SOURCE IMAGE UPLOAD ERROR:", e);
+      return undefined;
+    }
+  }
+
+  const sourceDefaults = (url: string | undefined) => (url ? { sourceDrawingUrl: url } : {});
 
   async function convertSvgToStl(file: File) {
     onPreviewFile?.(null);
@@ -184,7 +204,8 @@ const UploadBox = forwardRef<UploadBoxHandle, {
     layers: ColorLayer[],
     settings: LayerSetting[],
     name: string,
-    replaceActive: boolean
+    replaceActive: boolean,
+    source?: string
   ) {
     onPreviewFile?.(null);
     onProgress?.("convert", 0);
@@ -199,9 +220,12 @@ const UploadBox = forwardRef<UploadBoxHandle, {
     onPreviewFile?.(model.file);
     const firstColor = settings.find((s) => s.enabled)?.colorId ?? "black";
     await uploadAndAnalyze(model.file, {
-      configDefaults: model.partColors
-        ? { material: "PLA", color: model.partColors[0], partColors: model.partColors }
-        : { color: firstColor },
+      configDefaults: {
+        ...(model.partColors
+          ? { material: "PLA" as const, color: model.partColors[0], partColors: model.partColors }
+          : { color: firstColor }),
+        ...sourceDefaults(source),
+      },
       replaceActive,
     });
   }
@@ -228,6 +252,11 @@ const UploadBox = forwardRef<UploadBoxHandle, {
 
       if (!isAllowed) throw new Error(t("Podporujeme STL, OBJ, SVG a obrázky PNG alebo JPG."));
 
+      // Obrázok a SVG si uložíme popri prevode na 3D model.
+      const isImageSource = isRasterImage(originalFileName) || originalFileName.endsWith(".svg");
+      const sourcePromise = isImageSource ? uploadSource(originalFile) : Promise.resolve(undefined);
+      setSourceUrl(undefined);
+
       // Viacfarebný obrázok/SVG: každá farba vlastná vrstva s vlastnou výškou.
       const multi =
         isRasterImage(originalFileName) || originalFileName.endsWith(".svg")
@@ -243,7 +272,9 @@ const UploadBox = forwardRef<UploadBoxHandle, {
         setOriginalSvgFile(null);
         setColorLayers({ layers: multi.layers, name: originalFile.name });
         setLayerSettings(settings);
-        await buildLayersAndUpload(multi.layers, settings, originalFile.name, false);
+        const src = await sourcePromise;
+        setSourceUrl(src);
+        await buildLayersAndUpload(multi.layers, settings, originalFile.name, false, src);
       } else if (isRasterImage(originalFileName)) {
         setColorLayers(null);
         // Obrázok → obrys (SVG) v prehliadači → rovnaké vytiahnutie ako SVG.
@@ -253,12 +284,16 @@ const UploadBox = forwardRef<UploadBoxHandle, {
         const svgFile = await rasterImageToSvgFile(originalFile);
         setOriginalSvgFile(svgFile);
         const stlFile = await convertSvgToStl(svgFile);
-        await uploadAndAnalyze(stlFile);
+        const src = await sourcePromise;
+        setSourceUrl(src);
+        await uploadAndAnalyze(stlFile, { configDefaults: sourceDefaults(src) });
       } else if (originalFileName.endsWith(".svg")) {
         setColorLayers(null);
         setOriginalSvgFile(originalFile);
         const stlFile = await convertSvgToStl(originalFile);
-        await uploadAndAnalyze(stlFile);
+        const src = await sourcePromise;
+        setSourceUrl(src);
+        await uploadAndAnalyze(stlFile, { configDefaults: sourceDefaults(src) });
       } else {
         setColorLayers(null);
         setOriginalSvgFile(null);
@@ -280,10 +315,10 @@ const UploadBox = forwardRef<UploadBoxHandle, {
     onUploadingChange?.(true);
     try {
       if (colorLayers) {
-        await buildLayersAndUpload(colorLayers.layers, layerSettings, colorLayers.name, true);
+        await buildLayersAndUpload(colorLayers.layers, layerSettings, colorLayers.name, true, sourceUrl);
       } else if (originalSvgFile) {
         const stlFile = await convertSvgToStl(originalSvgFile);
-        await uploadAndAnalyze(stlFile, { replaceActive: true });
+        await uploadAndAnalyze(stlFile, { replaceActive: true, configDefaults: sourceDefaults(sourceUrl) });
       }
     } catch (e: any) {
       setError(e?.message || "Chyba pri konverzii.");

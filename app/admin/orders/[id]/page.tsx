@@ -8,7 +8,7 @@ import { formatEur, addVat, vatAmount, formatPaidTotal } from "@/lib/vat";
 import CopyOrderButton from "@/components/CopyOrderButton";
 import AdminStatusChanger from "@/components/AdminStatusChanger";
 import Fold from "@/components/admin/Fold";
-import { isOurBlobUrl } from "@/lib/drawing-model";
+import { DRAWING_MODEL_PREFIX, isOurBlobUrl } from "@/lib/drawing-model";
 import EditableField from "@/components/EditableField";
 import ModelPreviewButton from "@/components/ModelPreviewButton";
 import ModelPreviewAllButton from "@/components/ModelPreviewAllButton";
@@ -386,7 +386,7 @@ export default async function AdminOrderDetailPage({
                         <span className="ml-auto text-sm font-extrabold text-neutral-900">{formatEur(ip.total)} bez DPH → {formatEur(addVat(ip.total))} s DPH</span>
                       )}
                     </div>
-                    <SourceOfModel config={ic} />
+                    <SourceOfModel config={ic} ai={item.fileName.startsWith(DRAWING_MODEL_PREFIX)} />
                     <div className="grid gap-2 text-xs sm:grid-cols-4">
                       <InfoCard label="Materiál" value={ic.materialFlexible ? `${materialLabel(ic.material)} · nezáleží` : materialLabel(ic.material)} />
                       <InfoCard label="Kvalita" value={qualityLabel(ic.quality)} />
@@ -652,11 +652,12 @@ function PriceBreakdown({
 }
 
 /** Model vygenerovaný AI: výkres/obrázok, z ktorého vznikol, a popis zákazníka. */
-function SourceOfModel({ config }: { config: Record<string, any> }) {
+function SourceOfModel({ config, ai }: { config: Record<string, any>; ai: boolean }) {
   const url = isOurBlobUrl(config?.sourceDrawingUrl) ? config.sourceDrawingUrl : null;
   const description = typeof config?.sourceDescription === "string" ? config.sourceDescription.trim() : "";
   if (!url && !description) return null;
-  const isImage = url ? /\.(png|jpe?g|webp)(\?|$)/i.test(url) : false;
+  // SVG v <img> nespúšťa skripty, preto sa dá bezpečne ukázať ako náhľad.
+  const isImage = url ? /\.(png|jpe?g|webp|gif|svg)(\?|$)/i.test(url) : false;
   return (
     <div className="mb-3 flex flex-wrap items-start gap-3 rounded-xl border border-violet-200 bg-violet-50 p-3 text-xs">
       {url &&
@@ -672,7 +673,7 @@ function SourceOfModel({ config }: { config: Record<string, any> }) {
         ))}
       <div className="min-w-0 flex-1 space-y-1.5">
         <div className="font-extrabold text-violet-900">
-          Model vygenerovaný AI {url ? "z výkresu / obrázka" : "z popisu"}
+          {ai ? `Model vygenerovaný AI ${url ? "z výkresu / obrázka" : "z popisu"}` : "Model vytvorený z nahraného obrázka / SVG"}
         </div>
         {description && (
           <div className="whitespace-pre-wrap text-neutral-700">
