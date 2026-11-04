@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import { activeAdminEmails } from "@/lib/admin-auth";
 import { getSafeServerSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
+import { stripe } from "@/lib/stripe";
+import { healStripeShippingAddress } from "@/lib/order-fulfillment";
 import { formatEur, addVat, vatAmount, formatPaidTotal } from "@/lib/vat";
 import CopyOrderButton from "@/components/CopyOrderButton";
 import AdminStatusChanger from "@/components/AdminStatusChanger";
@@ -69,6 +71,13 @@ export default async function AdminOrderDetailPage({
   }
 
   const { id } = await params;
+
+  // Staršie platby kartou nemajú uloženú doručovaciu adresu zo Stripe — doplň ju.
+  const healFields = await prisma.order.findUnique({
+    where: { id },
+    select: { id: true, status: true, stripeSessionId: true, shippingAddress: true, deliveryAddress: true },
+  });
+  if (healFields) await healStripeShippingAddress(stripe, healFields);
 
   const order = await prisma.order.findUnique({
     where: { id },
@@ -308,10 +317,10 @@ export default async function AdminOrderDetailPage({
           <Panel title="Dodacia adresa zo Stripe">
             <EditableField orderId={order.id} label="Meno" value={getValue(rawShipping.name)} jsonField="shippingAddress" jsonKey="name" />
             <EditableField orderId={order.id} label="Telefón" value={getValue(rawShipping.phone)} jsonField="shippingAddress" jsonKey="phone" />
-            <EditableField orderId={order.id} label="Ulica" value={getValue(rawShipping.line1 ?? rawShipping.address)} jsonField="shippingAddress" jsonKey="line1" />
+            <EditableField orderId={order.id} label="Ulica" value={getValue(rawShipping.street ?? rawShipping.line1)} jsonField="shippingAddress" jsonKey="street" />
             <EditableField orderId={order.id} label="Doplnenie adresy" value={getValue(rawShipping.line2)} jsonField="shippingAddress" jsonKey="line2" />
             <EditableField orderId={order.id} label="Mesto" value={getValue(rawShipping.city)} jsonField="shippingAddress" jsonKey="city" />
-            <EditableField orderId={order.id} label="PSČ" value={getValue(rawShipping.postal_code)} jsonField="shippingAddress" jsonKey="postal_code" />
+            <EditableField orderId={order.id} label="PSČ" value={getValue(rawShipping.zip ?? rawShipping.postal_code)} jsonField="shippingAddress" jsonKey="zip" />
             <EditableField orderId={order.id} label="Krajina" value={getValue(rawShipping.country)} jsonField="shippingAddress" jsonKey="country" />
           </Panel>
 

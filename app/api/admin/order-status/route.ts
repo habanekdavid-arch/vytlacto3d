@@ -6,6 +6,9 @@ import { sendOrderStatusEmail } from "@/lib/email-status";
 import { sendOrderPaidEmail } from "@/lib/email";
 import { scheduleFlowiiSync } from "@/lib/flowii/sync";
 
+// Prenos do FLOWii beží po odpovedi (after) a pri limite FLOWii čaká až ~2 minúty.
+export const maxDuration = 300;
+
 const VALID_STATUSES = [
   "PENDING",
   "AWAITING_TRANSFER",

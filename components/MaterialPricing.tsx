@@ -33,7 +33,7 @@ export default function MaterialPricing() {
       name: "PA6-CF",
       eurPerGram: 80 / 1000,
       density: "1.20 g/cm³",
-      use: "Nylon s uhlíkovými vláknami: najpevnejšie a najtuhšie technické diely, odolnosť voči teplu (len čierna a biela)",
+      use: "Nylon s uhlíkovými vláknami: najpevnejšie a najtuhšie technické diely, odolnosť voči teplu (len čierna)",
       dot: "bg-neutral-900",
     },
   ];

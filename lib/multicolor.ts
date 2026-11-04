@@ -14,6 +14,8 @@ export const MULTICOLOR_FEE_EUR = 10;
 export const MULTICOLOR_MATERIALS: readonly string[] = ["PLA"];
 /** Viac častí by sa v náhľade nedalo rozumne klikať ani vyrobiť. */
 export const MULTICOLOR_MAX_PARTS = 64;
+/** Farby, ktorými sa dá farbiť (PLA na sklade v AMS). */
+export const MULTICOLOR_COLORS: readonly string[] = ["black", "white", "gray", "red", "blue", "green", "purple", "orange"];
 
 export function multicolorAllowedFor(material: string): boolean {
   return MULTICOLOR_MATERIALS.includes(material);

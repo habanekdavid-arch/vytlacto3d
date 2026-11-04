@@ -68,13 +68,42 @@ export function isFlowiiAutoEnabled() {
   return isFlowiiConfigured() && process.env.FLOWII_ENABLED?.trim().toLowerCase() !== "false";
 }
 
+// FLOWii povolí 100 požiadaviek za minútu (pre celý účet). Keď je limit
+// vyčerpaný (HTTP 429), počkáme, kým sa obnoví, a prenos dokončíme sami —
+// pokračuje sa od toho, čo sa už stihlo založiť, nič sa nezduplikuje.
+const RATE_LIMIT_WAIT_MS = 65_000;
+const RATE_LIMIT_RETRIES = 2;
+
+export function isFlowiiRateLimit(e: unknown) {
+  return e instanceof FlowiiError && e.status === 429;
+}
+
+/** Spustí fn; pri limite FLOWii počká a skúsi znova (najviac `retries`-krát). */
+export async function withFlowiiRateLimitRetry<T>(
+  fn: () => Promise<T>,
+  opts: { waitMs?: number; retries?: number; onRetry?: (attempt: number) => void } = {}
+): Promise<T> {
+  const retries = opts.retries ?? RATE_LIMIT_RETRIES;
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await fn();
+    } catch (e) {
+      if (!isFlowiiRateLimit(e) || attempt >= retries) throw e;
+      opts.onRetry?.(attempt + 1);
+      await new Promise((r) => setTimeout(r, opts.waitMs ?? RATE_LIMIT_WAIT_MS));
+    }
+  }
+}
+
 /** Spustí prenos po odoslaní odpovede, aby nezdržal Stripe webhook ani administráciu. */
 export function scheduleFlowiiSync(orderId: string) {
   if (!isFlowiiAutoEnabled()) return;
   try {
     after(async () => {
       try {
-        const result = await syncOrderToFlowii(orderId);
+        const result = await withFlowiiRateLimitRetry(() => syncOrderToFlowii(orderId), {
+          onRetry: (n) => console.warn(`FLOWii sync: limit požiadaviek, pokus ${n + 1} o minútu`, orderId),
+        });
         console.log("FLOWii sync:", orderId, result.status);
       } catch (e) {
         console.error("FLOWii sync failed:", orderId, e);

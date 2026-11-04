@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { stripe } from "@/lib/stripe";
+import { healStripeShippingAddress } from "@/lib/order-fulfillment";
 import { isAdminSession } from "@/lib/admin-auth";
 import { PacketaError, createPacket, isPacketaConfigured } from "@/lib/packeta/client";
 import {
@@ -36,6 +38,13 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   if (weightKg === null || lengthCm === null || widthCm === null || heightCm === null) {
     return NextResponse.json({ error: "Zadajte hmotnosť (kg) a rozmery balíka (cm)." }, { status: 400 });
   }
+
+  // Staršie platby kartou nemajú uloženú doručovaciu adresu zo Stripe — doplň ju.
+  const healFields = await prisma.order.findUnique({
+    where: { id },
+    select: { id: true, status: true, stripeSessionId: true, shippingAddress: true, deliveryAddress: true },
+  });
+  if (healFields) await healStripeShippingAddress(stripe, healFields);
 
   const order = await prisma.order.findUnique({
     where: { id },

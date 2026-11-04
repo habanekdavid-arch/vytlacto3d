@@ -10,11 +10,11 @@ export function isMaterial(value: unknown): value is Material {
 }
 
 /**
- * Materiály, ktoré sa tlačia len v niektorých farbách (PA6-CF len čierna
- * a biela). Ostatné materiály môžu mať akúkoľvek farbu z palety.
+ * Materiály, ktoré sa tlačia len v niektorých farbách (PA6-CF len
+ * čierna). Ostatné materiály môžu mať akúkoľvek farbu z palety.
  */
 export const MATERIAL_COLORS: Partial<Record<Material, readonly string[]>> = {
-  "PA6-CF": ["black", "white"],
+  "PA6-CF": ["black"],
 };
 
 export function allowedColors(material: string): readonly string[] | null {

@@ -5,6 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { markOrderPaidFromCheckoutSession } from "@/lib/order-fulfillment";
 
 export const runtime = "nodejs";
+// Prenos do FLOWii beží po odpovedi (after) a pri limite FLOWii čaká až ~2 minúty.
+export const maxDuration = 300;
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
   apiVersion: "2026-02-25.clover",

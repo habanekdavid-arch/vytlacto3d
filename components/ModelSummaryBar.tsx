@@ -23,8 +23,8 @@ export default function ModelSummaryBar({
 
   useEffect(() => {
     function onScroll() {
-      // Na mobile by prilepený panel zakryl štvrtinu obrazovky aj tlačidlo Objednať.
-      setCompact(window.scrollY > 320 && window.innerWidth >= 768);
+      // Na mobile a tablete by prilepený panel s cenou zakrýval formulár aj tlačidlo Objednať.
+      setCompact(window.scrollY > 320 && window.innerWidth >= 1024);
     }
 
     onScroll();
@@ -73,7 +73,7 @@ export default function ModelSummaryBar({
             </div>
 
             {!compact ? (
-              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <div className="mt-4 grid grid-cols-2 gap-3">
                 <div className="rounded-2xl bg-neutral-50 p-4">
                   <div className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
                     Rozmery

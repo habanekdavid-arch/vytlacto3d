@@ -836,15 +836,15 @@ const messages: Messages = {
     hu: "A képen nem található forma. Próbáljon logót vagy rajzot kontrasztos háttérrel.",
     de: "Im Bild wurde keine Form gefunden. Versuchen Sie ein Logo oder eine Zeichnung mit kontrastreichem Hintergrund.",
   },
-  "Nylon s uhlíkovými vláknami — veľmi pevný, tuhý a tepelne odolný. Tlačíme ho len v čiernej a bielej farbe.": {
-    en: "Nylon with carbon fibres — very strong, stiff and heat-resistant. We print it in black and white only.",
-    hu: "Szénszálas nejlon — nagyon erős, merev és hőálló. Csak fekete és fehér színben nyomtatjuk.",
-    de: "Nylon mit Kohlefasern — sehr fest, steif und hitzebeständig. Wir drucken es nur in Schwarz und Weiß.",
+  "Nylon s uhlíkovými vláknami — veľmi pevný, tuhý a tepelne odolný. Tlačíme ho len v čiernej farbe.": {
+    en: "Nylon with carbon fibres — very strong, stiff and heat-resistant. We print it in black only.",
+    hu: "Szénszálas nejlon — nagyon erős, merev és hőálló. Csak fekete színben nyomtatjuk.",
+    de: "Nylon mit Kohlefasern — sehr fest, steif und hitzebeständig. Wir drucken es nur in Schwarz.",
   },
-  "Nylon s uhlíkovými vláknami: najpevnejšie a najtuhšie technické diely, odolnosť voči teplu (len čierna a biela)": {
-    en: "Carbon-fibre nylon: the strongest and stiffest technical parts, heat resistance (black and white only)",
-    hu: "Szénszálas nejlon: a legerősebb és legmerevebb műszaki alkatrészek, hőállóság (csak fekete és fehér)",
-    de: "Kohlefaser-Nylon: festeste und steifste technische Teile, Hitzebeständigkeit (nur Schwarz und Weiß)",
+  "Nylon s uhlíkovými vláknami: najpevnejšie a najtuhšie technické diely, odolnosť voči teplu (len čierna)": {
+    en: "Carbon-fibre nylon: the strongest and stiffest technical parts, heat resistance (black only)",
+    hu: "Szénszálas nejlon: a legerősebb és legmerevebb műszaki alkatrészek, hőállóság (csak fekete)",
+    de: "Kohlefaser-Nylon: festeste und steifste technische Teile, Hitzebeständigkeit (nur Schwarz)",
   },
   "Na jednom modeli môžu byť najviac {n} farby.": {
     en: "A single model can have at most {n} colours.",
@@ -1320,6 +1320,26 @@ const messages: Messages = {
     en: "We didn't find a dimensioned technical drawing of a part in this file.",
     hu: "A fájlban nem találtunk méretezett műszaki rajzot alkatrészről.",
     de: "In der Datei haben wir keine bemaßte technische Zeichnung eines Bauteils gefunden.",
+  },
+  "Vyberte farbu a kliknite na časť modelu alebo na jej číslo nižšie.": {
+    en: "Pick a colour and click a part of the model or its number below.",
+    hu: "Válasszon színt, és kattintson a modell egy részére vagy alább a számára.",
+    de: "Wählen Sie eine Farbe und klicken Sie auf einen Teil des Modells oder unten auf seine Nummer.",
+  },
+  "Časti modelu ({n})": {
+    en: "Model parts ({n})",
+    hu: "A modell részei ({n})",
+    de: "Modellteile ({n})",
+  },
+  "Častí: {n}": {
+    en: "Parts: {n}",
+    hu: "Részek: {n}",
+    de: "Teile: {n}",
+  },
+  "Tu zmeníte celú farbu naraz. Jednotlivé časti prefarbíte v 3D náhľade cez „Viac farieb“.": {
+    en: "Change a whole colour at once here. Recolour individual parts in the 3D preview via “Multicolour”.",
+    hu: "Itt egyszerre módosíthat egy teljes színt. Az egyes részeket a 3D előnézetben a „Több szín” gombbal színezheti át.",
+    de: "Hier ändern Sie eine ganze Farbe auf einmal. Einzelne Teile färben Sie in der 3D-Vorschau über „Mehrfarbig“ um.",
   },
 };
 

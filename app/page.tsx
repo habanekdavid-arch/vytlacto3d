@@ -894,7 +894,7 @@ export default function Home() {
         </>
       )}
 
-      <main className="mx-auto max-w-6xl px-6 pb-20 pt-10">
+      <main className="mx-auto max-w-6xl px-4 pb-20 pt-10 sm:px-6">
         <section className="mb-12 text-center">
           <div className="inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-3 py-1 text-sm text-neutral-700 shadow-sm">
             <span className="inline-block h-2 w-2 rounded-full bg-[#FFAE00]" />
@@ -910,7 +910,7 @@ export default function Home() {
           </p>
         </section>
 
-        <section id="kalkulator" className="rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm">
+        <section id="kalkulator" className="scroll-mt-24 bg-white sm:rounded-3xl sm:border sm:border-neutral-200 sm:p-6 sm:shadow-sm">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <div className="text-sm font-semibold text-neutral-500">{t("Konfigurátor")}</div>
@@ -979,7 +979,7 @@ export default function Home() {
                 survives), only the dropzone itself hides once an item
                 is active. This lets a customer keep adjusting the
                 height of an SVG-derived model after it's inserted. */}
-            <div className={activeItem ? "" : "rounded-3xl border border-neutral-200 bg-neutral-50 p-5"}>
+            <div className={activeItem ? "" : "rounded-3xl border border-neutral-200 bg-neutral-50 p-4 sm:p-5"}>
               {!activeItem && (
                 <div className="flex items-center gap-3 mb-4">
                   <div className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-black text-sm font-bold text-white">1</div>
@@ -1030,7 +1030,7 @@ export default function Home() {
                   totalWithVat={formatPriceWithVat(activeItem.pricing?.total ?? null)}
                 />
 
-                <div className="rounded-3xl border border-neutral-200 bg-white p-5">
+                <div className="rounded-3xl border border-neutral-200 bg-white p-3 sm:p-5">
                   <div className="flex items-center gap-3 mb-4">
                     <div className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-black text-sm font-bold text-white">2</div>
                     <div>
@@ -1061,7 +1061,7 @@ export default function Home() {
                   )}
                 </div>
 
-                <div className="rounded-3xl border border-neutral-200 bg-white p-5">
+                <div className="rounded-3xl border border-neutral-200 bg-white p-3 sm:p-5">
                   <div className="flex items-center justify-between gap-3 mb-4">
                     <div className="flex items-center gap-3">
                       <div className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-black text-sm font-bold text-white">3</div>
