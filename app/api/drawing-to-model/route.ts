@@ -11,6 +11,8 @@ import {
   DRAWING_MAX_BYTES,
   DRAWING_MODEL_PREFIX,
   DRAWING_NOTE_MAX_CHARS,
+  DESCRIPTION_MAX_CHARS,
+  DESCRIPTION_MIN_CHARS,
   type DrawingMediaType,
   type DrawingModelResult,
 } from "@/lib/drawing-model";
@@ -82,8 +84,14 @@ export async function POST(req: NextRequest) {
   }
 
   const form = await req.formData().catch(() => null);
-  const file = form?.get("file");
-  if (!form || !(file instanceof File)) return fail("Nahrajte výkres (PDF, PNG alebo JPG).", 400);
+  const rawFile = form?.get("file");
+  const file = rawFile instanceof File && rawFile.size > 0 ? rawFile : null;
+  // Bez výkresu: model len z textového popisu.
+  const description = String(form?.get("description") ?? "").trim().slice(0, DESCRIPTION_MAX_CHARS);
+  const textMode = !file;
+  if (!form || (textMode && description.length < DESCRIPTION_MIN_CHARS)) {
+    return fail("Nahrajte výkres (PDF, PNG alebo JPG) alebo opíšte súčiastku podrobnejšie.", 400);
+  }
 
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "";
   const captcha = await verifyRecaptcha(form.get("recaptcha"), "drawing", ip);
@@ -92,17 +100,22 @@ export async function POST(req: NextRequest) {
     return fail("Overenie proti spamu sa nepodarilo. Obnovte stránku a skúste to znova.", 400);
   }
 
-  if (file.size > DRAWING_MAX_BYTES) {
-    return fail(`Výkres má viac ako ${DRAWING_MAX_BYTES / 1024 / 1024} MB. Zmenšite ho alebo uložte ako JPG.`, 413);
+  let data: Buffer | undefined;
+  let mediaType: DrawingMediaType | undefined;
+  if (file) {
+    if (file.size > DRAWING_MAX_BYTES) {
+      return fail(`Výkres má viac ako ${DRAWING_MAX_BYTES / 1024 / 1024} MB. Zmenšite ho alebo uložte ako JPG.`, 413);
+    }
+    data = Buffer.from(await file.arrayBuffer());
+    const sniffed = sniffType(data);
+    if (!sniffed) return fail("Výkres nahrajte ako PDF, PNG, JPG alebo WEBP.", 400);
+    mediaType = sniffed;
   }
-  const data = Buffer.from(await file.arrayBuffer());
-  const mediaType = sniffType(data);
-  if (!mediaType) return fail("Výkres nahrajte ako PDF, PNG, JPG alebo WEBP.", 400);
 
   const note = String(form.get("note") ?? "").slice(0, DRAWING_NOTE_MAX_CHARS);
   const localeRaw = String(form.get("locale") ?? "sk");
   const locale = isLocale(localeRaw) ? localeRaw : "sk";
-  const fileName = file.name.slice(0, 200) || "vykres";
+  const fileName = file ? file.name.slice(0, 200) || "vykres" : `popis: ${description.slice(0, 180)}`;
 
   const session = await getSafeServerSession();
   const userId = (session?.user as { id?: string } | undefined)?.id ?? null;
@@ -152,9 +165,13 @@ export async function POST(req: NextRequest) {
     }
   };
 
+  const cannotBuild = textMode
+    ? "Z popisu sa nepodarilo poskladať model. Doplňte rozmery a tvar súčiastky a skúste to znova."
+    : "Z výkresu sa nepodarilo poskladať model. Skúste ostrejší obrázok alebo pridajte poznámku s rozmermi.";
+
   let ai;
   try {
-    ai = await readDrawing({ data, mediaType, note, locale });
+    ai = await readDrawing({ data, mediaType, description: textMode ? description : undefined, note, locale });
   } catch (e) {
     console.error("DRAWING AI ERROR:", e);
     await log("error", e instanceof Error ? e.message : String(e));
@@ -173,9 +190,14 @@ export async function POST(req: NextRequest) {
       return fail("Generovanie modelu z výkresu je dočasne nedostupné. Pošlite nám výkres cez kontaktný formulár.", 503);
     }
     if (ai.reason === "refused") {
-      return fail("Tento výkres nevieme spracovať automaticky. Pošlite nám ho cez kontaktný formulár.", 422);
+      return fail(
+        textMode
+          ? "Z tohto popisu nevieme model vytvoriť automaticky. Napíšte nám cez kontaktný formulár."
+          : "Tento výkres nevieme spracovať automaticky. Pošlite nám ho cez kontaktný formulár.",
+        422
+      );
     }
-    return fail("Z výkresu sa nepodarilo poskladať model. Skúste ostrejší obrázok alebo pridajte poznámku s rozmermi.", 422);
+    return fail(cannotBuild, 422);
   }
 
   const model = ai.model;
@@ -183,7 +205,9 @@ export async function POST(req: NextRequest) {
     await log("not_drawing", model.summary, ai.usage);
     return NextResponse.json(
       {
-        error: "Na súbore sme nenašli technický výkres súčiastky s rozmermi.",
+        error: textMode
+          ? "Z popisu sa nedá navrhnúť súčiastka na tlač."
+          : "Na súbore sme nenašli technický výkres súčiastky s rozmermi.",
         detail: model.summary,
       },
       { status: 422 }
@@ -200,7 +224,7 @@ export async function POST(req: NextRequest) {
     if (!(e instanceof CsgError)) {
       return fail("Model sa nepodarilo vygenerovať. Skúste to znova alebo nám pošlite výkres cez kontaktný formulár.", 500);
     }
-    return fail("Z výkresu sa nepodarilo poskladať model. Skúste ostrejší obrázok alebo pridajte poznámku s rozmermi.", 422);
+    return fail(cannotBuild, 422);
   }
 
   await log("ok", `${model.partName} · ${built.dims.x.toFixed(1)}×${built.dims.y.toFixed(1)}×${built.dims.z.toFixed(1)} mm`, ai.usage);

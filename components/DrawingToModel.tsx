@@ -9,6 +9,8 @@ import {
   DRAWING_MAX_BYTES,
   DRAWING_MODEL_FEE_EUR,
   DRAWING_NOTE_MAX_CHARS,
+  DESCRIPTION_MAX_CHARS,
+  DESCRIPTION_MIN_CHARS,
   type DrawingModelResult,
 } from "@/lib/drawing-model";
 
@@ -63,6 +65,9 @@ export default function DrawingToModel({
   const [drawing, setDrawing] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>("");
   const [note, setNote] = useState("");
+  // Bez výkresu: zákazník súčiastku opíše slovami.
+  const [textMode, setTextMode] = useState(false);
+  const [description, setDescription] = useState("");
   const [busy, setBusy] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [error, setError] = useState("");
@@ -108,12 +113,23 @@ export default function DrawingToModel({
       return;
     }
     setDrawing(file);
+    setTextMode(false);
+    setOpen(true);
+    void loadRecaptcha();
+  }
+
+  function openText() {
+    setError("");
+    setErrorDetail("");
+    setDrawing(null);
+    setTextMode(true);
     setOpen(true);
     void loadRecaptcha();
   }
 
   async function generate(replace: boolean) {
-    if (!drawing || busy) return;
+    if (busy) return;
+    if (textMode ? description.trim().length < DESCRIPTION_MIN_CHARS : !drawing) return;
     setBusy(true);
     onBusyChange?.(true);
     setError("");
@@ -121,10 +137,14 @@ export default function DrawingToModel({
     const controller = new AbortController();
     abortRef.current = controller;
     try {
-      const file = await prepareImage(drawing);
-      if (file.size > DRAWING_MAX_BYTES) throw new Error("Výkres je príliš veľký. Uložte ho ako JPG s menším rozlíšením.");
       const form = new FormData();
-      form.append("file", file);
+      if (textMode) {
+        form.append("description", description.trim());
+      } else {
+        const file = await prepareImage(drawing!);
+        if (file.size > DRAWING_MAX_BYTES) throw new Error("Výkres je príliš veľký. Uložte ho ako JPG s menším rozlíšením.");
+        form.append("file", file);
+      }
       form.append("note", note);
       form.append("locale", locale);
       form.append("recaptcha", await recaptchaToken("drawing"));
@@ -179,25 +199,52 @@ export default function DrawingToModel({
               </svg>
             </div>
             <div className="min-w-0 flex-1">
-              <div className="text-sm font-extrabold text-neutral-900">{t("Máte len technický výkres?")}</div>
+              <div className="text-sm font-extrabold text-neutral-900">{t("Nemáte 3D model?")}</div>
               <p className="mt-1 text-xs leading-relaxed text-neutral-600">
-                {t("Nahrajte výkres alebo náčrt s rozmermi (PDF, PNG, JPG) a AI z neho vygeneruje 3D model na tlač. K cene položky sa pripočíta {fee} s DPH za vygenerovanie modelu.", { fee })}
+                {t("Nahrajte výkres alebo náčrt s rozmermi (PDF, PNG, JPG) alebo súčiastku opíšte slovami a AI z toho vygeneruje 3D model na tlač. K cene položky sa pripočíta {fee} s DPH za vygenerovanie modelu.", { fee })}
               </p>
             </div>
             {!open && (
-              <button
-                type="button"
-                disabled={disabled}
-                onClick={() => inputRef.current?.click()}
-                className="rounded-xl border border-neutral-900 px-4 py-2 text-sm font-bold text-neutral-900 transition hover:bg-neutral-900 hover:text-white disabled:opacity-50"
-              >
-                {t("Nahrať výkres")}
-              </button>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  disabled={disabled}
+                  onClick={() => inputRef.current?.click()}
+                  className="rounded-xl border border-neutral-900 px-4 py-2 text-sm font-bold text-neutral-900 transition hover:bg-neutral-900 hover:text-white disabled:opacity-50"
+                >
+                  {t("Nahrať výkres")}
+                </button>
+                <button
+                  type="button"
+                  disabled={disabled}
+                  onClick={openText}
+                  className="rounded-xl border border-neutral-900 px-4 py-2 text-sm font-bold text-neutral-900 transition hover:bg-neutral-900 hover:text-white disabled:opacity-50"
+                >
+                  {t("Opísať slovami")}
+                </button>
+              </div>
             )}
           </div>
 
-          {open && drawing && (
+          {open && (drawing || textMode) && (
             <div className="mt-4 space-y-3">
+              {textMode ? (
+                <label className="block">
+                  <span className="text-xs font-semibold text-neutral-700">{t("Opíšte súčiastku")}</span>
+                  <textarea
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value.slice(0, DESCRIPTION_MAX_CHARS))}
+                    disabled={busy}
+                    rows={5}
+                    autoFocus
+                    placeholder={t("Napr. držiak na stenu pre router, 120 × 40 mm, hrúbka 4 mm, dva otvory na skrutky Ø 5 mm vzdialené 80 mm, na hornej strane lem vysoký 15 mm…")}
+                    className="mt-1 w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm outline-none focus:border-[#FFAE00] disabled:opacity-60"
+                  />
+                  <span className="mt-1 block text-[11px] text-neutral-500">
+                    {t("Čím presnejšie rozmery a tvar opíšete, tým lepší model. Čo neuvediete, AI zvolí rozumne a vypíše.")}
+                  </span>
+                </label>
+              ) : drawing && (
               <div className="flex items-center gap-3 rounded-xl border border-neutral-200 bg-neutral-50 p-2">
                 {previewUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -212,7 +259,9 @@ export default function DrawingToModel({
                   </button>
                 )}
               </div>
+              )}
 
+              {!textMode && (
               <label className="block">
                 <span className="text-xs font-semibold text-neutral-700">{t("Poznámka k výkresu (nepovinné)")}</span>
                 <textarea
@@ -224,13 +273,14 @@ export default function DrawingToModel({
                   className="mt-1 w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm outline-none focus:border-[#FFAE00] disabled:opacity-60"
                 />
               </label>
+              )}
 
               {busy ? (
                 <div className="rounded-xl bg-[#FFAE00]/10 p-3">
                   <div className="flex items-center gap-3">
                     <span className="h-5 w-5 shrink-0 animate-spin rounded-full border-2 border-[#FFAE00] border-t-transparent" />
                     <div className="min-w-0 flex-1 text-sm font-semibold text-neutral-800">
-                      {t("AI číta výkres a skladá 3D model…")}
+                      {textMode ? t("AI navrhuje 3D model podľa popisu…") : t("AI číta výkres a skladá 3D model…")}
                       <div className="text-xs font-normal text-neutral-500">
                         {t("Zvyčajne to trvá 1–3 minúty. Nezatvárajte stránku.")} ({elapsed} s)
                       </div>
@@ -244,7 +294,7 @@ export default function DrawingToModel({
                 <div className="flex flex-wrap items-center gap-3">
                   <button
                     type="button"
-                    disabled={disabled}
+                    disabled={disabled || (textMode && description.trim().length < DESCRIPTION_MIN_CHARS)}
                     onClick={() => generate(false)}
                     className="rounded-xl bg-[#FFAE00] px-4 py-2 text-sm font-bold text-black transition hover:bg-[#e09d00] disabled:opacity-60"
                   >
@@ -255,6 +305,7 @@ export default function DrawingToModel({
                     onClick={() => {
                       setOpen(false);
                       setDrawing(null);
+                      setTextMode(false);
                       setError("");
                     }}
                     className="text-xs font-semibold text-neutral-500 underline"
@@ -264,7 +315,9 @@ export default function DrawingToModel({
                 </div>
               )}
               <p className="text-[11px] leading-relaxed text-neutral-400">
-                {t("Výkres spracuje AI (Claude od Anthropic) len na vygenerovanie modelu. Nahrajte iba výkresy, ktoré môžete použiť.")}
+                {textMode
+                  ? t("Popis spracuje AI (Claude od Anthropic) len na vygenerovanie modelu.")
+                  : t("Výkres spracuje AI (Claude od Anthropic) len na vygenerovanie modelu. Nahrajte iba výkresy, ktoré môžete použiť.")}
               </p>
             </div>
           )}
@@ -275,7 +328,7 @@ export default function DrawingToModel({
         <div className="mt-4 rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
           <div className="flex flex-wrap items-baseline gap-x-2">
             <div className="text-sm font-extrabold text-neutral-900">
-              {t("Model z výkresu:")} {result.partName}
+              {textMode ? t("Model z popisu:") : t("Model z výkresu:")} {result.partName}
             </div>
             <div className="text-xs text-neutral-500">
               {result.dims.x} × {result.dims.y} × {result.dims.z} mm
@@ -302,10 +355,10 @@ export default function DrawingToModel({
             </div>
           )}
           <p className="mt-3 rounded-xl bg-white p-3 text-xs leading-relaxed text-neutral-700">
-            {result.confidence === "low" && <strong>{t("Výkres nebol úplne jasný.")} </strong>}
+            {result.confidence === "low" && <strong>{textMode ? t("Popis nebol úplne jasný.") : t("Výkres nebol úplne jasný.")} </strong>}
             {t("Skontrolujte prosím tvar a rozmery v 3D náhľade — vytlačíme model presne tak, ako ho vidíte. Ak niečo nesedí, doplňte poznámku a vygenerujte ho znova, alebo nám napíšte.")}
           </p>
-          {drawing && (
+          {(drawing || textMode) && (
             <div className="mt-3 space-y-2">
               <textarea
                 value={note}
@@ -319,7 +372,7 @@ export default function DrawingToModel({
               {busy ? (
                 <div className="flex items-center gap-3 text-sm font-semibold text-neutral-800">
                   <span className="h-5 w-5 shrink-0 animate-spin rounded-full border-2 border-[#FFAE00] border-t-transparent" />
-                  {t("AI číta výkres a skladá 3D model…")} ({elapsed} s)
+                  {textMode ? t("AI navrhuje 3D model podľa popisu…") : t("AI číta výkres a skladá 3D model…")} ({elapsed} s)
                   <button type="button" onClick={cancel} className="text-xs font-semibold text-neutral-500 underline">
                     {t("Zrušiť")}
                   </button>

@@ -1341,6 +1341,76 @@ const messages: Messages = {
     hu: "Itt egyszerre módosíthat egy teljes színt. Az egyes részeket a 3D előnézetben a „Több szín” gombbal színezheti át.",
     de: "Hier ändern Sie eine ganze Farbe auf einmal. Einzelne Teile färben Sie in der 3D-Vorschau über „Mehrfarbig“ um.",
   },
+  "Nemáte 3D model?": {
+    en: "Don't have a 3D model?",
+    hu: "Nincs 3D modellje?",
+    de: "Kein 3D-Modell?",
+  },
+  "Nahrajte výkres alebo náčrt s rozmermi (PDF, PNG, JPG) alebo súčiastku opíšte slovami a AI z toho vygeneruje 3D model na tlač. K cene položky sa pripočíta {fee} s DPH za vygenerovanie modelu.": {
+    en: "Upload a drawing or a dimensioned sketch (PDF, PNG, JPG) or describe the part in words, and AI will generate a printable 3D model. {fee} incl. VAT for generating the model is added to the item price.",
+    hu: "Töltsön fel egy rajzot vagy méretezett vázlatot (PDF, PNG, JPG), vagy írja le szavakkal az alkatrészt, és az MI nyomtatható 3D modellt készít belőle. A modell generálásáért {fee} (áfával) adódik a tétel árához.",
+    de: "Laden Sie eine Zeichnung oder bemaßte Skizze hoch (PDF, PNG, JPG) oder beschreiben Sie das Teil in Worten, und die KI erstellt daraus ein druckbares 3D-Modell. Für die Modellerstellung kommen {fee} inkl. MwSt. zum Positionspreis hinzu.",
+  },
+  "Opísať slovami": {
+    en: "Describe in words",
+    hu: "Leírás szavakkal",
+    de: "In Worten beschreiben",
+  },
+  "Opíšte súčiastku": {
+    en: "Describe the part",
+    hu: "Írja le az alkatrészt",
+    de: "Beschreiben Sie das Teil",
+  },
+  "Napr. držiak na stenu pre router, 120 × 40 mm, hrúbka 4 mm, dva otvory na skrutky Ø 5 mm vzdialené 80 mm, na hornej strane lem vysoký 15 mm…": {
+    en: "E.g. wall bracket for a router, 120 × 40 mm, 4 mm thick, two Ø 5 mm screw holes 80 mm apart, a 15 mm high lip on the top edge…",
+    hu: "Pl. fali tartó routerhez, 120 × 40 mm, 4 mm vastag, két Ø 5 mm-es csavarfurat 80 mm távolságra, a felső élen 15 mm magas perem…",
+    de: "Z. B. Wandhalter für einen Router, 120 × 40 mm, 4 mm dick, zwei Schraubenlöcher Ø 5 mm im Abstand von 80 mm, oben ein 15 mm hoher Rand…",
+  },
+  "Čím presnejšie rozmery a tvar opíšete, tým lepší model. Čo neuvediete, AI zvolí rozumne a vypíše.": {
+    en: "The more precisely you describe the dimensions and shape, the better the model. Anything you leave out, the AI chooses sensibly and lists.",
+    hu: "Minél pontosabban írja le a méreteket és a formát, annál jobb a modell. Amit nem ad meg, azt az MI észszerűen választja meg és felsorolja.",
+    de: "Je genauer Sie Maße und Form beschreiben, desto besser das Modell. Was Sie nicht angeben, wählt die KI sinnvoll und listet es auf.",
+  },
+  "AI navrhuje 3D model podľa popisu…": {
+    en: "AI is designing the 3D model from your description…",
+    hu: "Az MI a leírás alapján tervezi a 3D modellt…",
+    de: "Die KI entwirft das 3D-Modell nach Ihrer Beschreibung…",
+  },
+  "Popis spracuje AI (Claude od Anthropic) len na vygenerovanie modelu.": {
+    en: "The description is processed by AI (Claude by Anthropic) only to generate the model.",
+    hu: "A leírást az MI (Claude, Anthropic) csak a modell generálásához dolgozza fel.",
+    de: "Die Beschreibung wird von der KI (Claude von Anthropic) nur zur Modellerstellung verarbeitet.",
+  },
+  "Model z popisu:": {
+    en: "Model from description:",
+    hu: "Modell leírásból:",
+    de: "Modell aus Beschreibung:",
+  },
+  "Popis nebol úplne jasný.": {
+    en: "The description wasn't entirely clear.",
+    hu: "A leírás nem volt teljesen egyértelmű.",
+    de: "Die Beschreibung war nicht ganz eindeutig.",
+  },
+  "Nahrajte výkres (PDF, PNG alebo JPG) alebo opíšte súčiastku podrobnejšie.": {
+    en: "Upload a drawing (PDF, PNG or JPG) or describe the part in more detail.",
+    hu: "Töltsön fel rajzot (PDF, PNG vagy JPG), vagy írja le részletesebben az alkatrészt.",
+    de: "Laden Sie eine Zeichnung hoch (PDF, PNG oder JPG) oder beschreiben Sie das Teil genauer.",
+  },
+  "Z tohto popisu nevieme model vytvoriť automaticky. Napíšte nám cez kontaktný formulár.": {
+    en: "We can't create a model from this description automatically. Write to us via the contact form.",
+    hu: "Ebből a leírásból nem tudunk automatikusan modellt készíteni. Írjon nekünk a kapcsolatfelvételi űrlapon.",
+    de: "Aus dieser Beschreibung können wir kein Modell automatisch erstellen. Schreiben Sie uns über das Kontaktformular.",
+  },
+  "Z popisu sa nedá navrhnúť súčiastka na tlač.": {
+    en: "No printable part can be designed from this description.",
+    hu: "Ebből a leírásból nem tervezhető nyomtatható alkatrész.",
+    de: "Aus dieser Beschreibung lässt sich kein druckbares Teil entwerfen.",
+  },
+  "Z popisu sa nepodarilo poskladať model. Doplňte rozmery a tvar súčiastky a skúste to znova.": {
+    en: "The model couldn't be built from the description. Add the dimensions and shape of the part and try again.",
+    hu: "A leírásból nem sikerült modellt összeállítani. Adja meg az alkatrész méreteit és formáját, és próbálja újra.",
+    de: "Aus der Beschreibung konnte kein Modell erstellt werden. Ergänzen Sie Maße und Form des Teils und versuchen Sie es erneut.",
+  },
 };
 
 export default messages;

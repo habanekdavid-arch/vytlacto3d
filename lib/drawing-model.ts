@@ -23,6 +23,10 @@ export type DrawingMediaType = (typeof DRAWING_MEDIA_TYPES)[number];
 /** Poznámka zákazníka k výkresu (napr. chýbajúca hrúbka). */
 export const DRAWING_NOTE_MAX_CHARS = 500;
 
+/** Model len z textového popisu (bez výkresu): dĺžka popisu. */
+export const DESCRIPTION_MIN_CHARS = 15;
+export const DESCRIPTION_MAX_CHARS = 1500;
+
 export function drawingFeeForFileKey(fileKey: unknown): number {
   if (typeof fileKey !== "string" || !fileKey) return 0;
   let path: string;
