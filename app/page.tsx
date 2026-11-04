@@ -1000,6 +1000,7 @@ export default function Home() {
                 hideDropzone={!!activeItem || !!build}
                 onPreviewFile={(file) => setBuild((b) => (b ? { ...b, file } : b))}
                 onProgress={(phase, progress) => setBuild((b) => (b ? { ...b, phase, progress } : b))}
+                activeScalePct={activeItem?.config.scalePct}
               />
               {productError && !build && (
                 <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">

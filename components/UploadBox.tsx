@@ -48,7 +48,12 @@ const UploadBox = forwardRef<UploadBoxHandle, {
   // a aktuálna fáza s priebehom 0–1.
   onPreviewFile?: (file: File | null) => void;
   onProgress?: (phase: BuildPhase, progress: number) => void;
-}>(function UploadBox({ onUploaded, onUploadingChange, hideDropzone, onPreviewFile, onProgress }, ref) {
+  /**
+   * Mierka (%) aktívnej položky. Pri prepočte novej výšky sa model vytiahne
+   * tak, aby po mierke mal presne zadanú výšku (mierka mení len šírku/dĺžku).
+   */
+  activeScalePct?: number;
+}>(function UploadBox({ onUploaded, onUploadingChange, hideDropzone, onPreviewFile, onProgress, activeScalePct }, ref) {
   const t = useT();
   const inputRef = useRef<HTMLInputElement | null>(null);
 
@@ -84,12 +89,18 @@ const UploadBox = forwardRef<UploadBoxHandle, {
       .toLowerCase();
   }
 
-  async function convertSvgToStl(file: File) {
+  /** Prepočet výšky pri mierke ≠ 100 %: výška po mierke = zadaná výška. */
+  const heightFactor = () => {
+    const pct = Number(activeScalePct) || 100;
+    return 100 / Math.max(1, pct);
+  };
+
+  async function convertSvgToStl(file: File, factor = 1) {
     onPreviewFile?.(null);
     onProgress?.("convert", 0);
     const formData = new FormData();
     formData.append("file", file);
-    formData.append("thicknessMm", String(svgThicknessMm));
+    formData.append("thicknessMm", String(Math.round(svgThicknessMm * factor * 1000) / 1000));
 
     const res = await fetch("/api/svg-to-stl", {
       method: "POST",
@@ -180,13 +191,15 @@ const UploadBox = forwardRef<UploadBoxHandle, {
     layers: ColorLayer[],
     settings: LayerSetting[],
     name: string,
-    replaceActive: boolean
+    replaceActive: boolean,
+    factor = 1
   ) {
     onPreviewFile?.(null);
     onProgress?.("convert", 0);
     // Nech sa stihne vykresliť priebeh — výpočet beží v hlavnom vlákne.
     await new Promise((r) => setTimeout(r, 30));
-    const model = buildLayeredStl(layers, settings, sanitizeFileName(name));
+    const scaled = factor === 1 ? settings : settings.map((s) => ({ ...s, heightMm: s.heightMm * factor }));
+    const model = buildLayeredStl(layers, scaled, sanitizeFileName(name));
     setLayerNotice(
       model.tooManyParts
         ? t("Model má priveľa samostatných častí na automatické zafarbenie — vytlačíme ho v jednej farbe.")
@@ -270,9 +283,9 @@ const UploadBox = forwardRef<UploadBoxHandle, {
     onUploadingChange?.(true);
     try {
       if (colorLayers) {
-        await buildLayersAndUpload(colorLayers.layers, layerSettings, colorLayers.name, true);
+        await buildLayersAndUpload(colorLayers.layers, layerSettings, colorLayers.name, true, heightFactor());
       } else if (originalSvgFile) {
-        const stlFile = await convertSvgToStl(originalSvgFile);
+        const stlFile = await convertSvgToStl(originalSvgFile, heightFactor());
         await uploadAndAnalyze(stlFile, { replaceActive: true });
       }
     } catch (e: any) {
