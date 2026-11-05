@@ -13,6 +13,7 @@ import { addVat, formatEur } from "@/lib/vat";
 import type { CartItemConfig } from "@/lib/types";
 import type { BuildPhase } from "@/components/ModelBuildAnimation";
 import DrawingToModel from "@/components/DrawingToModel";
+import { drawingAiVisibleOnHost } from "@/lib/drawing-visibility";
 
 type Uploaded = {
   fileKey: string;
@@ -64,6 +65,9 @@ const UploadBox = forwardRef<UploadBoxHandle, {
 
   // Na mobile by .stl/.obj súbory boli vo výbere zosivené (pozri lib/file-accept).
   useEffect(() => relaxAcceptOnMobile(inputRef.current), []);
+  // AI modelovanie zatiaľ len mimo verejnej domény (lib/drawing-visibility).
+  const [drawingAiVisible, setDrawingAiVisible] = useState(false);
+  useEffect(() => setDrawingAiVisible(drawingAiVisibleOnHost(window.location.host)), []);
   const [dragging, setDragging] = useState(false);
   const [error, setError] = useState<string>("");
   const [svgThicknessMm, setSvgThicknessMm] = useState(10);
@@ -417,12 +421,14 @@ const UploadBox = forwardRef<UploadBoxHandle, {
         </div>
       )}
 
-      <DrawingToModel
-        hideForm={hideDropzone}
-        resetSignal={drawingReset}
-        onBusyChange={setDrawingBusy}
-        onModel={handleDrawingModel}
-      />
+      {drawingAiVisible && (
+        <DrawingToModel
+          hideForm={hideDropzone}
+          resetSignal={drawingReset}
+          onBusyChange={setDrawingBusy}
+          onModel={handleDrawingModel}
+        />
+      )}
 
       {colorLayers && (
         <div className="mt-4 rounded-2xl border border-neutral-200 bg-neutral-50 p-4">

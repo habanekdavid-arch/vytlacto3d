@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { drawingAiVisibleOnHost } from "@/lib/drawing-visibility";
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { put } from "@vercel/blob";
@@ -80,6 +81,9 @@ function slug(s: string) {
 const fail = (error: string, status: number) => NextResponse.json({ error }, { status });
 
 export async function POST(req: NextRequest) {
+  if (!drawingAiVisibleOnHost(req.headers.get("host"))) {
+    return fail("Táto funkcia zatiaľ nie je dostupná.", 404);
+  }
   if (!drawingAiAvailable()) {
     return fail("Generovanie modelu z výkresu je dočasne nedostupné. Pošlite nám výkres cez kontaktný formulár.", 503);
   }
