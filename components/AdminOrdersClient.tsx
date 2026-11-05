@@ -242,6 +242,7 @@ export default function AdminOrdersClient({
           <h1 className="text-2xl font-extrabold tracking-tight">Objednávky</h1>
           <div className="flex flex-wrap items-center gap-2">
             <a href="/admin/kupony" className={navLink}>Kupóny</a>
+            <a href="/admin/chranene-subory" className={navLink}>Chránené súbory</a>
             <a href="/admin/produkty" className={navLink}>Produkty</a>
             <a href="/admin/ucty" className={navLink}>Účty</a>
             <a href="/admin/cms" className={navLink}>CMS</a>

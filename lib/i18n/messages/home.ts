@@ -1411,6 +1411,26 @@ const messages: Messages = {
     hu: "A leírásból nem sikerült modellt összeállítani. Adja meg az alkatrész méreteit és formáját, és próbálja újra.",
     de: "Aus der Beschreibung konnte kein Modell erstellt werden. Ergänzen Sie Maße und Form des Teils und versuchen Sie es erneut.",
   },
+  "Chránený model VytlačTo3D": {
+    en: "Protected VytlačTo3D model",
+    hu: "Védett VytlačTo3D modell",
+    de: "Geschütztes VytlačTo3D-Modell",
+  },
+  "Chránený súbor sa nepodarilo otvoriť.": {
+    en: "The protected file could not be opened.",
+    hu: "A védett fájlt nem sikerült megnyitni.",
+    de: "Die geschützte Datei konnte nicht geöffnet werden.",
+  },
+  "Toto nie je chránený súbor VytlačTo3D.": {
+    en: "This is not a protected VytlačTo3D file.",
+    hu: "Ez nem védett VytlačTo3D fájl.",
+    de: "Dies ist keine geschützte VytlačTo3D-Datei.",
+  },
+  "Chránený súbor sa nepodarilo otvoriť (je poškodený alebo nie je od nás).": {
+    en: "The protected file could not be opened (it is damaged or not from us).",
+    hu: "A védett fájlt nem sikerült megnyitni (sérült, vagy nem tőlünk származik).",
+    de: "Die geschützte Datei konnte nicht geöffnet werden (beschädigt oder nicht von uns).",
+  },
 };
 
 export default messages;

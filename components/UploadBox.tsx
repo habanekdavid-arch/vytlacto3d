@@ -28,7 +28,7 @@ type Uploaded = {
     supportCm3?: number;
   };
   /** Nastavenie, s ktorým sa model vloží do kalkulátora (farby dielov z obrázka). */
-  configDefaults?: Partial<Pick<CartItemConfig, "material" | "color" | "partColors" | "sourceDrawingUrl" | "sourceDescription">>;
+  configDefaults?: Partial<Pick<CartItemConfig, "material" | "color" | "partColors" | "sourceDrawingUrl" | "sourceDescription" | "protectedFile">>;
   /** Prepočet toho istého modelu — nahradí aktívnu položku, nepridá novú. */
   replaceActive?: boolean;
 };
@@ -149,7 +149,33 @@ const UploadBox = forwardRef<UploadBoxHandle, {
     return stlFile;
   }
 
+  /** Chránený súbor .v3d (admin → Chránené súbory): otvorí ho server, ďalej ide ako bežný súbor. */
+  const protectedRef = useRef(false);
+  async function openProtected(file: File): Promise<File> {
+    onPreviewFile?.(null);
+    onProgress?.("upload", 0);
+    const blob = await upload(`chranene-nahrate/${sanitizeFileName(file.name)}`, file, {
+      access: "public",
+      handleUploadUrl: "/api/blob/upload",
+      multipart: file.size > 8 * 1024 * 1024,
+      contentType: "application/octet-stream",
+      onUploadProgress: ({ percentage }) => onProgress?.("upload", percentage / 100),
+    });
+    const res = await fetch("/api/protected/open", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url: blob.url }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data?.url) throw new Error(data?.error || t("Chránený súbor sa nepodarilo otvoriť."));
+    const content = await fetch(data.url);
+    if (!content.ok) throw new Error(t("Chránený súbor sa nepodarilo otvoriť."));
+    const out = await content.blob();
+    return new File([out], data.fileName, { type: out.type || "application/octet-stream" });
+  }
+
   async function uploadAndAnalyze(file: File, extra?: Pick<Uploaded, "configDefaults" | "replaceActive">): Promise<void> {
+    if (protectedRef.current) extra = { ...extra, configDefaults: { ...extra?.configDefaults, protectedFile: true } };
     if (file.size > MAX_MODEL_MB * 1024 * 1024) {
       throw new Error(
         t("Súbor má {size} MB, maximum je {max} MB. Skúste znížiť počet trojuholníkov modelu.", {
@@ -248,7 +274,8 @@ const UploadBox = forwardRef<UploadBoxHandle, {
     });
   }
 
-  async function handleFile(originalFile: File) {
+  async function handleFile(inputFile: File) {
+    let originalFile = inputFile;
     if (drawingBusy) return;
     setError("");
     setLayerNotice("");
@@ -260,6 +287,11 @@ const UploadBox = forwardRef<UploadBoxHandle, {
     onUploadingChange?.(true);
 
     try {
+      protectedRef.current = false;
+      if (originalFile.name.toLowerCase().endsWith(".v3d")) {
+        originalFile = await openProtected(originalFile);
+        protectedRef.current = true;
+      }
       const originalFileName = originalFile.name.toLowerCase();
 
       const isAllowed =
@@ -557,7 +589,7 @@ const UploadBox = forwardRef<UploadBoxHandle, {
       <input
         ref={inputRef}
         type="file"
-        accept=".stl,.obj,.svg,.png,.jpg,.jpeg,.webp"
+        accept=".stl,.obj,.svg,.png,.jpg,.jpeg,.webp,.v3d"
         className="hidden"
         onChange={(e) => {
           const file = e.target.files?.[0];

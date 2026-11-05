@@ -27,6 +27,8 @@ export type CartItemConfig = {
   /** Model vygenerovaný AI: z akého výkresu/obrázka (Blob URL) alebo popisu vznikol. */
   sourceDrawingUrl?: string;
   sourceDescription?: string;
+  /** Model z chráneného súboru .v3d — v náhľade značka VytlačTo3D. */
+  protectedFile?: boolean;
 };
 
 export type CartItemPricing = {

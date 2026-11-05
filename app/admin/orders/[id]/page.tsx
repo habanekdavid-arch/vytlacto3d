@@ -386,6 +386,11 @@ export default async function AdminOrderDetailPage({
                         <span className="ml-auto text-sm font-extrabold text-neutral-900">{formatEur(ip.total)} bez DPH → {formatEur(addVat(ip.total))} s DPH</span>
                       )}
                     </div>
+                    {ic?.protectedFile && (
+                      <div className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-neutral-900 px-3 py-1 text-xs font-bold text-white">
+                        🔒 Z chráneného súboru .v3d (admin → Chránené súbory)
+                      </div>
+                    )}
                     <SourceOfModel config={ic} ai={item.fileName.startsWith(DRAWING_MODEL_PREFIX)} />
                     <div className="grid gap-2 text-xs sm:grid-cols-4">
                       <InfoCard label="Materiál" value={ic.materialFlexible ? `${materialLabel(ic.material)} · nezáleží` : materialLabel(ic.material)} />

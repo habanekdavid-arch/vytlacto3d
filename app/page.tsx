@@ -6,6 +6,7 @@ import UploadBox, { UploadBoxHandle } from "@/components/UploadBox";
 import ModelBuildAnimation, { type BuildPhase } from "@/components/ModelBuildAnimation";
 import { getProduct, type Product } from "@/content/produkty";
 import Configurator, { ConfigState } from "@/components/Configurator";
+import ProtectedWatermark from "@/components/ProtectedWatermark";
 import StlViewer from "@/components/StlViewer";
 import CartSidebar from "@/components/CartSidebar";
 import MaterialPricing from "@/components/MaterialPricing";
@@ -38,7 +39,7 @@ type Uploaded = {
     printHeightMm?: number;
   };
   /** Odporúčané nastavenie hotového produktu z katalógu (alebo farby z obrázka). */
-  configDefaults?: Product["defaults"] & Partial<Pick<CartItemConfig, "sourceDrawingUrl" | "sourceDescription">>;
+  configDefaults?: Product["defaults"] & Partial<Pick<CartItemConfig, "sourceDrawingUrl" | "sourceDescription" | "protectedFile">>;
   /** Prepočet toho istého modelu (nová výška) — nahradí aktívnu položku. */
   replaceActive?: boolean;
 };
@@ -1046,22 +1047,25 @@ export default function Home() {
                       <div className="text-lg font-extrabold">{t("3D náhľad")}</div>
                     </div>
                   </div>
-                  <StlViewer
-                    key={`${activeItem.fileKey}-${activeItem.config.scalePct}`}
-                    fileKey={activeItem.fileKey}
-                    title={t("Model sa dá otáčať a zoomovať")}
-                    colorId={activeItem.config.colorFlexible ? "gray" : activeItem.config.color}
-                    height={380}
-                    scalePct={activeItem.config.scalePct}
-                    partColors={activeItem.config.partColors}
-                    onPartColorsChange={handlePartColors}
-                    multicolorAllowed={multicolorAllowedFor(activeItem.config.material) && !activeItem.config.colorFlexible}
-                    multicolorBlockedReason={
-                      !multicolorAllowedFor(activeItem.config.material)
-                        ? t("Viacfarebnú tlač robíme len z PLA. Prepnite materiál na PLA.")
-                        : t("Pri viacfarebnej tlači vyberáte farby sami — zrušte voľbu „Nezáleží mi na farbe“.")
-                    }
-                  />
+                  <div className="relative">
+                    <StlViewer
+                      key={`${activeItem.fileKey}-${activeItem.config.scalePct}`}
+                      fileKey={activeItem.fileKey}
+                      title={t("Model sa dá otáčať a zoomovať")}
+                      colorId={activeItem.config.colorFlexible ? "gray" : activeItem.config.color}
+                      height={380}
+                      scalePct={activeItem.config.scalePct}
+                      partColors={activeItem.config.partColors}
+                      onPartColorsChange={handlePartColors}
+                      multicolorAllowed={multicolorAllowedFor(activeItem.config.material) && !activeItem.config.colorFlexible}
+                      multicolorBlockedReason={
+                        !multicolorAllowedFor(activeItem.config.material)
+                          ? t("Viacfarebnú tlač robíme len z PLA. Prepnite materiál na PLA.")
+                          : t("Pri viacfarebnej tlači vyberáte farby sami — zrušte voľbu „Nezáleží mi na farbe“.")
+                      }
+                    />
+                    {activeItem.config.protectedFile && <ProtectedWatermark />}
+                  </div>
                   {activeItem.config.colorFlexible && (
                     <p className="mt-3 rounded-2xl bg-neutral-50 px-4 py-2.5 text-xs text-neutral-600">
                       {t("Farba, ktorú aktuálne vidíte, je")} <span className="font-bold text-neutral-900">{t("ilustračná")}</span> {t("— na farbe vám nezáleží, vyberieme ju podľa dostupnosti.")}
