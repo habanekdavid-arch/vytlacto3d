@@ -322,3 +322,20 @@ model ProductImage {
   updatedAt DateTime @default(now()) @updatedAt
   updatedBy String?
 }
+
+// Vygenerovanie 3D modelu z technického výkresu cez AI (/api/drawing-to-model).
+// Slúži na limit počtu generovaní a prehľad nákladov na AI.
+model DrawingGeneration {
+  id           String   @id @default(cuid())
+  createdAt    DateTime @default(now())
+  ipHash       String
+  userId       String?
+  fileName     String
+  status       String
+  detail       String?
+  inputTokens  Int?
+  outputTokens Int?
+
+  @@index([ipHash, createdAt])
+  @@index([createdAt])
+}

@@ -12,6 +12,7 @@ import { MULTICOLOR_FEE_EUR } from "@/lib/multicolor";
 import { addVat, formatEur } from "@/lib/vat";
 import type { CartItemConfig } from "@/lib/types";
 import type { BuildPhase } from "@/components/ModelBuildAnimation";
+import DrawingToModel from "@/components/DrawingToModel";
 
 type Uploaded = {
   fileKey: string;
@@ -26,7 +27,7 @@ type Uploaded = {
     supportCm3?: number;
   };
   /** Nastavenie, s ktorým sa model vloží do kalkulátora (farby dielov z obrázka). */
-  configDefaults?: Partial<Pick<CartItemConfig, "material" | "color" | "partColors">>;
+  configDefaults?: Partial<Pick<CartItemConfig, "material" | "color" | "partColors" | "sourceDrawingUrl" | "sourceDescription">>;
   /** Prepočet toho istého modelu — nahradí aktívnu položku, nepridá novú. */
   replaceActive?: boolean;
 };
@@ -68,12 +69,18 @@ const UploadBox = forwardRef<UploadBoxHandle, {
   const [svgThicknessMm, setSvgThicknessMm] = useState(10);
 
   const [originalSvgFile, setOriginalSvgFile] = useState<File | null>(null);
+  // Pôvodný obrázok/SVG uložený v Blobe — ide s položkou do objednávky, aby
+  // výroba videla, z čoho model vznikol.
+  const [sourceUrl, setSourceUrl] = useState<string | undefined>(undefined);
   // Viacfarebný obrázok/SVG: farebné vrstvy a ich výška a farba tlače.
   const [colorLayers, setColorLayers] = useState<{ layers: ColorLayer[]; name: string } | null>(null);
   const [layerSettings, setLayerSettings] = useState<LayerSetting[]>([]);
   const [layerNotice, setLayerNotice] = useState<string>("");
   const [isReconverting, setIsReconverting] = useState(false);
   const [uploadedFileName, setUploadedFileName] = useState<string>("");
+  // Model z technického výkresu (components/DrawingToModel)
+  const [drawingBusy, setDrawingBusy] = useState(false);
+  const [drawingReset, setDrawingReset] = useState(0);
 
   // Zobraz panel hrúbky len ak nie je ešte uploadnutý súbor, alebo ak bol uploadnutý SVG.
   // Keď je v kalkulátore už iný model (napr. hotový produkt), panel nepatrí k nemu.
@@ -94,6 +101,23 @@ const UploadBox = forwardRef<UploadBoxHandle, {
     const pct = Number(activeScalePct) || 100;
     return 100 / Math.max(1, pct);
   };
+
+  /** Uloží pôvodný obrázok/SVG; zlyhanie nevadí (model sa spracuje aj tak). */
+  async function uploadSource(file: File): Promise<string | undefined> {
+    try {
+      const saved = await upload(`podklady/${sanitizeFileName(file.name)}`, file, {
+        access: "public",
+        handleUploadUrl: "/api/blob/upload",
+        contentType: file.type || undefined,
+      });
+      return saved.url;
+    } catch (e) {
+      console.error("SOURCE IMAGE UPLOAD ERROR:", e);
+      return undefined;
+    }
+  }
+
+  const sourceDefaults = (url: string | undefined) => (url ? { sourceDrawingUrl: url } : {});
 
   async function convertSvgToStl(file: File, factor = 1) {
     onPreviewFile?.(null);
@@ -193,6 +217,7 @@ const UploadBox = forwardRef<UploadBoxHandle, {
     settings: LayerSetting[],
     name: string,
     replaceActive: boolean,
+    source?: string,
     factor = 1
   ) {
     onPreviewFile?.(null);
@@ -209,16 +234,25 @@ const UploadBox = forwardRef<UploadBoxHandle, {
     onPreviewFile?.(model.file);
     const firstColor = settings.find((s) => s.enabled)?.colorId ?? "black";
     await uploadAndAnalyze(model.file, {
-      configDefaults: model.partColors
-        ? { material: "PLA", color: model.partColors[0], partColors: model.partColors }
-        : { color: firstColor },
+      configDefaults: {
+        ...(model.partColors
+          ? { material: "PLA" as const, color: model.partColors[0], partColors: model.partColors }
+          : { color: firstColor }),
+        ...sourceDefaults(source),
+      },
       replaceActive,
     });
   }
 
   async function handleFile(originalFile: File) {
+    if (drawingBusy) return;
     setError("");
     setLayerNotice("");
+    setDrawingReset((n) => n + 1);
+    if (originalFile.name.toLowerCase().endsWith(".pdf")) {
+      setError("PDF výkres nahrajte nižšie v časti „Máte len technický výkres?“ — vygenerujeme z neho 3D model.");
+      return;
+    }
     onUploadingChange?.(true);
 
     try {
@@ -231,6 +265,11 @@ const UploadBox = forwardRef<UploadBoxHandle, {
         isRasterImage(originalFileName);
 
       if (!isAllowed) throw new Error(t("Podporujeme STL, OBJ, SVG a obrázky PNG alebo JPG."));
+
+      // Obrázok a SVG si uložíme popri prevode na 3D model.
+      const isImageSource = isRasterImage(originalFileName) || originalFileName.endsWith(".svg");
+      const sourcePromise = isImageSource ? uploadSource(originalFile) : Promise.resolve(undefined);
+      setSourceUrl(undefined);
 
       // Viacfarebný obrázok/SVG: každá farba vlastná vrstva s vlastnou výškou.
       const multi =
@@ -247,7 +286,9 @@ const UploadBox = forwardRef<UploadBoxHandle, {
         setOriginalSvgFile(null);
         setColorLayers({ layers: multi.layers, name: originalFile.name });
         setLayerSettings(settings);
-        await buildLayersAndUpload(multi.layers, settings, originalFile.name, false);
+        const src = await sourcePromise;
+        setSourceUrl(src);
+        await buildLayersAndUpload(multi.layers, settings, originalFile.name, false, src);
       } else if (isRasterImage(originalFileName)) {
         setColorLayers(null);
         // Obrázok → obrys (SVG) v prehliadači → rovnaké vytiahnutie ako SVG.
@@ -257,12 +298,16 @@ const UploadBox = forwardRef<UploadBoxHandle, {
         const svgFile = await rasterImageToSvgFile(originalFile);
         setOriginalSvgFile(svgFile);
         const stlFile = await convertSvgToStl(svgFile);
-        await uploadAndAnalyze(stlFile);
+        const src = await sourcePromise;
+        setSourceUrl(src);
+        await uploadAndAnalyze(stlFile, { configDefaults: sourceDefaults(src) });
       } else if (originalFileName.endsWith(".svg")) {
         setColorLayers(null);
         setOriginalSvgFile(originalFile);
         const stlFile = await convertSvgToStl(originalFile);
-        await uploadAndAnalyze(stlFile);
+        const src = await sourcePromise;
+        setSourceUrl(src);
+        await uploadAndAnalyze(stlFile, { configDefaults: sourceDefaults(src) });
       } else {
         setColorLayers(null);
         setOriginalSvgFile(null);
@@ -284,15 +329,41 @@ const UploadBox = forwardRef<UploadBoxHandle, {
     onUploadingChange?.(true);
     try {
       if (colorLayers) {
-        await buildLayersAndUpload(colorLayers.layers, layerSettings, colorLayers.name, true, heightFactor());
+        await buildLayersAndUpload(colorLayers.layers, layerSettings, colorLayers.name, true, sourceUrl, heightFactor());
       } else if (originalSvgFile) {
         const stlFile = await convertSvgToStl(originalSvgFile, heightFactor());
-        await uploadAndAnalyze(stlFile, { replaceActive: true });
+        await uploadAndAnalyze(stlFile, { replaceActive: true, configDefaults: sourceDefaults(sourceUrl) });
       }
     } catch (e: any) {
       setError(e?.message || "Chyba pri konverzii.");
     } finally {
       setIsReconverting(false);
+      onUploadingChange?.(false);
+    }
+  }
+
+  /** Vygenerovaný model z výkresu → rovnaké nahranie a analýza ako pri STL. */
+  async function handleDrawingModel(
+    stlFile: File,
+    replace: boolean,
+    source: { drawingUrl?: string; description?: string }
+  ) {
+    setError("");
+    setLayerNotice("");
+    setColorLayers(null);
+    setOriginalSvgFile(null);
+    onUploadingChange?.(true);
+    try {
+      onPreviewFile?.(stlFile);
+      // Podklad (výkres alebo popis) ide s položkou do objednávky — pre výrobu.
+      await uploadAndAnalyze(stlFile, {
+        replaceActive: replace,
+        configDefaults: {
+          ...(source.drawingUrl ? { sourceDrawingUrl: source.drawingUrl } : {}),
+          ...(source.description ? { sourceDescription: source.description } : {}),
+        },
+      });
+    } finally {
       onUploadingChange?.(false);
     }
   }
@@ -311,8 +382,9 @@ const UploadBox = forwardRef<UploadBoxHandle, {
           onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
           onDragLeave={() => setDragging(false)}
           onDrop={onDrop}
-          onClick={() => inputRef.current?.click()}
+          onClick={() => { if (!drawingBusy) inputRef.current?.click(); }}
           className={[
+            drawingBusy ? "pointer-events-none opacity-50" : "",
             "cursor-pointer rounded-3xl border-2 border-dashed p-8 text-center transition",
             dragging
               ? "border-[#FFAE00] bg-[#FFAE00]/10"
@@ -344,6 +416,13 @@ const UploadBox = forwardRef<UploadBoxHandle, {
           </p>
         </div>
       )}
+
+      <DrawingToModel
+        hideForm={hideDropzone}
+        resetSignal={drawingReset}
+        onBusyChange={setDrawingBusy}
+        onModel={handleDrawingModel}
+      />
 
       {colorLayers && (
         <div className="mt-4 rounded-2xl border border-neutral-200 bg-neutral-50 p-4">

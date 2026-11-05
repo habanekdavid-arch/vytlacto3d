@@ -24,6 +24,9 @@ export type CartItemConfig = {
    * lib/model-parts — od najväčšej časti). Chýba = jedna farba `color`.
    */
   partColors?: string[];
+  /** Model vygenerovaný AI: z akého výkresu/obrázka (Blob URL) alebo popisu vznikol. */
+  sourceDrawingUrl?: string;
+  sourceDescription?: string;
 };
 
 export type CartItemPricing = {
@@ -40,6 +43,7 @@ export type CartItemPricing = {
   /** Poplatok za viacfarebnú tlač (bez DPH); staršie položky ho nemajú. */
   multicolorFee?: number;
   modelFee?: number;
+  drawingFee?: number;
   total: number;
   /** Len počas akcie (lib/promo). */
   promoPercent?: number;

@@ -38,7 +38,7 @@ type Uploaded = {
     printHeightMm?: number;
   };
   /** Odporúčané nastavenie hotového produktu z katalógu (alebo farby z obrázka). */
-  configDefaults?: Product["defaults"];
+  configDefaults?: Product["defaults"] & Partial<Pick<CartItemConfig, "sourceDrawingUrl" | "sourceDescription">>;
   /** Prepočet toho istého modelu (nová výška) — nahradí aktívnu položku. */
   replaceActive?: boolean;
 };
@@ -321,6 +321,13 @@ export default function Home() {
                   ...(partColors ? { material: "PLA" as const } : {}),
                   ...(color ? { color } : {}),
                   partColors,
+                  // Nový model z výkresu/popisu nesie nový podklad; iný prepočet ho nemení.
+                  ...(uploaded.configDefaults?.sourceDrawingUrl !== undefined || uploaded.configDefaults?.sourceDescription !== undefined
+                    ? {
+                        sourceDrawingUrl: uploaded.configDefaults?.sourceDrawingUrl,
+                        sourceDescription: uploaded.configDefaults?.sourceDescription,
+                      }
+                    : {}),
                 },
                 pricing: null,
               }

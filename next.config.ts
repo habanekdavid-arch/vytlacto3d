@@ -1,10 +1,12 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Vektorový prevod SVG (lib/svg-extrude) — WASM sa načíta zo súboru.
+  // Vektorový prevod SVG (lib/svg-extrude) a modely z výkresov (lib/drawing-csg)
+  // — WASM manifold-3d sa načíta zo súboru.
   serverExternalPackages: ["manifold-3d"],
   outputFileTracingIncludes: {
     "/api/svg-to-stl": ["./node_modules/manifold-3d/manifold.wasm"],
+    "/api/drawing-to-model": ["./node_modules/manifold-3d/manifold.wasm"],
   },
   images: {
     remotePatterns: [
