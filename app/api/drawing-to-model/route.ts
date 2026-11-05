@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
 import { drawingAiVisibleOnHost } from "@/lib/drawing-visibility";
+import { isAnalyticsHost } from "@/lib/analytics";
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { put } from "@vercel/blob";
@@ -100,7 +101,12 @@ export async function POST(req: NextRequest) {
 
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "";
   const captcha = await verifyRecaptcha(form.get("recaptcha"), "drawing", ip);
-  if (!captcha.ok) {
+  // Kľúč reCAPTCHA je povolený len pre vytlacto3d.sk — na testovacej adrese
+  // (*.vercel.app) Google vráti „browser-error“. Tam to neblokuje; limity
+  // počtu generovaní nižšie platia ďalej.
+  const testHostDomainError =
+    !captcha.ok && captcha.reason === "invalid:browser-error" && !isAnalyticsHost(req.headers.get("host"));
+  if (!captcha.ok && !testHostDomainError) {
     console.warn("Drawing-to-model blocked by reCAPTCHA:", captcha.reason);
     return fail("Overenie proti spamu sa nepodarilo. Obnovte stránku a skúste to znova.", 400);
   }
