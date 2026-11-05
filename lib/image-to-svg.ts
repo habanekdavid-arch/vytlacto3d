@@ -459,15 +459,34 @@ function fitCurve(pts: Point[], corner: boolean[]): Point[] {
  * Hladké obrysy poľa pokrytia 0–1 (už rozmazaného) v pracovných pixeloch.
  * `scale` = zväčšenie pôvodného obrázka, `mmPerWorkPx` = veľkosť pixela v mm.
  */
-export function traceLoops(field: Float32Array, w: number, h: number, scale: number, mmPerWorkPx: number): Point[][] {
-  const minArea = Math.max(20, w * h * 0.0003); // drobné zrnká a šum preč
+export type TraceOptions = {
+  /**
+   * Čistý zdroj (vykreslené SVG): bez šumu, takže sa nechajú aj drobné
+   * tvary (od ~0,02 mm²) a obrys sa vyhladí len jemne — malé krivky a
+   * krúžky ostanú okrúhle a rovné hrany rovné.
+   */
+  vector?: boolean;
+};
+
+export function traceLoops(
+  field: Float32Array,
+  w: number,
+  h: number,
+  scale: number,
+  mmPerWorkPx: number,
+  opts: TraceOptions = {}
+): Point[][] {
+  const minArea = opts.vector
+    ? Math.max(4, 0.02 / (mmPerWorkPx * mmPerWorkPx))
+    : Math.max(20, w * h * 0.0003); // drobné zrnká a šum preč
+  const passes = opts.vector ? 10 : SMOOTH_PASSES;
   // Tolerancia v pracovných pixeloch: ~0,75 px pôvodného obrázka, no nikdy
   // nie hrubšia ako ~0,12 mm (malé obrázky sú zväčšené, detail by sa stratil).
   const fitEps = Math.min(FIT_EPS_SRC * Math.max(1, scale), 0.12 / mmPerWorkPx);
   return marchingSquares(field, w, h)
     .filter((l) => Math.abs(area(l)) >= minArea)
     .map((l) => {
-      const smoothed = smooth(resample(l, RESAMPLE_STEP), SMOOTH_PASSES, scale);
+      const smoothed = smooth(resample(l, RESAMPLE_STEP), passes, scale);
       const s = simplifyKeepCorners(smoothed.pts, smoothed.corners, fitEps);
       return fitCurve(s.pts, s.corners);
     })

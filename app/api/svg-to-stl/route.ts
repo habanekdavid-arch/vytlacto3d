@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import * as THREE from "three";
 import { SVGLoader } from "three/examples/jsm/loaders/SVGLoader.js";
 import { DOMParser } from "xmldom";
+import { SvgExtrudeError, extrudeSvg } from "@/lib/svg-extrude";
 
 export const runtime = "nodejs";
 
@@ -159,6 +160,27 @@ export async function POST(req: NextRequest) {
 
     const svgText = await file.text();
     const scaleToMm = getSvgScaleToMm(svgText);
+
+    // Vektorový prevod (čiary ako čiary, jemné krivky, zjednotené tvary).
+    // Pri neočakávanej chybe ostáva pôvodný prevod nižšie.
+    try {
+      const res = await extrudeSvg(svgText, scaleToMm, thicknessMm);
+      console.log(`svg-to-stl: ${res.shapes} contours, ${Date.now() - start}ms`);
+      const outputFileName = file.name.replace(/\.svg$/i, ".stl");
+      return new NextResponse(new Uint8Array(res.stl), {
+        status: 200,
+        headers: {
+          "Content-Type": "model/stl",
+          "Content-Disposition": `attachment; filename="${outputFileName}"`,
+          "X-Generated-File-Name": outputFileName,
+        },
+      });
+    } catch (e) {
+      if (e instanceof SvgExtrudeError) {
+        return NextResponse.json({ error: e.message }, { status: 400 });
+      }
+      console.error("svg-to-stl: vektorový prevod zlyhal, použije sa starší:", e);
+    }
 
     // Warn about transforms — SVGLoader handles basic cases but nested transforms may distort
     if (/<[^>]+\stransform=["'][^"']/i.test(svgText)) {

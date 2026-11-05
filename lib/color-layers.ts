@@ -9,7 +9,7 @@
  * z našej palety — zákazník ju aj výšku vrstvy môže zmeniť.
  */
 import { MULTICOLOR_MAX_COLORS } from "@/lib/multicolor";
-import { blurForTrace, traceLoops, type Point } from "@/lib/image-to-svg";
+import { blurForTrace, traceLoops, type Point, type TraceOptions } from "@/lib/image-to-svg";
 
 /** Farby, ktoré tlačíme (id ako v konfigurátore) a ich vzhľad. */
 export const PALETTE_HEX: Record<string, string> = {
@@ -110,7 +110,8 @@ export function extractColorLayers(
   h: number,
   data: Uint8ClampedArray,
   scale: number,
-  mmPerPx: number
+  mmPerPx: number,
+  traceOpts: TraceOptions = {}
 ): LayerExtraction | null {
   const n = w * h;
   const L = new Float32Array(n), A = new Float32Array(n), B = new Float32Array(n);
@@ -287,7 +288,7 @@ export function extractColorLayers(
     const field = new Float32Array(n);
     let count = 0;
     for (let i = 0; i < n; i++) if (label[i] === k) { field[i] = 1; count++; }
-    const loops = traceLoops(blurForTrace(field, w, h, scale), w, h, scale, mmPerPx).map(toMm);
+    const loops = traceLoops(blurForTrace(field, w, h, scale), w, h, scale, mmPerPx, traceOpts).map(toMm);
     if (!loops.length) return null;
     const c = clusters[k];
     const hex = toHex(...c.rgb);

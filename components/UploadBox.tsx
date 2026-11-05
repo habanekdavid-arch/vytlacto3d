@@ -180,8 +180,9 @@ const UploadBox = forwardRef<UploadBoxHandle, {
   async function detectColorLayers(file: File) {
     const name = file.name.toLowerCase();
     if (name.endsWith(".svg")) {
-      const px = await loadSvgPixels(file).catch(() => null);
-      return px ? extractColorLayers(px.w, px.h, px.data, px.scale, px.mmPerPx) : null;
+      // Vyššie rozlíšenie a jemné vyhladenie — SVG je čisté, drobné krivky treba zachovať.
+      const px = await loadSvgPixels(file, 2600).catch(() => null);
+      return px ? extractColorLayers(px.w, px.h, px.data, px.scale, px.mmPerPx, { vector: true }) : null;
     }
     const px = await loadPixels(file);
     return extractColorLayers(px.w, px.h, px.data, px.scale, OUTPUT_LONGEST_MM / Math.max(px.w, px.h));
