@@ -7,6 +7,7 @@ import AccountButton from "@/components/AccountButton";
 import { useCartUi } from "@/lib/cart-ui-context";
 import { useT } from "@/lib/i18n/client";
 import LanguageSwitcher, { LanguageButtons } from "@/components/LanguageSwitcher";
+import ThemeToggle from "@/components/ThemeToggle";
 
 const FOURFROM_URL =
   "https://www.4from.media/?gad_source=1&gad_campaignid=21391373681&gbraid=0AAAAADyxKkl3uOWw6VN6UM8ekC4FAegi_";
@@ -36,7 +37,15 @@ export default function Navbar() {
             alt="VytlačTo3D"
             width={6397}
             height={1530}
-            className="h-9 w-auto"
+            className="h-9 w-auto dark:hidden"
+            priority
+          />
+          <Image
+            src="/logo-full-dark.svg"
+            alt="VytlačTo3D"
+            width={6397}
+            height={1530}
+            className="hidden h-9 w-auto dark:block"
             priority
           />
         </Link>
@@ -85,6 +94,7 @@ export default function Navbar() {
           <div className="hidden sm:block">
             <LanguageSwitcher />
           </div>
+          <ThemeToggle className="hidden sm:flex" />
           <AccountButton />
           <button
             type="button"
@@ -126,8 +136,9 @@ export default function Navbar() {
               </a>
             </li>
           </ul>
-          <div className="mx-auto mt-2 max-w-7xl border-t border-neutral-100 px-3 pt-3 sm:hidden">
+          <div className="mx-auto mt-2 flex max-w-7xl items-center justify-between gap-3 border-t border-neutral-100 px-3 pt-3 sm:hidden">
             <LanguageButtons />
+            <ThemeToggle />
           </div>
         </nav>
       )}

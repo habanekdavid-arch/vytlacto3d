@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
+import { viewerBackground } from "@/lib/theme";
 import { STLLoader } from "three/examples/jsm/loaders/STLLoader.js";
 import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader.js";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
@@ -167,6 +168,16 @@ export default function StlViewer({
   const applyColorsRef = useRef(applyColors);
   applyColorsRef.current = applyColors;
 
+  // Tmavý režim prepnutý počas prezerania — pozadie scény sa zmení hneď.
+  useEffect(() => {
+    const onTheme = () => {
+      const scene = sceneRef.current;
+      if (scene) scene.background = new THREE.Color(viewerBackground());
+    };
+    window.addEventListener("vytlacto3d:theme", onTheme);
+    return () => window.removeEventListener("vytlacto3d:theme", onTheme);
+  }, []);
+
   useEffect(() => {
     const mount = mountRef.current;
     if (!mount || !fileKey) return;
@@ -175,7 +186,7 @@ export default function StlViewer({
     setError(null);
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color("#F3F4F6");
+    scene.background = new THREE.Color(viewerBackground());
     sceneRef.current = scene;
 
     const width = Math.max(mount.clientWidth, 320);

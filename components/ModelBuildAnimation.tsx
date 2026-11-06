@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
+import { viewerBackground } from "@/lib/theme";
 import { STLLoader } from "three/examples/jsm/loaders/STLLoader.js";
 import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader.js";
 import { useT } from "@/lib/i18n/client";
@@ -146,7 +147,7 @@ export default function ModelBuildAnimation({
     renderer?.setSize(width(), height());
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color("#F3F4F6");
+    scene.background = new THREE.Color(viewerBackground());
     scene.add(new THREE.AmbientLight(0xffffff, 1.0));
     scene.add(new THREE.HemisphereLight(0xffffff, 0xd1d5db, 0.9));
     const key = new THREE.DirectionalLight(0xffffff, 1.5);

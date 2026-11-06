@@ -12,8 +12,8 @@ type ColorOption = {
 
 const COLORS: ColorOption[] = [
   { id: "black", name: "Čierna", swatchClass: "bg-black", ringClass: "ring-white/20" },
-  { id: "white", name: "Biela", swatchClass: "bg-white", ringClass: "ring-black/20" },
-  { id: "gray", name: "Sivá", swatchClass: "bg-zinc-400", ringClass: "ring-black/10" },
+  { id: "white", name: "Biela", swatchClass: "bg-[#ffffff]", ringClass: "ring-black/20" },
+  { id: "gray", name: "Sivá", swatchClass: "bg-[#a1a1aa]", ringClass: "ring-black/10" },
   { id: "red", name: "Červená", swatchClass: "bg-red-500" },
   { id: "blue", name: "Modrá", swatchClass: "bg-blue-500" },
   { id: "green", name: "Zelená", swatchClass: "bg-green-500" },

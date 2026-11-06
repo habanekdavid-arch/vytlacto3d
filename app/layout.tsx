@@ -1,4 +1,5 @@
 import "./globals.css";
+import { THEME_INIT_SCRIPT } from "@/lib/theme";
 import Script from "next/script";
 import { headers } from "next/headers";
 import Navbar from "@/components/Navbar";
@@ -18,6 +19,15 @@ import AnalyticsRouteGuard from "@/components/AnalyticsRouteGuard";
 
 const baseUrl =
   process.env.NEXT_PUBLIC_BASE_URL || "https://www.vytlacto3d.sk";
+
+/** Vlastný tmavý režim — prehliadač (Chrome, Samsung Internet) stránku sám nestmavuje. */
+export const viewport = {
+  colorScheme: "light dark",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#141414" },
+  ],
+};
 
 export async function generateMetadata() {
   const { t, locale } = await getT();
@@ -86,7 +96,11 @@ export default async function RootLayout({
   const analytics = isAnalyticsHost((await headers()).get("host"));
 
   return (
-    <html lang={locale}>
+    <html lang={locale} suppressHydrationWarning>
+      <head>
+        {/* Tmavý režim pred prvým vykreslením (bez bliknutia) — lib/theme.ts */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+      </head>
       <body className="min-h-screen flex flex-col bg-white text-neutral-900 antialiased">
         {analytics && (
           <>

@@ -33,18 +33,10 @@ html {
 
 body {
   font-family: "Century Gothic Paneuropean", Arial, Helvetica, sans-serif;
-  background: white;
-  color: #171717;
-}
-
-html {
-  scroll-behavior: smooth;
-}
-
-body {
   background: #ffffff;
   color: #18181b;
 }
+
 
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(18px); }
@@ -104,3 +96,78 @@ body {
 .grecaptcha-badge {
   visibility: hidden;
 }
+
+/* ------------------------------------------------------------------------
+ * Tmavý režim — trieda .dark na <html> (lib/theme.ts). Neutrálne a farebné
+ * odtiene prepínajú premenné v tailwind.config.ts; tu sú biela, čierna,
+ * žlté tlačidlá a pár pevných farieb.
+ * ---------------------------------------------------------------------- */
+:root {
+  color-scheme: light;
+  --surface: 20 20 20;
+}
+html.dark {
+  color-scheme: dark;
+}
+html.dark body {
+  background: #0e0e0e;
+  color: #ededed;
+}
+
+/* Biele plochy → tmavé karty. Priesvitná biela pod 50 % (na tmavých
+   pásoch a fotkách) ostáva biela. */
+html.dark .bg-white { background-color: rgb(var(--surface)); }
+html.dark .bg-white\/90 { background-color: rgb(var(--surface) / 0.9); }
+html.dark .bg-white\/95,
+html.dark .sm\:bg-white\/95 { background-color: rgb(var(--surface) / 0.95); }
+html.dark .hover\:bg-white:hover { background-color: #222222; }
+html.dark .bg-neutral-950 { background-color: #050505; }
+html.dark .via-white\/60 { --tw-gradient-to: transparent; --tw-gradient-stops: var(--tw-gradient-from), rgb(var(--surface) / 0.6), var(--tw-gradient-to); }
+
+/* Čierny text → svetlý; na žltých a oranžových tlačidlách ostáva čierny. */
+html.dark .text-black,
+html.dark .hover\:text-black:hover,
+html.dark .group:hover .group-hover\:text-black { color: #f2f2f2; }
+html.dark .text-black\/70 { color: rgb(242 242 242 / 0.7); }
+html.dark .text-black\/60 { color: rgb(242 242 242 / 0.6); }
+html.dark .text-black\/50 { color: rgb(242 242 242 / 0.5); }
+html.dark .text-black\/40 { color: rgb(242 242 242 / 0.4); }
+html.dark :is(.bg-\[\#FFAE00\], .bg-\[\#e09d00\], .bg-orange-500, .bg-orange-400, .bg-amber-400, .bg-yellow-400, .from-\[\#FFAE00\]):is(.text-black, .hover\:text-black:hover),
+html.dark :is(.bg-\[\#FFAE00\], .bg-\[\#e09d00\], .bg-orange-500, .bg-orange-400) :is(.text-black, .text-neutral-900, .text-neutral-800, .text-neutral-700),
+html.dark .hover\:bg-\[\#FFAE00\]:hover:is(.text-black, .text-neutral-900, .hover\:text-black),
+html.dark .group:hover .group-hover\:bg-\[\#FFAE00\] { color: #000; }
+html.dark :is(.bg-\[\#FFAE00\], .bg-\[\#e09d00\]):is(.text-neutral-900, .text-neutral-800, .text-neutral-700) { color: #000; }
+/* Svetlé tlačidlo, ktoré pri prejdení zožltne (hover:bg-[#FFAE00]) — text čierny. */
+html.dark .hover\:bg-\[\#FFAE00\]:hover { color: #000; }
+
+/* Tmavozlaté odkazy (na bielom) → svetlejšia zlatá. */
+html.dark .text-\[\#b07a00\],
+html.dark .hover\:text-\[\#b07a00\]:hover { color: #ffc547; }
+html.dark .text-\[\#7a5800\] { color: #ffd77a; }
+html.dark .bg-\[\#FFAE00\]\/5 { background-color: rgb(255 174 0 / 0.07); }
+html.dark .bg-\[\#FFAE00\]\/10 { background-color: rgb(255 174 0 / 0.12); }
+
+/* Jemné tiene na tmavom pozadí nie sú vidieť — okraj kariet stačí. */
+html.dark .shadow-sm { --tw-shadow-color: rgb(0 0 0 / 0.5); }
+
+/* Formulárové prvky bez vlastnej farby pozadia. */
+html.dark :is(input, select, textarea):not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([class*="bg-"]) {
+  background-color: rgb(var(--surface));
+  color: #ededed;
+}
+html.dark ::placeholder { color: #7c7c7c; }
+
+/* Logá a obrázky s čiernym textom (napr. DNABS) */
+html.dark .dark-invert { filter: invert(1) hue-rotate(180deg); }
+
+/* Články (blog) */
+html.dark .article-content h2,
+html.dark .article-content h3,
+html.dark .article-content strong { color: #f2f2f2; }
+html.dark .article-content p,
+html.dark .article-content li { color: #c9c9c9; }
+
+/* Svetlé žlté pásy (upozornenia) → tmavý zlatý tón. */
+html.dark .bg-\[\#FFF8E1\],
+html.dark .bg-\[\#FFF8E7\] { background-color: #2a2210; }
+html.dark .hover\:bg-black\/5:hover { background-color: rgb(255 255 255 / 0.06); }

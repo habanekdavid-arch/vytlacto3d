@@ -405,6 +405,10 @@ const messages: Messages = {
     hu: "Az akció alatt a kedvezőbb akciós kedvezmény érvényes. A kupont tartsa meg a következő vásárlásra.",
     de: "Während der Aktion gilt der günstigere Aktionsrabatt. Heben Sie den Gutschein für die nächste Bestellung auf.",
   },
+  "Režim: podľa zariadenia": { en: "Theme: system", hu: "Téma: rendszer szerint", de: "Modus: wie Gerät" },
+  "Režim: tmavý": { en: "Theme: dark", hu: "Téma: sötét", de: "Modus: dunkel" },
+  "Režim: svetlý": { en: "Theme: light", hu: "Téma: világos", de: "Modus: hell" },
 };
+
 
 export default messages;

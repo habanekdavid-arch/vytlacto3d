@@ -726,7 +726,7 @@ function PriceLine({ label, value, bold, hint }: { label: string; value: string;
 
 function TechLine({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-center justify-between rounded-xl bg-white/30 px-3 py-2">
+    <div className="flex items-center justify-between rounded-xl bg-white/30 px-3 py-2 dark:bg-white/5">
       <span className="text-xs text-black/60">{label}</span>
       <span className="text-xs font-bold text-black">{value}</span>
     </div>

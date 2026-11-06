@@ -138,7 +138,7 @@ export default function Footer() {
               alt="DNABS"
               width={14}
               height={14}
-              className="h-3.5 w-3.5"
+              className="h-3.5 w-3.5 dark-invert"
             />
             <span className="font-semibold">DNABS</span>
           </a>
