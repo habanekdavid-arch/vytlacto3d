@@ -103,7 +103,8 @@ body {
  * žlté tlačidlá a pár pevných farieb.
  * ---------------------------------------------------------------------- */
 :root {
-  color-scheme: light;
+  /* Vždy svetlá stránka — prehliadač ju nesmie sám stmaviť. */
+  color-scheme: only light;
   --surface: 20 20 20;
 }
 html.dark {

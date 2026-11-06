@@ -1,10 +1,13 @@
 /**
- * Tmavý režim podľa nastavenia zariadenia (bez prepínača na stránke).
- * Trieda .dark na <html> prepína farby (tailwind.config.ts, app/globals.css).
+ * Tmavý režim je vypnutý — stránka je vždy svetlá.
  */
 
-/** Spustí sa pred vykreslením stránky, aby neblikla svetlá verzia. */
-export const THEME_INIT_SCRIPT = `(function(){try{localStorage.removeItem("vytlacto3d:theme");var m=window.matchMedia("(prefers-color-scheme: dark)");var a=function(){document.documentElement.classList.toggle("dark",m.matches);window.dispatchEvent(new Event("vytlacto3d:theme"));};a();m.addEventListener("change",a);}catch(e){}})();`;
+/**
+ * Stránka je vždy svetlá: trieda .dark sa nepridáva (tmavé farby v
+ * tailwind.config.ts / globals.css ostávajú pripravené, ak by sa niekedy
+ * zapínal). Skript len zmaže starú voľbu z prepínača.
+ */
+export const THEME_INIT_SCRIPT = `(function(){try{localStorage.removeItem("vytlacto3d:theme");document.documentElement.classList.remove("dark");}catch(e){}})();`;
 
 export function isDarkNow(): boolean {
   return typeof document !== "undefined" && document.documentElement.classList.contains("dark");

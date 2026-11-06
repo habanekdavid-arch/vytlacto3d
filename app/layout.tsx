@@ -20,13 +20,13 @@ import AnalyticsRouteGuard from "@/components/AnalyticsRouteGuard";
 const baseUrl =
   process.env.NEXT_PUBLIC_BASE_URL || "https://www.vytlacto3d.sk";
 
-/** Vlastný tmavý režim — prehliadač (Chrome, Samsung Internet) stránku sám nestmavuje. */
+/**
+ * Stránka je vždy svetlá — „only light“ zakáže prehliadaču (Chrome,
+ * Samsung Internet) automatické stmavenie, ktoré vyzeralo zle.
+ */
 export const viewport = {
-  colorScheme: "light dark",
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#141414" },
-  ],
+  colorScheme: "only light",
+  themeColor: "#ffffff",
 };
 
 export async function generateMetadata() {
