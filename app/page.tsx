@@ -22,6 +22,7 @@ import { SHIPPING_RATES } from "@/lib/shipping";
 import { useCartUi } from "@/lib/cart-ui-context";
 import { CART_STORAGE_KEY } from "@/lib/cart-storage";
 import ContactNoticeBanner from "@/components/ContactNoticeBanner";
+import AdminConfigTools from "@/components/AdminConfigTools";
 import { useT } from "@/lib/i18n/client";
 import { PACKETA_WIDGET_API_KEY } from "@/lib/packeta/constants";
 
@@ -359,6 +360,13 @@ export default function Home() {
     };
     setCartItems((prev) => [...prev, newItem]);
     setActiveItemId(id);
+  }
+
+  /** Admin import konfigurácie (components/AdminConfigTools). */
+  function importItems(items: CartItem[], replace: boolean) {
+    if (!items.length) return;
+    setCartItems((prev) => (replace ? items : [...prev, ...items]));
+    setActiveItemId(items[0].id);
   }
 
   function removeItem(id: string) {
@@ -933,6 +941,9 @@ export default function Home() {
 
           <div className="mt-6 space-y-4">
             <ContactNoticeBanner />
+
+            {/* Len pre administrátorov: export / import celej konfigurácie (ZIP). */}
+            <AdminConfigTools cartItems={cartItems} onImport={importItems} />
 
             {/* Model switcher chips — visible when cart has items */}
             {cartItems.length > 0 && (
