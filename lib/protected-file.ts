@@ -21,7 +21,49 @@ const MAX_BYTES = 100 * 1024 * 1024;
 
 export class ProtectedFileError extends Error {}
 
-export type ProtectedHeader = { name: string; type: string; createdAt: string; createdBy?: string | null };
+export type ProtectedHeader = {
+  name: string;
+  type: string;
+  createdAt: string;
+  createdBy?: string | null;
+  /** Nastavenie z konfigurátora (export položky adminom) — vloží sa s modelom. */
+  config?: ProtectedConfig;
+};
+
+/** Parametre položky, ktoré si .v3d nesie (bez URL podkladov a interných príznakov). */
+export type ProtectedConfig = {
+  material?: string;
+  quality?: string;
+  infillPct?: number;
+  color?: string;
+  quantity?: number;
+  scalePct?: number;
+  materialFlexible?: boolean;
+  colorFlexible?: boolean;
+  partColors?: string[];
+};
+
+/** Prepustí len známe kľúče so správnym typom (obsah .v3d nie je dôveryhodný vstup). */
+export function sanitizeConfig(raw: unknown): ProtectedConfig | undefined {
+  if (!raw || typeof raw !== "object") return undefined;
+  const r = raw as Record<string, unknown>;
+  const out: ProtectedConfig = {};
+  const str = (v: unknown) => (typeof v === "string" && /^[A-Za-z0-9_-]{1,24}$/.test(v) ? v : undefined);
+  const num = (v: unknown, min: number, max: number) =>
+    typeof v === "number" && Number.isFinite(v) && v >= min && v <= max ? v : undefined;
+  if (str(r.material)) out.material = str(r.material);
+  if (str(r.quality)) out.quality = str(r.quality);
+  if (str(r.color)) out.color = str(r.color);
+  if (num(r.infillPct, 0, 100) !== undefined) out.infillPct = num(r.infillPct, 0, 100);
+  if (num(r.quantity, 1, 10000) !== undefined) out.quantity = Math.round(num(r.quantity, 1, 10000)!);
+  if (num(r.scalePct, 1, 1000) !== undefined) out.scalePct = num(r.scalePct, 1, 1000);
+  if (typeof r.materialFlexible === "boolean") out.materialFlexible = r.materialFlexible;
+  if (typeof r.colorFlexible === "boolean") out.colorFlexible = r.colorFlexible;
+  if (Array.isArray(r.partColors) && r.partColors.length <= 64 && r.partColors.every((c) => str(c))) {
+    out.partColors = r.partColors as string[];
+  }
+  return Object.keys(out).length ? out : undefined;
+}
 
 function key(): Buffer {
   const secret = process.env.PROTECTED_FILE_SECRET || process.env.NEXTAUTH_SECRET;

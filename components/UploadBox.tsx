@@ -28,7 +28,7 @@ type Uploaded = {
     supportCm3?: number;
   };
   /** Nastavenie, s ktorým sa model vloží do kalkulátora (farby dielov z obrázka). */
-  configDefaults?: Partial<Pick<CartItemConfig, "material" | "color" | "partColors" | "sourceDrawingUrl" | "sourceDescription" | "protectedFile">>;
+  configDefaults?: Partial<CartItemConfig>;
   /** Prepočet toho istého modelu — nahradí aktívnu položku, nepridá novú. */
   replaceActive?: boolean;
 };
@@ -151,6 +151,8 @@ const UploadBox = forwardRef<UploadBoxHandle, {
 
   /** Chránený súbor .v3d (admin → Chránené súbory): otvorí ho server, ďalej ide ako bežný súbor. */
   const protectedRef = useRef(false);
+  // Nastavenie uložené v .v3d (export položky z konfigurátora adminom).
+  const protectedConfigRef = useRef<Partial<CartItemConfig> | null>(null);
   async function openProtected(file: File): Promise<File> {
     onPreviewFile?.(null);
     onProgress?.("upload", 0);
@@ -171,11 +173,16 @@ const UploadBox = forwardRef<UploadBoxHandle, {
     const content = await fetch(data.url);
     if (!content.ok) throw new Error(t("Chránený súbor sa nepodarilo otvoriť."));
     const out = await content.blob();
+    protectedConfigRef.current = data.config && typeof data.config === "object" ? (data.config as Partial<CartItemConfig>) : null;
     return new File([out], data.fileName, { type: out.type || "application/octet-stream" });
   }
 
   async function uploadAndAnalyze(file: File, extra?: Pick<Uploaded, "configDefaults" | "replaceActive">): Promise<void> {
-    if (protectedRef.current) extra = { ...extra, configDefaults: { ...extra?.configDefaults, protectedFile: true } };
+    if (protectedRef.current) {
+      // Uložené nastavenie platí pri vložení; pri prepočte výšky ostáva to, čo je v položke.
+      const saved = !extra?.replaceActive ? protectedConfigRef.current ?? {} : {};
+      extra = { ...extra, configDefaults: { ...saved, ...extra?.configDefaults, protectedFile: true } };
+    }
     if (file.size > MAX_MODEL_MB * 1024 * 1024) {
       throw new Error(
         t("Súbor má {size} MB, maximum je {max} MB. Skúste znížiť počet trojuholníkov modelu.", {
@@ -288,6 +295,7 @@ const UploadBox = forwardRef<UploadBoxHandle, {
 
     try {
       protectedRef.current = false;
+      protectedConfigRef.current = null;
       if (originalFile.name.toLowerCase().endsWith(".v3d")) {
         originalFile = await openProtected(originalFile);
         protectedRef.current = true;

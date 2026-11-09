@@ -40,7 +40,7 @@ type Uploaded = {
     printHeightMm?: number;
   };
   /** Odporúčané nastavenie hotového produktu z katalógu (alebo farby z obrázka). */
-  configDefaults?: Product["defaults"] & Partial<Pick<CartItemConfig, "sourceDrawingUrl" | "sourceDescription" | "protectedFile">>;
+  configDefaults?: Partial<CartItemConfig>;
   /** Prepočet toho istého modelu (nová výška) — nahradí aktívnu položku. */
   replaceActive?: boolean;
 };
@@ -360,13 +360,6 @@ export default function Home() {
     };
     setCartItems((prev) => [...prev, newItem]);
     setActiveItemId(id);
-  }
-
-  /** Admin import konfigurácie (components/AdminConfigTools). */
-  function importItems(items: CartItem[], replace: boolean) {
-    if (!items.length) return;
-    setCartItems((prev) => (replace ? items : [...prev, ...items]));
-    setActiveItemId(items[0].id);
   }
 
   function removeItem(id: string) {
@@ -942,8 +935,8 @@ export default function Home() {
           <div className="mt-6 space-y-4">
             <ContactNoticeBanner />
 
-            {/* Len pre administrátorov: export / import celej konfigurácie (ZIP). */}
-            <AdminConfigTools cartItems={cartItems} onImport={importItems} />
+            {/* Len pre administrátorov: každý model ako .v3d aj s nastavením. */}
+            <AdminConfigTools cartItems={cartItems} />
 
             {/* Model switcher chips — visible when cart has items */}
             {cartItems.length > 0 && (

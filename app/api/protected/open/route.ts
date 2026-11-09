@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { del, put } from "@vercel/blob";
 import { isOurBlobUrl } from "@/lib/drawing-model";
-import { ProtectedFileError, contentTypeFor, isProtectableName, openProtectedFile, safeFileName } from "@/lib/protected-file";
+import { ProtectedFileError, contentTypeFor, isProtectableName, openProtectedFile, safeFileName, sanitizeConfig } from "@/lib/protected-file";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
       contentType: contentTypeFor(name),
     });
     await del(url).catch(() => {});
-    return NextResponse.json({ ok: true, fileName: name, url: saved.url });
+    return NextResponse.json({ ok: true, fileName: name, url: saved.url, config: sanitizeConfig(header.config) ?? null });
   } catch (e) {
     await del(url).catch(() => {});
     if (e instanceof ProtectedFileError) return NextResponse.json({ error: e.message }, { status: 400 });
