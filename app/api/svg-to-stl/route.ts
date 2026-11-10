@@ -3,6 +3,7 @@ import * as THREE from "three";
 import { SVGLoader } from "three/examples/jsm/loaders/SVGLoader.js";
 import { DOMParser } from "xmldom";
 import { SvgExtrudeError, extrudeSvg } from "@/lib/svg-extrude";
+import { asciiFileName, contentDisposition } from "@/lib/http-filename";
 
 export const runtime = "nodejs";
 
@@ -171,8 +172,8 @@ export async function POST(req: NextRequest) {
         status: 200,
         headers: {
           "Content-Type": "model/stl",
-          "Content-Disposition": `attachment; filename="${outputFileName}"`,
-          "X-Generated-File-Name": outputFileName,
+          "Content-Disposition": contentDisposition("attachment", outputFileName),
+          "X-Generated-File-Name": asciiFileName(outputFileName),
         },
       });
     } catch (e) {
@@ -307,8 +308,8 @@ export async function POST(req: NextRequest) {
       status: 200,
       headers: {
         "Content-Type": "model/stl",
-        "Content-Disposition": `attachment; filename="${outputFileName}"`,
-        "X-Generated-File-Name": outputFileName,
+        "Content-Disposition": contentDisposition("attachment", outputFileName),
+        "X-Generated-File-Name": asciiFileName(outputFileName),
       },
     });
   } catch (error: any) {

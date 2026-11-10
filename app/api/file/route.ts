@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
 import { getLocalFilePath } from "@/lib/storage";
+import { contentDisposition } from "@/lib/http-filename";
 
 export const runtime = "nodejs";
 
@@ -29,7 +30,7 @@ export async function GET(req: NextRequest) {
     return new NextResponse(fileBuffer, {
       headers: {
         "Content-Type": "application/vnd.ms-pki.stl",
-        "Content-Disposition": `inline; filename="${filename}"`,
+        "Content-Disposition": contentDisposition("inline", filename),
         "Cache-Control": "public, max-age=31536000, immutable",
       },
     });
