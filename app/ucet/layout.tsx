@@ -6,6 +6,9 @@ import AccountNav from "@/components/AccountNav";
 import { getSafeServerSession } from "@/lib/session";
 import { getT } from "@/lib/i18n/server";
 
+/** Zákaznícka zóna nepatrí do výsledkov vyhľadávania. */
+export const metadata = { robots: { index: false, follow: false } };
+
 export default async function AccountLayout({
   children,
 }: {

@@ -7,12 +7,23 @@ import { getT } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
 
-export async function generateMetadata() {
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<{ kategoria?: string; zoradit?: string }>;
+}) {
   const { t } = await getT();
+  const { kategoria, zoradit } = await searchParams;
+  // Filtrované a zoradené varianty (?kategoria=…, ?zoradit=…) sú len iný
+  // pohľad na tú istú stránku — Google indexuje iba /komunita.
+  const filtered = Boolean(kategoria || zoradit);
   return {
-  title: t("Komunita – vaše 3D výtlačky v praxi"),
-  description:
-    t("Príbehy zákazníkov VytlačTo3D: ako im 3D výtlačky pomohli, ako vyzerajú v praxi a čo by poradili ostatným. Pridajte aj ten svoj."),
+    title: t("Komunita – vaše 3D výtlačky v praxi"),
+    description: t(
+      "Príbehy zákazníkov VytlačTo3D: ako im 3D výtlačky pomohli, ako vyzerajú v praxi a čo by poradili ostatným. Pridajte aj ten svoj."
+    ),
+    alternates: { canonical: "/komunita" },
+    ...(filtered ? { robots: { index: false, follow: true } } : {}),
   };
 }
 

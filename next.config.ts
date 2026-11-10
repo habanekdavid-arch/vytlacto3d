@@ -21,6 +21,8 @@ const nextConfig: NextConfig = {
   },
   async redirects() {
     return [
+      // Stránka FAQ bola omylom na /fqa — staré odkazy vedú na /faq.
+      { source: "/fqa", destination: "/faq", permanent: true },
       // Článok o cene 3D tlače dostal v CMS kratšiu adresu — staré odkazy
       // (zdieľané, z Google) vedú trvalo na novú, namiesto 404.
       {

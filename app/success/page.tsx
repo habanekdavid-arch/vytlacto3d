@@ -172,6 +172,10 @@ async function SuccessContent({
   );
 }
 
+
+/** Stránka po platbe — nepatrí do výsledkov vyhľadávania. */
+export const metadata = { robots: { index: false, follow: false } };
+
 export default async function SuccessPage({
   searchParams,
 }: {
