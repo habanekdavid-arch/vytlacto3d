@@ -813,6 +813,8 @@ function FlowiiPreview({
               ? "border-green-200 bg-green-50 text-green-900"
               : sync.status === "FAILED"
               ? "border-red-200 bg-red-50 text-red-900"
+              : sync.status === "WAITING"
+              ? "border-amber-200 bg-amber-50 text-amber-900"
               : "border-neutral-200 bg-neutral-50 text-neutral-700"
           }`}
         >
@@ -821,6 +823,8 @@ function FlowiiPreview({
               ? "✓ Vytvorené vo FLOWii"
               : sync.status === "FAILED"
               ? "✗ Prenos zlyhal"
+              : sync.status === "WAITING"
+              ? "⏳ Čaká na obnovenie denného limitu FLOWii — vytvorí sa automaticky ráno"
               : "Prenos prebieha…"}
             <span className="ml-2 font-normal text-xs opacity-70">pokusov: {sync.attempts}</span>
           </div>

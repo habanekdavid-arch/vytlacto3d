@@ -78,6 +78,25 @@ export function isFlowiiRateLimit(e: unknown) {
   return e instanceof FlowiiError && e.status === 429;
 }
 
+/**
+ * Vyčerpaný DENNÝ limit FLOWii (20 000 požiadaviek za deň pre účet) — čakať
+ * minútu nemá zmysel. Prenos sa odloží (stav WAITING) a dokončí ho ráno
+ * cron /api/cron/flowii-retry.
+ */
+export function isFlowiiDailyQuota(e: unknown) {
+  if (!isFlowiiRateLimit(e)) return false;
+  const text = `${(e as FlowiiError).body ?? ""} ${(e as FlowiiError).message}`;
+  return /per\s*day|quota exceeded/i.test(text);
+}
+
+/** Text chyby z uloženého prenosu je denný limit? (staršie záznamy FAILED) */
+export function isDailyQuotaText(text: string | null | undefined) {
+  return /per\s*day/i.test(text ?? "") && /quota/i.test(text ?? "");
+}
+
+/** Stav prenosu odloženého pre denný limit FLOWii. */
+export const FLOWII_WAITING = "WAITING";
+
 /** Spustí fn; pri limite FLOWii počká a skúsi znova (najviac `retries`-krát). */
 export async function withFlowiiRateLimitRetry<T>(
   fn: () => Promise<T>,
@@ -88,7 +107,7 @@ export async function withFlowiiRateLimitRetry<T>(
     try {
       return await fn();
     } catch (e) {
-      if (!isFlowiiRateLimit(e) || attempt >= retries) throw e;
+      if (!isFlowiiRateLimit(e) || isFlowiiDailyQuota(e) || attempt >= retries) throw e;
       opts.onRetry?.(attempt + 1);
       await new Promise((r) => setTimeout(r, opts.waitMs ?? RATE_LIMIT_WAIT_MS));
     }
@@ -106,6 +125,10 @@ export function scheduleFlowiiSync(orderId: string) {
         });
         console.log("FLOWii sync:", orderId, result.status);
       } catch (e) {
+        if (isFlowiiDailyQuota(e)) {
+          console.warn("FLOWii sync odložený (denný limit FLOWii), dokončí sa ráno:", orderId);
+          return;
+        }
         console.error("FLOWii sync failed:", orderId, e);
         await notifyFailure(orderId, e);
       }
@@ -604,6 +627,7 @@ async function claim(orderId: string, allowStaleReclaim: boolean): Promise<Flowi
 
   const canTake =
     existing.status === "FAILED" ||
+    existing.status === FLOWII_WAITING ||
     (existing.status === "RUNNING" && allowStaleReclaim && Date.now() - existing.updatedAt.getTime() > STALE_RUNNING_MS);
   if (!canTake) return { status: "IN_PROGRESS" };
 
@@ -681,8 +705,18 @@ export async function syncOrderToFlowii(
   } catch (e: any) {
     const detail = e instanceof FlowiiError && e.body ? ` — ${e.body}` : "";
     const message = `${e?.message ?? String(e)}${detail}`.slice(0, 2000);
+    const status = isFlowiiDailyQuota(e) ? FLOWII_WAITING : "FAILED";
     await prisma.flowiiSync
-      .update({ where: { orderId }, data: { status: "FAILED", lastError: message } })
+      .update({
+        where: { orderId },
+        data: {
+          status,
+          lastError:
+            status === FLOWII_WAITING
+              ? `Denný limit FLOWii je vyčerpaný — zákazka sa vytvorí automaticky ráno. (${message.slice(0, 500)})`
+              : message,
+        },
+      })
       .catch((dbErr) => console.error("FLOWii sync: could not record failure", dbErr));
     throw e;
   }
@@ -868,4 +902,46 @@ function maskLogin(login: string): string {
   const [name, domain] = login.split("@");
   const visible = name.slice(0, Math.min(2, Math.max(1, name.length - 1)));
   return `${visible}•••${domain !== undefined ? `@${domain}` : ""} (${login.length} znakov)`;
+}
+
+// ── Odložené prenosy (denný limit FLOWii) ──────────────────────────────────
+
+export type FlowiiRetryReport = { tried: number; done: number; waiting: number; failed: number; details: string[] };
+
+/**
+ * Dokončí prenosy odložené pre denný limit FLOWii (aj staršie FAILED s touto
+ * chybou). Len zakladá nové zákazky — pokračuje od toho, čo sa už vytvorilo,
+ * nič existujúce vo FLOWii nemení. Ak je limit stále vyčerpaný, skončí.
+ */
+export async function retryWaitingFlowiiSyncs(limit = 25): Promise<FlowiiRetryReport> {
+  const report: FlowiiRetryReport = { tried: 0, done: 0, waiting: 0, failed: 0, details: [] };
+  if (!isFlowiiAutoEnabled()) {
+    report.details.push("FLOWii automatika nie je zapnutá.");
+    return report;
+  }
+  await ensureTable();
+  const rows = await prisma.flowiiSync.findMany({
+    where: { status: { in: [FLOWII_WAITING, "FAILED"] } },
+    orderBy: { createdAt: "asc" },
+    take: 200,
+  });
+  const queue = rows.filter((r) => r.status === FLOWII_WAITING || isDailyQuotaText(r.lastError)).slice(0, limit);
+  for (const r of queue) {
+    report.tried++;
+    try {
+      const res = await withFlowiiRateLimitRetry(() => syncOrderToFlowii(r.orderId));
+      if (res.status === "DONE" || res.status === "ALREADY_DONE") report.done++;
+      report.details.push(`${r.orderId}: ${res.status}`);
+    } catch (e) {
+      if (isFlowiiDailyQuota(e)) {
+        report.waiting++;
+        report.details.push(`${r.orderId}: limit stále vyčerpaný — skúsi sa zajtra`);
+        break;
+      }
+      report.failed++;
+      report.details.push(`${r.orderId}: ${String((e as Error)?.message ?? e).slice(0, 200)}`);
+      await notifyFailure(r.orderId, e);
+    }
+  }
+  return report;
 }
