@@ -89,11 +89,6 @@ export function isFlowiiDailyQuota(e: unknown) {
   return /per\s*day|quota exceeded/i.test(text);
 }
 
-/** Text chyby z uloženého prenosu je denný limit? (staršie záznamy FAILED) */
-export function isDailyQuotaText(text: string | null | undefined) {
-  return /per\s*day/i.test(text ?? "") && /quota/i.test(text ?? "");
-}
-
 /** Stav prenosu odloženého pre denný limit FLOWii. */
 export const FLOWII_WAITING = "WAITING";
 
@@ -909,9 +904,11 @@ function maskLogin(login: string): string {
 export type FlowiiRetryReport = { tried: number; done: number; waiting: number; failed: number; details: string[] };
 
 /**
- * Dokončí prenosy odložené pre denný limit FLOWii (aj staršie FAILED s touto
- * chybou). Len zakladá nové zákazky — pokračuje od toho, čo sa už vytvorilo,
- * nič existujúce vo FLOWii nemení. Ak je limit stále vyčerpaný, skončí.
+ * Dokončí prenosy odložené pre denný limit FLOWii (stav WAITING). Staršie
+ * FAILED sa neopakujú — mohli byť medzitým založené ručne priamo vo FLOWii
+ * a vznikla by duplicitná zákazka. Len zakladá nové zákazky, pokračuje od
+ * toho, čo sa už vytvorilo, nič existujúce vo FLOWii nemení. Ak je limit
+ * stále vyčerpaný, skončí.
  */
 export async function retryWaitingFlowiiSyncs(limit = 25): Promise<FlowiiRetryReport> {
   const report: FlowiiRetryReport = { tried: 0, done: 0, waiting: 0, failed: 0, details: [] };
@@ -920,12 +917,11 @@ export async function retryWaitingFlowiiSyncs(limit = 25): Promise<FlowiiRetryRe
     return report;
   }
   await ensureTable();
-  const rows = await prisma.flowiiSync.findMany({
-    where: { status: { in: [FLOWII_WAITING, "FAILED"] } },
+  const queue = await prisma.flowiiSync.findMany({
+    where: { status: FLOWII_WAITING },
     orderBy: { createdAt: "asc" },
-    take: 200,
+    take: limit,
   });
-  const queue = rows.filter((r) => r.status === FLOWII_WAITING || isDailyQuotaText(r.lastError)).slice(0, limit);
   for (const r of queue) {
     report.tried++;
     try {
