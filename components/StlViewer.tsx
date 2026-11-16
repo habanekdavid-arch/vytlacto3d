@@ -233,6 +233,11 @@ export default function StlViewer({
     rimLight.position.set(0, 120, -180);
     scene.add(rimLight);
 
+    // Slabé svetlo zospodu — pri pohľade na spodok modelu nie je čierna plocha.
+    const bottomLight = new THREE.DirectionalLight(0xffffff, 0.9);
+    bottomLight.position.set(60, -200, 80);
+    scene.add(bottomLight);
+
     const floorGeo = new THREE.CircleGeometry(1400, 80);
     const floorMat = new THREE.ShadowMaterial({
       color: 0x000000,
@@ -253,7 +258,10 @@ export default function StlViewer({
     controls.screenSpacePanning = true;
     controls.minDistance = 10;
     controls.maxDistance = 3000;
-    controls.maxPolarAngle = Math.PI / 2.02;
+    // Otáčanie dookola — model sa dá pozrieť aj zospodu (podložka s tieňom
+    // je zospodu priehľadná, nezakryje ho).
+    controls.minPolarAngle = 0;
+    controls.maxPolarAngle = Math.PI;
     controlsRef.current = controls;
 
     // Cesta na webe (hotové produkty v public/) sa načíta priamo.
