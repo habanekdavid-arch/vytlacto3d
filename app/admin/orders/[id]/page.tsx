@@ -8,6 +8,7 @@ import { formatEur, addVat, vatAmount, formatPaidTotal } from "@/lib/vat";
 import CopyOrderButton from "@/components/CopyOrderButton";
 import AdminStatusChanger from "@/components/AdminStatusChanger";
 import Fold from "@/components/admin/Fold";
+import ResendOrderEmails from "@/components/admin/ResendOrderEmails";
 import { DRAWING_MODEL_PREFIX, isOurBlobUrl } from "@/lib/drawing-model";
 import EditableField from "@/components/EditableField";
 import ModelPreviewButton from "@/components/ModelPreviewButton";
@@ -312,6 +313,13 @@ export default async function AdminOrderDetailPage({
             <EditableField orderId={order.id} label="IČ DPH" value={order.icDph ?? ""} field="icDph" />
           </Panel>
         </div>
+          </Fold>
+          <Fold title="E-maily k objednávke" summary="poslať znova">
+            <ResendOrderEmails
+              orderId={order.id}
+              customerEmail={order.customerEmail ?? null}
+              paid={!["PENDING", "AWAITING_TRANSFER", "CANCELLED"].includes(order.status)}
+            />
           </Fold>
           <Fold title="Adresy">
         <div className="grid gap-4 lg:grid-cols-2">

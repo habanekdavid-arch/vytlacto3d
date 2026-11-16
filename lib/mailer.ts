@@ -106,6 +106,9 @@ const FALLBACK_ON = new Set([
   "EMESSAGE",
 ]);
 
+// Dočasné výpadky spojenia — pred záložným Gmailom sa skúsi ešte raz.
+const TRANSIENT = new Set(["ESOCKET", "ETIMEDOUT", "ECONNECTION"]);
+
 // Prefix predmetu platný len pre správy odoslané vnútri withSubjectPrefix().
 // AsyncLocalStorage preto, že modulová premenná by v serverless prostredí
 // pretiekla do súbežných požiadaviek iných zákazníkov.
@@ -139,7 +142,19 @@ export async function sendMail(
   };
 
   try {
-    const info = await transporter.sendMail(message);
+    let info: SentMessageInfo;
+    try {
+      info = await transporter.sendMail(message);
+    } catch (first) {
+      // Microsoft 365 občas spojenie preruší alebo neodpovie (ECONNRESET,
+      // timeout) — jeden ďalší pokus o chvíľu zvyčajne prejde. Chybné
+      // prihlásenie či odmietnutie sa neopakuje.
+      const c = String((first as { code?: string })?.code ?? "");
+      if (!TRANSIENT.has(c)) throw first;
+      console.warn(`Primary SMTP ${c}, retrying once…`);
+      await new Promise((r) => setTimeout(r, 2500));
+      info = await transporter.sendMail(message);
+    }
     return Object.assign(info, { transport: "primary" as const });
   } catch (err) {
     const code = String((err as { code?: string })?.code ?? "");
