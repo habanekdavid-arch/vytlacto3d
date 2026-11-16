@@ -16,17 +16,12 @@ export const DEFAULT_FROM_EMAIL = "info@4frommedia.sk";
  */
 const DEFAULT_ADMIN_INBOX = `${CONTACT_EMAIL}, ${DEFAULT_FROM_EMAIL}`;
 
-const gmailUser = process.env.GMAIL_USER || "";
-const gmailPass = process.env.GMAIL_APP_PASSWORD || "";
+// Odosiela sa len cez Microsoft 365 (bez záložného Gmailu).
+const host = process.env.SMTP_HOST || DEFAULT_SMTP_HOST;
+const user = process.env.SMTP_USER || "";
+const pass = process.env.SMTP_PASSWORD || "";
 
-const useLegacyGmail = !process.env.SMTP_USER && !!gmailUser;
-
-const host =
-  process.env.SMTP_HOST || (useLegacyGmail ? "smtp.gmail.com" : DEFAULT_SMTP_HOST);
-const user = process.env.SMTP_USER || gmailUser;
-const pass = process.env.SMTP_PASSWORD || gmailPass;
-
-// 587 = STARTTLS (Microsoft 365 aj Gmail), 465 = implicitné TLS.
+// 587 = STARTTLS (Microsoft 365), 465 = implicitné TLS.
 const port = Number(process.env.SMTP_PORT) || 587;
 const secure = process.env.SMTP_SECURE
   ? process.env.SMTP_SECURE === "true"
@@ -70,43 +65,7 @@ export const ADMIN_INBOX = process.env.ADMIN_ORDER_EMAIL || DEFAULT_ADMIN_INBOX;
  */
 export const REPLY_TO = process.env.EMAIL_REPLY_TO || CONTACT_EMAIL;
 
-// Záložný Gmail transport. Keď primárny server odmietne prihlásenie alebo je
-// nedostupný, zákazník nesmie dostať 500 na kontaktnom formulári a objednávkové
-// maily nesmú vypadnúť — pošlú sa cez Gmail a chyba sa vypíše do logu.
-// Gmail odmieta cudziu From adresu, preto má fallback vlastnú.
-const fallback =
-  !useLegacyGmail && gmailUser && gmailPass
-    ? {
-        transporter: nodemailer.createTransport({
-          host: "smtp.gmail.com",
-          port: 587,
-          secure: false,
-          requireTLS: true,
-          auth: { user: gmailUser, pass: gmailPass },
-          ...TIMEOUTS,
-        }),
-        from: `VytlačTo3D <${gmailUser}>`,
-      }
-    : null;
-
-// Chyby, po ktorých je jasné, že tento server správu neodošle nikdy — nemá
-// zmysel ich vracať zákazníkovi ako 500.
-//
-// EENVELOPE a EMESSAGE sú tu kvôli Microsoftu 365: keď schránka nemá SendAs
-// oprávnenie na odosielaciu adresu, odmietne až obálku (550 5.7.60) alebo
-// dokonca celú správu po DATA (554 5.2.252 SendAsDenied). Oboje je permanentné
-// odmietnutie konfigurácie, nie chyba obsahu, a Gmail takú správu pošle.
-const FALLBACK_ON = new Set([
-  "EAUTH",
-  "ECONNECTION",
-  "ESOCKET",
-  "ETIMEDOUT",
-  "EDNS",
-  "EENVELOPE",
-  "EMESSAGE",
-]);
-
-// Dočasné výpadky spojenia — pred záložným Gmailom sa skúsi ešte raz.
+// Dočasné výpadky spojenia — odoslanie sa zopakuje.
 const TRANSIENT = new Set(["ESOCKET", "ETIMEDOUT", "ECONNECTION"]);
 
 // Prefix predmetu platný len pre správy odoslané vnútri withSubjectPrefix().
@@ -124,8 +83,8 @@ export function withSubjectPrefix<T>(prefix: string, fn: () => Promise<T>): Prom
 }
 
 /**
- * Odošle mail primárnym SMTP; ak ten neodpovie alebo odmietne prihlásenie,
- * skúsi záložný Gmail. Vracia nodemailer info doplnené o použitý transport.
+ * Odošle mail cez Microsoft 365. Pri dočasnom výpadku spojenia to skúsi
+ * ešte dvakrát. Vracia nodemailer info doplnené o použitý transport.
  */
 export async function sendMail(
   options: SendMailOptions
@@ -141,48 +100,28 @@ export async function sendMail(
     ...(options.replyTo ? null : { replyTo: REPLY_TO }),
   };
 
-  try {
-    let info: SentMessageInfo;
+  // Microsoft 365 občas spojenie preruší alebo neodpovie (ECONNRESET,
+  // timeout) — ďalší pokus o chvíľu zvyčajne prejde. Chybné prihlásenie či
+  // odmietnutie správy sa neopakuje.
+  const delays = [2500, 7000];
+  for (let attempt = 0; ; attempt++) {
     try {
-      info = await transporter.sendMail(message);
-    } catch (first) {
-      // Microsoft 365 občas spojenie preruší alebo neodpovie (ECONNRESET,
-      // timeout) — jeden ďalší pokus o chvíľu zvyčajne prejde. Chybné
-      // prihlásenie či odmietnutie sa neopakuje.
-      const c = String((first as { code?: string })?.code ?? "");
-      if (!TRANSIENT.has(c)) throw first;
-      console.warn(`Primary SMTP ${c}, retrying once…`);
-      await new Promise((r) => setTimeout(r, 2500));
-      info = await transporter.sendMail(message);
-    }
-    return Object.assign(info, { transport: "primary" as const });
-  } catch (err) {
-    const code = String((err as { code?: string })?.code ?? "");
-    if (!fallback || !FALLBACK_ON.has(code)) throw err;
-
-    console.error(
-      `Primary SMTP (${host}:${port}, user ${user}) failed with ${code} — resending via Gmail fallback.`,
-      err
-    );
-    try {
-      const info = await fallback.transporter.sendMail({ ...message, from: fallback.from });
-      return Object.assign(info, { transport: "fallback" as const });
-    } catch (fallbackErr) {
-      // Zlyhali obe cesty. Vyhodiť len chybu Gmailu by zakrylo pôvodnú
-      // príčinu na Microsofte — v správe musia byť obe.
-      const primaryMsg = err instanceof Error ? err.message : String(err);
-      const fallbackMsg = fallbackErr instanceof Error ? fallbackErr.message : String(fallbackErr);
-      throw Object.assign(
-        new Error(`Primárny SMTP: ${primaryMsg.slice(0, 300)} | Záložný Gmail: ${fallbackMsg.slice(0, 200)}`),
-        { code, primary: err, fallback: fallbackErr }
-      );
+      const info = await transporter.sendMail(message);
+      return Object.assign(info, { transport: "primary" as const });
+    } catch (err) {
+      const code = String((err as { code?: string })?.code ?? "");
+      const msg = String((err as { message?: string })?.message ?? "");
+      const transient = TRANSIENT.has(code) || (!code && /socket close|ECONNRESET|timeout|timed out/i.test(msg));
+      if (!transient || attempt >= delays.length) throw err;
+      console.warn(`SMTP ${host}:${port} ${code || msg} — pokus ${attempt + 2}/${delays.length + 1} o ${delays[attempt] / 1000} s.`);
+      await new Promise((r) => setTimeout(r, delays[attempt]));
     }
   }
 }
 
 /** Sú nastavené prihlasovacie údaje pre SMTP? Bez nich nemá zmysel odosielať. */
 export function hasMailCredentials() {
-  return Boolean((user && pass) || fallback);
+  return Boolean(user && pass);
 }
 
 /**
@@ -193,9 +132,7 @@ export function mailErrorHint(err: unknown): string | null {
   const e = err as { code?: string; responseCode?: number; response?: string; message?: string };
   const text = `${e?.message ?? ""} ${e?.response ?? ""}`;
   const fromAddress = FROM.match(/<([^>]+)>/)?.[1] ?? FROM;
-  // Pri zlyhaní oboch ciest je v správe aj chyba Gmailu — rady k Microsoftu
-  // sa riadia len prvou časťou.
-  const primaryText = text.split(" | Záložný Gmail:")[0];
+  const primaryText = text;
   const login = user || "prihlasovacia schránka (SMTP_USER)";
   const hints: string[] = [];
 
@@ -226,7 +163,5 @@ export function mailConfigSummary() {
     user: user || null,
     from: FROM,
     adminInbox: ADMIN_INBOX,
-    usingLegacyGmail: useLegacyGmail,
-    fallbackAvailable: Boolean(fallback),
   };
 }
