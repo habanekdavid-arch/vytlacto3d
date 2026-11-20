@@ -781,15 +781,15 @@ const messages: Messages = {
     hu: "Elemzés és ár",
     de: "Analyse & Preis",
   },
-  "Podporujeme STL, OBJ, SVG a obrázky PNG alebo JPG.": {
-    en: "We support STL, OBJ, SVG and PNG or JPG images.",
-    hu: "STL, OBJ, SVG fájlokat és PNG vagy JPG képeket támogatunk.",
-    de: "Wir unterstützen STL, OBJ, SVG sowie PNG- oder JPG-Bilder.",
+  "Podporujeme STL, OBJ, 3MF, SVG a obrázky PNG alebo JPG.": {
+    en: "We support STL, OBJ, 3MF, SVG and PNG or JPG images.",
+    hu: "STL, OBJ, 3MF, SVG fájlokat és PNG vagy JPG képeket támogatunk.",
+    de: "Wir unterstützen STL, OBJ, 3MF, SVG sowie PNG- oder JPG-Bilder.",
   },
-  "Nahrajte STL, OBJ, SVG alebo obrázok": {
-    en: "Upload an STL, OBJ, SVG or image",
-    hu: "Töltsön fel STL, OBJ, SVG fájlt vagy képet",
-    de: "STL, OBJ, SVG oder Bild hochladen",
+  "Nahrajte STL, OBJ, 3MF, SVG alebo obrázok": {
+    en: "Upload an STL, OBJ, 3MF, SVG or image",
+    hu: "Töltsön fel STL, OBJ, 3MF, SVG fájlt vagy képet",
+    de: "STL, OBJ, 3MF, SVG oder Bild hochladen",
   },
   "SVG aj obrázok (PNG, JPG) automaticky vytiahneme do 3D s nastavenou výškou. STL a OBJ súbory sa spracujú priamo.": {
     en: "We automatically extrude SVG files and images (PNG, JPG) into 3D at the height you set. STL and OBJ files are processed directly.",
@@ -816,10 +816,10 @@ const messages: Messages = {
     hu: "A kép átalakítása 3D modellé…",
     de: "Bild wird in ein 3D-Modell umgewandelt…",
   },
-  "Podporujeme STL, OBJ, SVG aj obrázky PNG a JPG. STL a OBJ sa spracujú priamo, SVG a obrázky (napr. logo) automaticky vytiahneme do 3D s nastaviteľnou výškou.": {
-    en: "We support STL, OBJ, SVG and PNG and JPG images. STL and OBJ are processed directly; SVG files and images (e.g. a logo) are automatically extruded into 3D with an adjustable height.",
-    hu: "STL, OBJ, SVG fájlokat, valamint PNG és JPG képeket támogatunk. Az STL és OBJ fájlokat közvetlenül feldolgozzuk, az SVG fájlokat és képeket (pl. logót) automatikusan 3D-be húzzuk állítható magassággal.",
-    de: "Wir unterstützen STL, OBJ, SVG sowie PNG- und JPG-Bilder. STL und OBJ werden direkt verarbeitet, SVG-Dateien und Bilder (z. B. ein Logo) extrudieren wir automatisch mit einstellbarer Höhe zu 3D.",
+  "Podporujeme STL, OBJ, 3MF, SVG aj obrázky PNG a JPG. STL, OBJ a 3MF sa spracujú priamo, SVG a obrázky (napr. logo) automaticky vytiahneme do 3D s nastaviteľnou výškou.": {
+    en: "We support STL, OBJ, 3MF, SVG and PNG and JPG images. STL, OBJ and 3MF are processed directly; SVG files and images (e.g. a logo) are automatically extruded into 3D with an adjustable height.",
+    hu: "STL, OBJ, 3MF, SVG fájlokat, valamint PNG és JPG képeket támogatunk. Az STL, OBJ és 3MF fájlokat közvetlenül feldolgozzuk, az SVG fájlokat és képeket (pl. logót) automatikusan 3D-be húzzuk állítható magassággal.",
+    de: "Wir unterstützen STL, OBJ, 3MF, SVG sowie PNG- und JPG-Bilder. STL, OBJ und 3MF werden direkt verarbeitet, SVG-Dateien und Bilder (z. B. ein Logo) extrudieren wir automatisch mit einstellbarer Höhe zu 3D.",
   },
   "Nahrajte STL, OBJ alebo SVG súbor vášho 3D modelu — alebo obrázok loga (PNG, JPG), ktorý vytiahneme do 3D — priamo na našu stránku. Náš systém automaticky analyzuje model — objem, povrch aj previsy — a vypočíta hmotnosť a presnú cenu.": {
     en: "Upload the STL, OBJ or SVG file of your 3D model — or a logo image (PNG, JPG) that we extrude into 3D — right on our website. Our system automatically analyses the model — volume, surface and overhangs — and calculates the weight and exact price.",
@@ -1460,6 +1460,9 @@ const messages: Messages = {
     de: "Die 3D-Vorschau kann auf diesem Gerät nicht angezeigt werden. Sie können trotzdem bestellen — Preis und Einstellungen funktionieren normal.",
   },
   "Nemáte 3D model? Kde ho nájsť zadarmo →": { en: "No 3D model? Where to find one for free →", hu: "Nincs 3D modellje? Hol találhat ingyen →", de: "Kein 3D-Modell? Wo Sie eines kostenlos finden →" },
+  "Súbor 3MF sa nepodarilo spracovať.": { en: "The 3MF file could not be processed.", hu: "A 3MF fájlt nem sikerült feldolgozni.", de: "Die 3MF-Datei konnte nicht verarbeitet werden." },
+  "Súbor 3MF sa nepodarilo otvoriť (nie je to platný 3MF).": { en: "The 3MF file could not be opened (not a valid 3MF).", hu: "A 3MF fájlt nem sikerült megnyitni (nem érvényes 3MF).", de: "Die 3MF-Datei konnte nicht geöffnet werden (keine gültige 3MF)." },
+  "V súbore 3MF sa nenašiel žiadny tvar na tlač.": { en: "No printable shape was found in the 3MF file.", hu: "A 3MF fájlban nem található nyomtatható forma.", de: "In der 3MF-Datei wurde keine druckbare Form gefunden." },
 };
 
 export default messages;

@@ -15,7 +15,7 @@ import zlib from "node:zlib";
  */
 
 export const PROTECTED_EXT = ".v3d";
-export const PROTECTABLE_EXTS = [".stl", ".obj", ".svg", ".png", ".jpg", ".jpeg", ".webp"];
+export const PROTECTABLE_EXTS = [".stl", ".obj", ".3mf", ".svg", ".png", ".jpg", ".jpeg", ".webp"];
 const MAGIC = Buffer.from("V3D1");
 const MAX_BYTES = 100 * 1024 * 1024;
 
@@ -129,5 +129,6 @@ export function contentTypeFor(name: string): string {
   if (n.endsWith(".jpg") || n.endsWith(".jpeg")) return "image/jpeg";
   if (n.endsWith(".webp")) return "image/webp";
   if (n.endsWith(".stl")) return "model/stl";
+  if (n.endsWith(".3mf")) return "model/3mf";
   return "application/octet-stream";
 }

@@ -671,6 +671,7 @@ function SourceOfModel({ config, ai }: { config: Record<string, any>; ai: boolea
   if (!url && !description) return null;
   // SVG v <img> nespúšťa skripty, preto sa dá bezpečne ukázať ako náhľad.
   const isImage = url ? /\.(png|jpe?g|webp|gif|svg)(\?|$)/i.test(url) : false;
+  const is3mf = url ? /\.3mf(\?|$)/i.test(url) : false;
   return (
     <div className="mb-3 flex flex-wrap items-start gap-3 rounded-xl border border-violet-200 bg-violet-50 p-3 text-xs">
       {url &&
@@ -680,13 +681,17 @@ function SourceOfModel({ config, ai }: { config: Record<string, any>; ai: boolea
             <img src={url} alt="Podklad modelu" className="h-28 w-28 rounded-lg border border-violet-200 bg-white object-contain" />
           </a>
         ) : (
-          <a href={url} target="_blank" rel="noreferrer" className="flex h-28 w-28 shrink-0 items-center justify-center rounded-lg border border-violet-200 bg-white text-sm font-extrabold text-red-600">
-            PDF
+          <a href={url} target="_blank" rel="noreferrer" className={`flex h-28 w-28 shrink-0 items-center justify-center rounded-lg border border-violet-200 bg-white text-sm font-extrabold ${is3mf ? "text-violet-700" : "text-red-600"}`}>
+            {is3mf ? "3MF" : "PDF"}
           </a>
         ))}
       <div className="min-w-0 flex-1 space-y-1.5">
         <div className="font-extrabold text-violet-900">
-          {ai ? `Model vygenerovaný AI ${url ? "z výkresu / obrázka" : "z popisu"}` : "Model vytvorený z nahraného obrázka / SVG"}
+          {ai
+            ? `Model vygenerovaný AI ${url ? "z výkresu / obrázka" : "z popisu"}`
+            : is3mf
+              ? "Zákazník nahral 3MF — pôvodný súbor (s nastavením zo slicera) je tu, náhľad a cena sú z prevedeného STL"
+              : "Model vytvorený z nahraného obrázka / SVG"}
         </div>
         {description && (
           <div className="whitespace-pre-wrap text-neutral-700">

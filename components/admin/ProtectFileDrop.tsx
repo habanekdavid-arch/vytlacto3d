@@ -6,8 +6,8 @@ import { uploadContentType } from "@/lib/upload-types";
 
 type Done = { fileName: string; downloadUrl: string; size: number; original: string };
 
-const ACCEPT = ".stl,.obj,.svg,.png,.jpg,.jpeg,.webp";
-const OK_EXT = /\.(stl|obj|svg|png|jpe?g|webp)$/i;
+const ACCEPT = ".stl,.obj,.3mf,.svg,.png,.jpg,.jpeg,.webp";
+const OK_EXT = /\.(stl|obj|3mf|svg|png|jpe?g|webp)$/i;
 
 function safe(name: string) {
   return name.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-zA-Z0-9._-]/g, "_").replace(/_+/g, "_");
@@ -27,7 +27,7 @@ export default function ProtectFileDrop() {
     setError("");
     for (const file of Array.from(files)) {
       if (!OK_EXT.test(file.name)) {
-        setError(`${file.name}: podporujeme STL, OBJ, SVG, PNG, JPG a WEBP.`);
+        setError(`${file.name}: podporujeme STL, OBJ, 3MF, SVG, PNG, JPG a WEBP.`);
         continue;
       }
       if (file.size > 100 * 1024 * 1024) {
@@ -93,7 +93,7 @@ export default function ProtectFileDrop() {
         <div className="mt-4 text-lg font-extrabold text-neutral-900">
           {busy ? `Zamykám ${busy}…` : "Pretiahnite sem model, SVG alebo obrázok"}
         </div>
-        <p className="mt-1 text-sm text-neutral-500">STL, OBJ, SVG, PNG, JPG, WEBP · do 100 MB · aj viac súborov naraz</p>
+        <p className="mt-1 text-sm text-neutral-500">STL, OBJ, 3MF, SVG, PNG, JPG, WEBP · do 100 MB · aj viac súborov naraz</p>
         <input
           ref={inputRef}
           type="file"

@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
   if (!url) return NextResponse.json({ error: "Neplatný súbor." }, { status: 400 });
   if (!isProtectableName(name)) {
     if (temporary) await del(body.url).catch(() => {});
-    return NextResponse.json({ error: "Podporujeme STL, OBJ, SVG, PNG, JPG a WEBP." }, { status: 400 });
+    return NextResponse.json({ error: "Podporujeme STL, OBJ, 3MF, SVG, PNG, JPG a WEBP." }, { status: 400 });
   }
   try {
     const res = await fetch(url, { cache: "no-store" });

@@ -3,6 +3,7 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { upload } from "@vercel/blob/client";
 import { friendlyUploadError, uploadContentType } from "@/lib/upload-types";
+import { ThreeMfError, convert3mfToStl } from "@/lib/threemf";
 import { useT } from "@/lib/i18n/client";
 import { relaxAcceptOnMobile } from "@/lib/file-accept";
 import { OUTPUT_LONGEST_MM, isRasterImage, loadPixels, rasterImageToSvgFile } from "@/lib/image-to-svg";
@@ -307,12 +308,15 @@ const UploadBox = forwardRef<UploadBoxHandle, {
         originalFileName.endsWith(".stl") ||
         originalFileName.endsWith(".obj") ||
         originalFileName.endsWith(".svg") ||
+        originalFileName.endsWith(".3mf") ||
         isRasterImage(originalFileName);
 
-      if (!isAllowed) throw new Error(t("Podporujeme STL, OBJ, SVG a obrázky PNG alebo JPG."));
+      if (!isAllowed) throw new Error(t("Podporujeme STL, OBJ, 3MF, SVG a obrázky PNG alebo JPG."));
 
       // Obrázok a SVG si uložíme popri prevode na 3D model.
-      const isImageSource = isRasterImage(originalFileName) || originalFileName.endsWith(".svg");
+      // Pôvodný súbor sa uloží k objednávke (obrázok/SVG aj 3MF — ten sa tlačí z originálu).
+      const isImageSource =
+        isRasterImage(originalFileName) || originalFileName.endsWith(".svg") || originalFileName.endsWith(".3mf");
       const sourcePromise = isImageSource ? uploadSource(originalFile) : Promise.resolve(undefined);
       setSourceUrl(undefined);
 
@@ -350,6 +354,23 @@ const UploadBox = forwardRef<UploadBoxHandle, {
         setColorLayers(null);
         setOriginalSvgFile(originalFile);
         const stlFile = await convertSvgToStl(originalFile);
+        const src = await sourcePromise;
+        setSourceUrl(src);
+        await uploadAndAnalyze(stlFile, { configDefaults: sourceDefaults(src) });
+      } else if (originalFileName.endsWith(".3mf")) {
+        // 3MF (Bambu Studio, PrusaSlicer, Fusion…) → STL v prehliadači; ďalej
+        // ako bežný model. Originál ide k objednávke ako podklad.
+        setColorLayers(null);
+        setOriginalSvgFile(null);
+        onPreviewFile?.(null);
+        onProgress?.("convert", 0);
+        let stlFile: File;
+        try {
+          stlFile = await convert3mfToStl(originalFile);
+        } catch (e: any) {
+          throw new Error(e instanceof ThreeMfError ? e.message : t("Súbor 3MF sa nepodarilo spracovať."));
+        }
+        onPreviewFile?.(stlFile);
         const src = await sourcePromise;
         setSourceUrl(src);
         await uploadAndAnalyze(stlFile, { configDefaults: sourceDefaults(src) });
@@ -445,7 +466,7 @@ const UploadBox = forwardRef<UploadBoxHandle, {
           </div>
 
           <h3 className="mt-4 text-xl font-extrabold text-neutral-900">
-            {t("Nahrajte STL, OBJ, SVG alebo obrázok")}
+            {t("Nahrajte STL, OBJ, 3MF, SVG alebo obrázok")}
           </h3>
 
           <p className="mx-auto mt-3 hidden max-w-xl text-sm leading-relaxed text-neutral-600 sm:block">
@@ -457,7 +478,7 @@ const UploadBox = forwardRef<UploadBoxHandle, {
           </div>
 
           <p className="mt-3 text-xs text-neutral-500">
-            {t("Podporované formáty:")} .STL, .OBJ, .SVG, .PNG, .JPG
+            {t("Podporované formáty:")} .STL, .OBJ, .3MF, .SVG, .PNG, .JPG
           </p>
           {/* Formulár s radami je až na konci stránky — sem ho vidí každý. */}
           <a
@@ -606,7 +627,7 @@ const UploadBox = forwardRef<UploadBoxHandle, {
       <input
         ref={inputRef}
         type="file"
-        accept=".stl,.obj,.svg,.png,.jpg,.jpeg,.webp,.v3d"
+        accept=".stl,.obj,.3mf,.svg,.png,.jpg,.jpeg,.webp,.v3d"
         className="hidden"
         onChange={(e) => {
           const file = e.target.files?.[0];
