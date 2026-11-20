@@ -1431,6 +1431,16 @@ const messages: Messages = {
     hu: "A védett fájlt nem sikerült megnyitni (sérült, vagy nem tőlünk származik).",
     de: "Die geschützte Datei konnte nicht geöffnet werden (beschädigt oder nicht von uns).",
   },
+  "Súbor sa nepodarilo nahrať. Skúste to prosím znova, prípadne nám ho pošlite cez kontaktný formulár.": {
+    en: "The file could not be uploaded. Please try again, or send it to us via the contact form.",
+    hu: "A fájlt nem sikerült feltölteni. Próbálja újra, vagy küldje el nekünk a kapcsolatfelvételi űrlapon.",
+    de: "Die Datei konnte nicht hochgeladen werden. Bitte versuchen Sie es erneut oder senden Sie sie uns über das Kontaktformular.",
+  },
+  "Nahrávanie prerušilo pripojenie na internet. Skontrolujte pripojenie a skúste to znova.": {
+    en: "The upload was interrupted by the internet connection. Check your connection and try again.",
+    hu: "A feltöltést megszakította az internetkapcsolat. Ellenőrizze a kapcsolatot, és próbálja újra.",
+    de: "Der Upload wurde durch die Internetverbindung unterbrochen. Prüfen Sie die Verbindung und versuchen Sie es erneut.",
+  },
 };
 
 export default messages;

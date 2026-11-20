@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { upload } from "@vercel/blob/client";
+import { uploadContentType } from "@/lib/upload-types";
 
 type Done = { fileName: string; downloadUrl: string; size: number; original: string };
 
@@ -39,7 +40,7 @@ export default function ProtectFileDrop() {
           access: "public",
           handleUploadUrl: "/api/blob/upload",
           multipart: file.size > 8 * 1024 * 1024,
-          contentType: file.type || "application/octet-stream",
+          contentType: uploadContentType(file.name),
         });
         const res = await fetch("/api/admin/protect", {
           method: "POST",

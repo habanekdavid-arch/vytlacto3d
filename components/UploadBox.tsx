@@ -2,6 +2,7 @@
 
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { upload } from "@vercel/blob/client";
+import { friendlyUploadError, uploadContentType } from "@/lib/upload-types";
 import { useT } from "@/lib/i18n/client";
 import { relaxAcceptOnMobile } from "@/lib/file-accept";
 import { OUTPUT_LONGEST_MM, isRasterImage, loadPixels, rasterImageToSvgFile } from "@/lib/image-to-svg";
@@ -112,7 +113,7 @@ const UploadBox = forwardRef<UploadBoxHandle, {
       const saved = await upload(`podklady/${sanitizeFileName(file.name)}`, file, {
         access: "public",
         handleUploadUrl: "/api/blob/upload",
-        contentType: file.type || undefined,
+        contentType: uploadContentType(file.name),
       });
       return saved.url;
     } catch (e) {
@@ -199,7 +200,7 @@ const UploadBox = forwardRef<UploadBoxHandle, {
       access: "public",
       handleUploadUrl: "/api/blob/upload",
       multipart: true,
-      contentType: file.type || "application/octet-stream",
+      contentType: uploadContentType(file.name),
       onUploadProgress: ({ percentage }) => {
         onProgress?.("upload", percentage / 100);
       },
@@ -360,7 +361,7 @@ const UploadBox = forwardRef<UploadBoxHandle, {
       }
     } catch (e: any) {
       console.error("UPLOAD FLOW ERROR:", e);
-      setError(e?.message || t("Nepodarilo sa spracovať súbor."));
+      setError(friendlyUploadError(e?.message) || e?.message || t("Nepodarilo sa spracovať súbor."));
     } finally {
       onUploadingChange?.(false);
     }
@@ -379,7 +380,7 @@ const UploadBox = forwardRef<UploadBoxHandle, {
         await uploadAndAnalyze(stlFile, { replaceActive: true, configDefaults: sourceDefaults(sourceUrl) });
       }
     } catch (e: any) {
-      setError(e?.message || "Chyba pri konverzii.");
+      setError(friendlyUploadError(e?.message) || e?.message || "Chyba pri konverzii.");
     } finally {
       setIsReconverting(false);
       onUploadingChange?.(false);

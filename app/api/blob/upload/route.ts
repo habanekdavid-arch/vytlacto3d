@@ -1,5 +1,6 @@
 import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
 import { NextResponse } from "next/server";
+import { BLOB_ALLOWED_CONTENT_TYPES } from "@/lib/upload-types";
 
 export async function POST(request: Request): Promise<NextResponse> {
   const body = (await request.json()) as HandleUploadBody;
@@ -13,16 +14,9 @@ export async function POST(request: Request): Promise<NextResponse> {
           // Shared by the customer STL upload flow (UploadBox) and the
           // admin CMS image uploads (blog/realizácie) — both hit this
           // one route, so it needs to accept both kinds of files.
-          allowedContentTypes: [
-            "model/stl",
-            "application/sla",
-            "application/octet-stream",
-            "image/jpeg",
-            "image/png",
-            "image/webp",
-            "image/gif",
-            "image/svg+xml",
-          ],
+          // Typ určuje klient podľa prípony (lib/upload-types); zoznam obsahuje
+          // aj typy, ktoré posielajú prehliadače (Android: vnd.ms-pki.stl).
+          allowedContentTypes: BLOB_ALLOWED_CONTENT_TYPES,
           addRandomSuffix: true,
           tokenPayload: JSON.stringify({
             pathname,
