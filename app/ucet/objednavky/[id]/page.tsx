@@ -1,4 +1,5 @@
 import { notFound, redirect } from "next/navigation";
+import GA4PurchaseEvent from "@/components/GA4PurchaseEvent";
 import { prisma } from "@/lib/prisma";
 import { formatEur, addVat, formatPaidTotal } from "@/lib/vat";
 import { COMPANY_INFO } from "@/lib/company-info";
@@ -12,9 +13,13 @@ export const dynamic = "force-dynamic";
 
 export default async function OrderDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ objednane?: string }>;
 }) {
+  // Príchod hneď po objednávke prevodom (z košíka) — meranie nákupu (GA4).
+  const justOrdered = (await searchParams).objednane === "1";
   const { t } = await getT();
   // Viacfarebná položka: „Viacfarebná tlač: Červená, Modrá“.
   const colorText = (cfg: { color?: unknown }) => {
@@ -62,6 +67,7 @@ export default async function OrderDetailPage({
       orderNumber: true,
       variableSymbol: true,
       phone: true,
+      paymentMethod: true,
       orderItems: { orderBy: { createdAt: "asc" }, select: { id: true, fileName: true, config: true, pricing: true } },
     },
   });
@@ -113,8 +119,20 @@ export default async function OrderDetailPage({
 
   const total = paidTotal;
 
+  const shippingEurForGa =
+    typeof (order.shippingCost as any)?.amount === "number" ? (order.shippingCost as any).amount / 100 : null;
+
   return (
     <div className="space-y-6">
+      {justOrdered && order.paymentMethod === "TRANSFER" && order.status === "AWAITING_TRANSFER" && (
+        <GA4PurchaseEvent
+          orderNumber={order.orderNumber ?? null}
+          paidTotalEur={order.paidTotalEur ?? null}
+          shippingEur={shippingEurForGa}
+          paymentType="prevod"
+          items={order.orderItems as unknown as { fileName: string; config: Record<string, any> | null; pricing: Record<string, any> | null }[]}
+        />
+      )}
       <section className="rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>

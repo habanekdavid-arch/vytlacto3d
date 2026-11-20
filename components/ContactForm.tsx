@@ -282,6 +282,16 @@ export default function ContactForm({
         })}
       </div>
 
+      {!searching && (
+        <div className="mx-auto mt-4 max-w-2xl rounded-2xl border border-[#FFAE00]/40 bg-[#FFAE00]/10 px-4 py-3 text-xs leading-relaxed text-neutral-800">
+          {t("Nahrajte súbor sem alebo rovno do")}{" "}
+          <Link href="/#kalkulator" className="font-semibold underline">
+            {t("kalkulátora")}
+          </Link>
+          {t(", kde hneď uvidíte cenu.")}
+        </div>
+      )}
+
       {searching && (
         <div className="mx-auto mt-4 max-w-2xl rounded-2xl border border-violet-200 bg-violet-50 px-4 py-3 text-xs leading-relaxed text-violet-900">
           <div className="font-bold">{t("Ako na to:")}</div>
@@ -297,6 +307,7 @@ export default function ContactForm({
                 </span>
               ))}
             </li>
+            <li>{t("Tip: hľadajte názov dielu a značku zariadenia po anglicky. Väčšinu náhradných dielov už niekto vymodeloval a zdieľa zadarmo.")}</li>
             <li>{t("Stiahnite súbor modelu (STL alebo 3MF).")}</li>
             <li>
               {t("Vložte ho nižšie do príloh — alebo ho rovno nahrajte do")}{" "}
@@ -306,6 +317,7 @@ export default function ContactForm({
               {t("a cenu uvidíte hneď.")}
             </li>
           </ol>
+          <p className="mt-2 font-semibold">{t("Modelovanie podľa fotky alebo vzorky neponúkame.")}</p>
           <p className="mt-2 border-t border-violet-200 pt-2">
             <span className="font-bold">{t("Licencia modelu:")}</span>{" "}
             {t("Vyberte model, ktorého licencia dovoľuje tlač na objednávku (napr. CC0, CC BY, CC BY-SA). Modely označené „nekomerčné“ (NC) alebo „len na osobné použitie“ môžeme vytlačiť len so súhlasom autora.")}

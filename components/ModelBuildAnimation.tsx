@@ -350,11 +350,16 @@ export default function ModelBuildAnimation({
       frame = requestAnimationFrame(animate);
     })();
 
+    // Zmena veľkosti až v ďalšom snímku (bez hlásenia „ResizeObserver loop…“).
+    let roFrame = 0;
     const ro = new ResizeObserver(() => {
-      if (!renderer) return;
-      renderer.setSize(width(), height());
-      camera.aspect = width() / height();
-      camera.updateProjectionMatrix();
+      cancelAnimationFrame(roFrame);
+      roFrame = requestAnimationFrame(() => {
+        if (!renderer) return;
+        renderer.setSize(width(), height());
+        camera.aspect = width() / height();
+        camera.updateProjectionMatrix();
+      });
     });
     ro.observe(mount);
 
@@ -363,6 +368,7 @@ export default function ModelBuildAnimation({
       cancelAnimationFrame(frame);
       timers.forEach(clearTimeout);
       ro.disconnect();
+      cancelAnimationFrame(roFrame);
       for (const d of disposables) d.dispose();
       renderer?.domElement.remove();
     };

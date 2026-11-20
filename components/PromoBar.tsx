@@ -43,7 +43,20 @@ export default function PromoBar({ percent, endsAt, theme }: { percent: number; 
   const pathname = usePathname() ?? "/";
   const c = useCountdown(endsAt);
   if (c.ended || pathname.startsWith("/admin")) return null;
-  if (theme === "halloween" && pathname === "/") return <HalloweenBanner percent={percent} c={c} />;
+  // Veľký banner len na počítači — na mobile by zabral celú prvú obrazovku a
+  // nahrávanie modelu by bolo až pod ním. Obe verzie sa vykreslia hneď (CSS
+  // rozhodne), aby sa obsah po načítaní neposúval.
+  if (theme === "halloween" && pathname === "/")
+    return (
+      <>
+        <div className="hidden lg:block">
+          <HalloweenBanner percent={percent} c={c} />
+        </div>
+        <div className="lg:hidden">
+          <SlimBar percent={percent} c={c} theme={theme} />
+        </div>
+      </>
+    );
   return <SlimBar percent={percent} c={c} theme={theme} />;
 }
 
@@ -72,12 +85,12 @@ function SlimBar({ percent, c, theme }: { percent: number; c: Countdown; theme: 
       ].join(" ")}
     >
       <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-x-6 gap-y-2.5 px-4 py-3.5 text-center text-base sm:py-4 sm:text-lg">
-        <span className="text-[15px] font-extrabold leading-tight [text-wrap:balance] sm:text-lg">
+        <a href="/#kalkulator" className="text-[15px] font-extrabold leading-tight [text-wrap:balance] hover:underline sm:text-lg">
           <span className={`mr-2 inline-block rounded-full px-2.5 py-0.5 text-base font-black sm:px-3 sm:py-1 sm:text-xl ${badge}`}>
             −{percent} %
           </span>
           {halloween ? `🎃 ${t("Halloweenska zľava na všetky objednávky")}` : t("zľava na všetky objednávky")}
-        </span>
+        </a>
         <span className="inline-flex items-center gap-2">
           <span className="text-sm font-semibold text-white/70 sm:text-base">{t("končí o")}</span>
           {c.days > 0 && unit(c.days, t("d"), false)}
@@ -115,9 +128,13 @@ function HalloweenBanner({ percent, c }: { percent: number; c: Countdown }) {
 
       <div className="relative mx-auto grid max-w-7xl items-center gap-6 px-5 pb-0 pt-8 sm:px-8 lg:grid-cols-[1fr_1.15fr] lg:gap-8 lg:py-8">
         <div className="relative z-10 text-center lg:text-left">
-          <div className="inline-flex items-center gap-2 rounded-full border border-orange-400/40 bg-orange-500/15 px-4 py-1.5 text-xs font-extrabold uppercase tracking-[0.18em] text-orange-300 sm:text-sm">
+          {/* Štítok vedie do kalkulátora (ľudia naň klikali). */}
+          <a
+            href="#kalkulator"
+            className="inline-flex items-center gap-2 rounded-full border border-orange-400/40 bg-orange-500/15 px-4 py-1.5 text-xs font-extrabold uppercase tracking-[0.18em] text-orange-300 transition hover:bg-orange-500/25 sm:text-sm"
+          >
             🎃 {t("Halloweenska akcia")}
-          </div>
+          </a>
 
           <div className="mt-4 flex flex-wrap items-end justify-center gap-x-4 gap-y-1 lg:justify-start">
             <span className="bg-gradient-to-b from-orange-300 to-orange-600 bg-clip-text text-[88px] font-black leading-[0.85] tracking-tight text-transparent drop-shadow-[0_6px_30px_rgba(249,115,22,0.45)] sm:text-[120px]">

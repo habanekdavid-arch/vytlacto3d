@@ -13,6 +13,8 @@ type Props = {
   orderNumber: string | null;
   paidTotalEur: number | null;
   shippingEur: number | null;
+  /** „karta“ alebo „prevod“ — spúšťače v GTM podľa neho rozlíšia platbu. */
+  paymentType: "karta" | "prevod";
   items: OrderItemInput[];
 };
 
@@ -29,6 +31,7 @@ export default function GA4PurchaseEvent({
   orderNumber,
   paidTotalEur,
   shippingEur,
+  paymentType,
   items,
 }: Props) {
   useEffect(() => {
@@ -67,12 +70,14 @@ export default function GA4PurchaseEvent({
     window.dataLayer.push({ ecommerce: null });
     window.dataLayer.push({
       event: "purchase",
+      payment_type: paymentType,
       ecommerce: {
         transaction_id: orderNumber,
         value: paidTotalEur,
         tax: vatAmount,
         shipping: shippingEur ?? 0,
         currency: "EUR",
+        payment_type: paymentType,
         items: ga4Items,
       },
     });

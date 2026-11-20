@@ -195,11 +195,22 @@ export default function StlViewer({
     camera.position.set(180, 140, 180);
     cameraRef.current = camera;
 
-    const renderer = new THREE.WebGLRenderer({
-      antialias: true,
-      alpha: false,
-      powerPreference: "high-performance",
-    });
+    // Niektoré zariadenia WebGL nemajú (alebo ho prehliadač vypol) — bez toho
+    // by chyba „Error creating WebGL context“ zhodila celú stránku. Náhľad sa
+    // nezobrazí, objednávka (cena, parametre, košík) funguje ďalej.
+    let renderer: THREE.WebGLRenderer;
+    try {
+      renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        alpha: false,
+        powerPreference: "high-performance",
+      });
+    } catch (e) {
+      console.warn("WebGL nie je dostupné:", e);
+      setError("3D náhľad sa na tomto zariadení nedá zobraziť. Objednať môžete aj bez neho — cena a parametre fungujú normálne.");
+      setLoading(false);
+      return;
+    }
 
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setSize(width, height);

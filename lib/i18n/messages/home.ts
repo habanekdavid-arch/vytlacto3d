@@ -1441,6 +1441,25 @@ const messages: Messages = {
     hu: "A feltöltést megszakította az internetkapcsolat. Ellenőrizze a kapcsolatot, és próbálja újra.",
     de: "Der Upload wurde durch die Internetverbindung unterbrochen. Prüfen Sie die Verbindung und versuchen Sie es erneut.",
   },
+  "Nahrajte súbor sem alebo rovno do": { en: "Upload the file here or directly to the", hu: "Töltse fel a fájlt ide vagy közvetlenül a", de: "Laden Sie die Datei hier hoch oder direkt in den" },
+  ", kde hneď uvidíte cenu.": { en: ", where you will see the price right away.", hu: "-ba, ahol azonnal látja az árat.", de: ", wo Sie den Preis sofort sehen." },
+  "Tip: hľadajte názov dielu a značku zariadenia po anglicky. Väčšinu náhradných dielov už niekto vymodeloval a zdieľa zadarmo.": {
+    en: "Tip: search for the part name and device brand in English. Most spare parts have already been modelled and shared for free.",
+    hu: "Tipp: keressen rá az alkatrész nevére és a készülék márkájára angolul. A legtöbb pótalkatrészt már valaki megmodellezte és ingyen megosztotta.",
+    de: "Tipp: Suchen Sie nach dem Teilenamen und der Gerätemarke auf Englisch. Die meisten Ersatzteile hat schon jemand modelliert und kostenlos geteilt.",
+  },
+  "Modelovanie podľa fotky alebo vzorky neponúkame.": {
+    en: "We do not offer modelling from a photo or a sample.",
+    hu: "Fénykép vagy minta alapján nem modellezünk.",
+    de: "Modellierung nach Foto oder Muster bieten wir nicht an.",
+  },
+  "Kliknite a vyberte súbor s 3D modelom": { en: "Click to choose a 3D model file", hu: "Kattintson és válassza ki a 3D modell fájlt", de: "Klicken Sie, um eine 3D-Modelldatei auszuwählen" },
+  "3D náhľad sa na tomto zariadení nedá zobraziť. Objednať môžete aj bez neho — cena a parametre fungujú normálne.": {
+    en: "The 3D preview cannot be shown on this device. You can still order — price and settings work normally.",
+    hu: "A 3D előnézet ezen az eszközön nem jeleníthető meg. Rendelni enélkül is lehet — az ár és a beállítások rendesen működnek.",
+    de: "Die 3D-Vorschau kann auf diesem Gerät nicht angezeigt werden. Sie können trotzdem bestellen — Preis und Einstellungen funktionieren normal.",
+  },
+  "Nemáte 3D model? Kde ho nájsť zadarmo →": { en: "No 3D model? Where to find one for free →", hu: "Nincs 3D modellje? Hol találhat ingyen →", de: "Kein 3D-Modell? Wo Sie eines kostenlos finden →" },
 };
 
 export default messages;

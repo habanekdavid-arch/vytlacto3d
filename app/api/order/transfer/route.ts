@@ -370,7 +370,7 @@ export async function POST(req: NextRequest) {
       variableSymbol,
       amount: totalWithVat,
       iban: COMPANY_INFO.iban,
-      redirectUrl: `/ucet/objednavky/${order.id}`,
+      redirectUrl: `/ucet/objednavky/${order.id}?objednane=1`,
     });
   } catch (e: any) {
     console.error("Transfer order error:", e);

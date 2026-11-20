@@ -5,20 +5,24 @@ import { useT } from "@/lib/i18n/client";
 
 const STORAGE_KEY = "vytlacto3d:contact-notice-dismissed";
 
+/**
+ * Lišta je vykreslená hneď (aj na serveri), aby sa obsah pod ňou po načítaní
+ * neposúval (CLS). Kto ju zavrel, tomu ju skryje skript v <head> ešte pred
+ * vykreslením (trieda contact-notice-dismissed na <html>, lib/theme.ts).
+ */
 export default function ContactNoticeBanner() {
   const t = useT();
-  const [visible, setVisible] = useState(false);
+  const [visible, setVisible] = useState(true);
 
   useEffect(() => {
     try {
-      if (!localStorage.getItem(STORAGE_KEY)) setVisible(true);
-    } catch {
-      setVisible(true);
-    }
+      if (localStorage.getItem(STORAGE_KEY)) setVisible(false);
+    } catch {}
   }, []);
 
   function dismiss() {
     setVisible(false);
+    document.documentElement.classList.add("contact-notice-dismissed");
     try {
       localStorage.setItem(STORAGE_KEY, "1");
     } catch {
@@ -29,7 +33,7 @@ export default function ContactNoticeBanner() {
   if (!visible) return null;
 
   return (
-    <div className="animate-fade-up relative mb-6 flex items-start gap-3 rounded-2xl border border-[#FFAE00]/40 bg-[#FFF8E1] px-4 py-3 shadow-sm">
+    <div className="contact-notice relative mb-6 hidden sm:flex items-start gap-3 rounded-2xl border border-[#FFAE00]/40 bg-[#FFF8E1] px-4 py-3 shadow-sm">
       <span className="relative mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#FFAE00]">
         <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#FFAE00] opacity-40" />
         <svg

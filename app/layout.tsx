@@ -100,6 +100,9 @@ export default async function RootLayout({
       <head>
         {/* Tmavý režim pred prvým vykreslením (bez bliknutia) — lib/theme.ts */}
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+        {/* Písmo hneď od začiatku — menej preskakovania textu pri načítaní (CLS). */}
+        <link rel="preload" href="/fonts/CenturyGothicPaneuropean-Regular.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
+        <link rel="preload" href="/fonts/CenturyGothicPaneuropean-Bold.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
       </head>
       <body className="min-h-screen flex flex-col bg-white text-neutral-900 antialiased">
         {analytics && (

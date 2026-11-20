@@ -155,11 +155,17 @@ function SpinningModel({
         // Model sa nepodarilo načítať — ostane obrázok.
       });
 
+    // Zmena veľkosti až v ďalšom snímku — inak prehliadač hlási
+    // „ResizeObserver loop completed with undelivered notifications“.
+    let roFrame = 0;
     const ro = new ResizeObserver(() => {
-      const [w, h] = size();
-      renderer.setSize(w, h);
-      camera.aspect = w / h;
-      camera.updateProjectionMatrix();
+      cancelAnimationFrame(roFrame);
+      roFrame = requestAnimationFrame(() => {
+        const [w, h] = size();
+        renderer.setSize(w, h);
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+      });
     });
     ro.observe(mount);
 
@@ -167,6 +173,7 @@ function SpinningModel({
       disposed = true;
       cancelAnimationFrame(frame);
       ro.disconnect();
+      cancelAnimationFrame(roFrame);
       material.dispose();
       partMaterials.forEach((m) => m.dispose());
       renderer.dispose();

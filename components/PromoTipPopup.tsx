@@ -108,9 +108,11 @@ export default function PromoTipPopup() {
   const advanceRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
+    // Na mobile by okno hneď zakrylo nahrávanie modelu — ukáže sa až neskôr.
+    const mobile = window.matchMedia("(max-width: 639px)").matches;
     const t = window.setTimeout(() => {
       if (shouldShowPopup()) setVisible(true);
-    }, 1400);
+    }, mobile ? 25_000 : 1400);
     return () => clearTimeout(t);
   }, []);
 

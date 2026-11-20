@@ -172,3 +172,6 @@ html.dark .article-content li { color: #c9c9c9; }
 html.dark .bg-\[\#FFF8E1\],
 html.dark .bg-\[\#FFF8E7\] { background-color: #2a2210; }
 html.dark .hover\:bg-black\/5:hover { background-color: rgb(255 255 255 / 0.06); }
+
+/* Zavretá lišta „Máte pri modeli problém…“ — skrytá ešte pred vykreslením (bez posunu obsahu). */
+html.contact-notice-dismissed .contact-notice { display: none; }

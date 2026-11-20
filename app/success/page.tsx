@@ -16,6 +16,7 @@ async function getVerifiedOrder(orderId?: string, sessionId?: string) {
     select: {
       id: true,
       status: true,
+      paymentMethod: true,
       orderNumber: true,
       stripeSessionId: true,
       paidTotalEur: true,
@@ -48,9 +49,10 @@ async function SuccessContent({
   const isPending = order?.status === "PENDING";
   const isCancelled = order?.status === "CANCELLED";
   const isConfirmed = !!order && !isPending && !isCancelled;
-  // GA4 purchase must only fire once money has actually moved — AWAITING_TRANSFER
-  // is "confirmed" for display purposes but isn't a real payment yet.
+  // GA4 purchase pri platbe kartou až po zaplatení (PAID). Objednávka prevodom
+  // sa meria v /ucet/objednavky/[id]?objednane=1, kam vedie košík.
   const isPaid = order?.status === "PAID";
+  const paymentType = order?.paymentMethod === "TRANSFER" ? "prevod" : "karta";
 
   const shippingEur =
     typeof (order?.shippingCost as any)?.amount === "number"
@@ -69,6 +71,7 @@ async function SuccessContent({
                 orderNumber={order?.orderNumber ?? null}
                 paidTotalEur={order?.paidTotalEur ?? null}
                 shippingEur={shippingEur}
+                paymentType={paymentType}
                 items={(order?.orderItems ?? []) as unknown as { fileName: string; config: Record<string, any> | null; pricing: Record<string, any> | null }[]}
               />
             )}

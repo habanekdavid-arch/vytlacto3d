@@ -362,6 +362,13 @@ export default function Home() {
     setActiveItemId(id);
   }
 
+  /** Klik na úvod / hlavičku konfigurátora otvorí výber súboru (kým nie je vložený model). */
+  function openFilePicker() {
+    if (activeItem || build) return;
+    if (window.getSelection()?.toString()) return; // označovanie textu nie je klik
+    uploadBoxRef.current?.triggerOpen();
+  }
+
   function removeItem(id: string) {
     setCartItems((prev) => {
       const next = prev.filter((item) => item.id !== id);
@@ -904,23 +911,33 @@ export default function Home() {
       )}
 
       <main className="mx-auto max-w-6xl px-4 pb-20 pt-10 sm:px-6">
-        <section className="mb-12 text-center">
+        {/* Celý úvod aj hlavička konfigurátora otvárajú výber súboru (ľudia na ne
+            klikali v domnení, že sú tlačidlom). Len kým nie je vložený model. */}
+        <section
+          className={["mb-5 text-center sm:mb-12", !activeItem && !build ? "cursor-pointer" : ""].join(" ")}
+          onClick={openFilePicker}
+          title={!activeItem && !build ? t("Kliknite a vyberte súbor s 3D modelom") : undefined}
+        >
           <div className="inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-3 py-1 text-sm text-neutral-700 shadow-sm">
             <span className="inline-block h-2 w-2 rounded-full bg-[#FFAE00]" />
             {t("Online konfigurátor 3D tlače")}
           </div>
 
-          <h1 className="mx-auto mt-5 max-w-5xl text-4xl font-extrabold tracking-tight md:text-6xl">
+          {/* Na mobile kratší úvod — nahratie modelu musí byť vidieť už na prvej obrazovke. */}
+          <h1 className="mx-auto mt-3 max-w-5xl text-[28px] font-extrabold leading-tight tracking-tight sm:mt-5 sm:text-4xl md:text-6xl">
             {t("Nahrajte váš model, vyberte si parametre a my váš model dostaneme až k vám")}
           </h1>
 
-          <p className="mx-auto mt-4 max-w-3xl text-base leading-relaxed text-neutral-600 md:text-lg">
+          <p className="mx-auto mt-4 hidden max-w-3xl text-base leading-relaxed text-neutral-600 sm:block md:text-lg">
             {t("Nahrajte STL súbor, vyberte materiál, kvalitu, pevnosť, farbu a počet kusov. Systém automaticky vypočíta cenu a po dokončení objednávky vám model vyrobíme a odošleme priamo na adresu.")}
           </p>
         </section>
 
         <section id="kalkulator" className="scroll-mt-24 bg-white sm:rounded-3xl sm:border sm:border-neutral-200 sm:p-6 sm:shadow-sm">
-          <div className="flex flex-wrap items-start justify-between gap-4">
+          <div
+            className={["hidden flex-wrap items-start justify-between gap-4 sm:flex", !activeItem && !build ? "cursor-pointer" : ""].join(" ")}
+            onClick={openFilePicker}
+          >
             <div>
               <div className="text-sm font-semibold text-neutral-500">{t("Konfigurátor")}</div>
               <h2 className="mt-1 text-2xl font-extrabold tracking-tight">

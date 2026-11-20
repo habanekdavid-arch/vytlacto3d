@@ -430,7 +430,7 @@ const UploadBox = forwardRef<UploadBoxHandle, {
           onClick={() => { if (!drawingBusy) inputRef.current?.click(); }}
           className={[
             drawingBusy ? "pointer-events-none opacity-50" : "",
-            "cursor-pointer rounded-3xl border-2 border-dashed p-8 text-center transition",
+            "cursor-pointer rounded-3xl border-2 border-dashed p-5 text-center transition sm:p-8",
             dragging
               ? "border-[#FFAE00] bg-[#FFAE00]/10"
               : "border-neutral-300 bg-white hover:border-[#FFAE00]/60 hover:bg-neutral-50",
@@ -448,7 +448,7 @@ const UploadBox = forwardRef<UploadBoxHandle, {
             {t("Nahrajte STL, OBJ, SVG alebo obrázok")}
           </h3>
 
-          <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-neutral-600">
+          <p className="mx-auto mt-3 hidden max-w-xl text-sm leading-relaxed text-neutral-600 sm:block">
             {t("SVG aj obrázok (PNG, JPG) automaticky vytiahneme do 3D s nastavenou výškou. STL a OBJ súbory sa spracujú priamo.")}
           </p>
 
@@ -459,6 +459,14 @@ const UploadBox = forwardRef<UploadBoxHandle, {
           <p className="mt-3 text-xs text-neutral-500">
             {t("Podporované formáty:")} .STL, .OBJ, .SVG, .PNG, .JPG
           </p>
+          {/* Formulár s radami je až na konci stránky — sem ho vidí každý. */}
+          <a
+            href="/kontakt?dopyt=hladat-model"
+            onClick={(e) => e.stopPropagation()}
+            className="mt-3 inline-block text-sm font-semibold text-neutral-800 underline decoration-[#FFAE00] decoration-2 underline-offset-2 hover:text-black"
+          >
+            {t("Nemáte 3D model? Kde ho nájsť zadarmo →")}
+          </a>
         </div>
       )}
 
