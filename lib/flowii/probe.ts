@@ -73,7 +73,7 @@ export async function probeFlowiiInvoices(opts: { webOrderId?: string; invoiceNu
   const getFull = async (label: string, path: string, query: Record<string, string | number | undefined> = q) => {
     const json = await tryGet(path, query);
     if (!json) return null;
-    const pick = (r: any) => ({ type: r.type, id: r.id, attributes: r.attributes, relationships: r.relationships });
+    const pick = (r: any) => ({ type: r.type, id: r.id, attributes: r.attributes, relationships: r.relationships, links: r.links });
     full[label] = {
       data: Array.isArray(json.data) ? json.data.map(pick) : json.data ? pick(json.data) : null,
       included: Array.isArray(json.included) ? json.included.map(pick) : undefined,
@@ -97,16 +97,34 @@ export async function probeFlowiiInvoices(opts: { webOrderId?: string; invoiceNu
     if (sync?.flowiiOrderId) {
       const oid = encodeURIComponent(sync.flowiiOrderId);
       await getFull("Zákazka (vlastné polia)", `/orders/${oid}`, { ...q, include: "custom-field-string-values" });
-      const docs = await tryGet(`/orders/${oid}/documents`);
+      // Úplný zoznam dokladov vrátane relationships/links — odkazy "related"
+      // prezradia cesty k položkám a úhradám faktúry.
+      const docs = await getFull("Doklady zákazky", `/orders/${oid}/documents`);
       const list: any[] = Array.isArray(docs?.data) ? docs.data : [];
       const doc = list.find((d) => !opts.invoiceNumber || d.attributes?.["serial-nr"] === opts.invoiceNumber) ?? list[0];
       if (doc) {
         const did = encodeURIComponent(doc.id);
-        await getFull("Faktúra", `/documents/${did}`);
-        for (const sub of ["items", "payments", "documentitems", "invoiceitems", "rows"]) {
-          await getFull(`Faktúra → ${sub}`, `/documents/${did}/${sub}`);
+        // Kolo 4: /documents/{id} vracia 404 — skúšajú sa vnorené cesty pod zákazkou.
+        await getFull("Faktúra (pod zákazkou)", `/orders/${oid}/documents/${did}`);
+        await getFull("Faktúra (invoices)", `/orders/${oid}/invoices/${did}`);
+        await getFull("Faktúra (/invoices)", `/invoices/${did}`);
+        for (const sub of ["items", "payments", "document-items", "document-payments"]) {
+          await getFull(`Faktúra → ${sub}`, `/orders/${oid}/documents/${did}/${sub}`);
         }
-        await getFull("Faktúra (include)", `/documents/${did}`, { ...q, include: "items,payments" });
+        await getFull("Doklady zákazky (include)", `/orders/${oid}/documents`, { ...q, include: "items,payments" });
+        // Relationships uvedené priamo v doklade (ich links.related).
+        for (const [rel, val] of Object.entries((doc.relationships ?? {}) as Record<string, any>)) {
+          const related = val?.links?.related;
+          if (typeof related === "string") {
+            const path = related.replace(/^https?:\/\/[^/]+/, "").replace(/^\/v\d+/, "");
+            await getFull(`Faktúra → rel ${rel}`, path.split("?")[0]);
+          }
+        }
+        const partnerId = (doc.relationships as any)?.partner?.data?.id ?? "8834343";
+        await getFull("Doklady partnera", `/partners/${encodeURIComponent(partnerId)}/documents`);
+        await names("Sadzby DPH", "/vatrates");
+        await names("Číselné rady", "/numberseries");
+        await names("Typy dokladov", "/documenttypes");
       } else {
         results.push({ path: "(faktúra)", status: "-", error: "Zákazka tejto objednávky nemá doklad." });
       }
