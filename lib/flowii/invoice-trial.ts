@@ -79,15 +79,19 @@ export async function trialFlowiiInvoice(webOrderId: string, serialNr?: string) 
   // Kolo 2: FLOWii vyžaduje IssueDate, User, CompanyData, Partner.
   // Kolo 3: chýbali Maturity a Items. Položky ako pole v attributes (tvar sa
   // spresní podľa chybových hlásení FLOWii k jednotlivým poliam položky).
-  const items = web.lines.map((l) => ({
-    name: l.name,
-    note: l.note,
-    quantity: l.quantity,
-    "unit-price": l.unitNet,
-    vat: 23,
-    unit: "ks",
-  }));
-  const header = (dateKey: string, maturity: unknown = 14) => ({
+  // Kolo 4: položka vyžaduje Name, UnitPrice, UnitPriceType, VatRate.
+  const itemsFor = (priceType: number) =>
+    web.lines.map((l) => ({
+      name: l.name,
+      note: l.note,
+      quantity: l.quantity,
+      "unit-price": l.unitNet,
+      "unit-price-type": priceType,
+      "vat-rate": 23,
+      unit: "ks",
+    }));
+  const maturityDate = new Date(Date.parse(today) + 14 * 864e5).toISOString().slice(0, 10);
+  const header = (dateKey: string, maturity: unknown, items: unknown) => ({
     data: {
       type: "document",
       attributes: {
@@ -112,8 +116,9 @@ export async function trialFlowiiInvoice(webOrderId: string, serialNr?: string) 
     },
   });
   const attempts: { label: string; body: unknown }[] = [
-    { label: "6 — splatnosť 14 dní + položky", body: header("issue-date", 14) },
-    { label: "7 — splatnosť ako dátum + položky", body: header("issue-date", new Date(Date.parse(today) + 14 * 864e5).toISOString().slice(0, 10)) },
+    { label: "8 — typ ceny 1", body: header("issue-date", maturityDate, itemsFor(1)) },
+    { label: "9 — typ ceny 0", body: header("issue-date", maturityDate, itemsFor(0)) },
+    { label: "10 — typ ceny 2", body: header("issue-date", maturityDate, itemsFor(2)) },
   ];
 
   const results: { label: string; status: number | string; response: unknown }[] = [];
@@ -121,7 +126,20 @@ export async function trialFlowiiInvoice(webOrderId: string, serialNr?: string) 
     await new Promise((r) => setTimeout(r, 1500));
     const r = await client.tryCreateDocument(companyId, a.body);
     results.push({ label: a.label, status: r.status, response: r.body });
-    if (typeof r.status === "string" && r.status.startsWith("OK")) break; // doklad vznikol — ďalej nie
+    if (typeof r.status === "string" && r.status.startsWith("OK")) {
+      // Doklad vznikol — ďalej nie. Kontrola súm (bez DPH musí sedieť s webom).
+      const expectedNet = r2(web.lines.reduce((sum, l) => sum + l.unitNet * l.quantity, 0));
+      await new Promise((res) => setTimeout(res, 1500));
+      const docs = await client.get(`/orders/${encodeURIComponent(sync.flowiiOrderId)}/documents`, { companyId }).catch(() => null);
+      const createdId = (r.body as any)?.data?.id;
+      const doc = (docs?.data ?? []).find((d: any) => String(d.id) === String(createdId));
+      results.push({
+        label: "kontrola súm",
+        status: doc ? (Math.abs((doc.attributes?.["order-gross-amount"] ?? -1) - expectedNet) < 0.011 ? "SEDÍ" : "NESEDÍ") : "?",
+        response: { ocakavane_bez_DPH: expectedNet, ocakavane_s_DPH: web.paid, doklad: doc?.attributes ?? null },
+      });
+      break;
+    }
     if (/per\s*day/i.test(JSON.stringify(r.body ?? ""))) break; // denný limit
   }
   return { companyId, flowiiOrderId: sync.flowiiOrderId, partnerId, paidOn: web.paidOn, lines: web.lines, results };
