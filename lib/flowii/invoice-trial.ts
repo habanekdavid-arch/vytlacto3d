@@ -1,5 +1,32 @@
 import { prisma } from "@/lib/prisma";
 import { FlowiiClient, getFlowiiCredentials } from "@/lib/flowii/client";
+import { colorSummary, materialLabel, qualityLabel } from "@/lib/print-options";
+
+const r2 = (n: number) => Math.round(n * 100) / 100;
+
+/** Položky faktúry podľa zadania: 3D tlač (+ riadok Konfigurácia) a doprava, ceny bez DPH. */
+async function invoiceLines(webOrderId: string) {
+  const order = await prisma.order.findUnique({ where: { id: webOrderId }, include: { orderItems: { orderBy: { createdAt: "asc" } } } });
+  if (!order) return { orderNumber: "", lines: [] as Line[] };
+  const conf = (c: Record<string, any>) =>
+    "Konfigurácia: " +
+    [materialLabel(c?.material, ""), qualityLabel(c?.quality, ""), c?.infillPct != null ? `${c.infillPct}% infill` : "", colorSummary(c, "")]
+      .filter(Boolean)
+      .join(" • ");
+  const src = order.orderItems.length > 1
+    ? order.orderItems.map((oi) => ({ fileName: oi.fileName, config: oi.config as Record<string, any>, pricing: oi.pricing as Record<string, any> }))
+    : [{ fileName: order.fileName, config: order.config as Record<string, any>, pricing: order.pricing as Record<string, any> }];
+  const lines: Line[] = src.map((it) => {
+    const qty = Math.max(1, Number(it.config?.quantity ?? 1));
+    const net = typeof it.pricing?.total === "number" ? it.pricing.total : 0;
+    return { name: `3D tlač: ${it.fileName}`, note: conf(it.config ?? {}), quantity: qty, unitNet: r2(net / qty) };
+  });
+  const ship = (order.shippingCost ?? {}) as Record<string, any>;
+  const shipEur = typeof ship.amount === "number" ? ship.amount / 100 : 0;
+  if (shipEur > 0) lines.push({ name: order.shippingMethod ?? "Doprava", note: "", quantity: 1, unitNet: r2(shipEur / 1.23) });
+  return { orderNumber: order.orderNumber ?? "", paid: order.paidTotalEur ?? null, lines };
+}
+type Line = { name: string; note: string; quantity: number; unitNet: number };
 
 /**
  * SKÚŠOBNÁ faktúra vo FLOWii (so súhlasom majiteľa) — zistenie tvaru
@@ -23,7 +50,7 @@ export async function trialFlowiiInvoice(webOrderId: string, serialNr?: string) 
   const partnerId = rel.partner?.data?.id;
   const currencyId = rel.currency?.data?.id ?? "44";
   const userId = rel.user?.data?.id;
-  const web = await prisma.order.findUnique({ where: { id: webOrderId }, select: { orderNumber: true } }).catch(() => null);
+  const web = await invoiceLines(webOrderId);
   const today = new Date().toISOString().slice(0, 10);
   const nr = serialNr && /^\d{4,12}$/.test(serialNr) ? { "serial-nr": serialNr } : {};
 
@@ -34,7 +61,17 @@ export async function trialFlowiiInvoice(webOrderId: string, serialNr?: string) 
   const selfUserId = String(self?.data?.id ?? userId ?? "");
 
   // Kolo 2: FLOWii vyžaduje IssueDate, User, CompanyData, Partner.
-  const header = (dateKey: string) => ({
+  // Kolo 3: chýbali Maturity a Items. Položky ako pole v attributes (tvar sa
+  // spresní podľa chybových hlásení FLOWii k jednotlivým poliam položky).
+  const items = web.lines.map((l) => ({
+    name: l.name,
+    note: l.note,
+    quantity: l.quantity,
+    "unit-price": l.unitNet,
+    vat: 23,
+    unit: "ks",
+  }));
+  const header = (dateKey: string, maturity: unknown = 14) => ({
     data: {
       type: "document",
       attributes: {
@@ -42,7 +79,8 @@ export async function trialFlowiiInvoice(webOrderId: string, serialNr?: string) 
         ...nr,
         [dateKey]: today,
         "delivery-date": today,
-        "due-date": new Date(Date.now() + 14 * 864e5).toISOString().slice(0, 10),
+        maturity,
+        items,
         "constant-symbol": "0008",
         "order-number": web?.orderNumber ?? "",
       },
@@ -58,8 +96,8 @@ export async function trialFlowiiInvoice(webOrderId: string, serialNr?: string) 
     },
   });
   const attempts: { label: string; body: unknown }[] = [
-    { label: "4 — všetky povinné polia (issue-date)", body: header("issue-date") },
-    { label: "5 — iný názov dátumu (issued)", body: header("issued") },
+    { label: "6 — splatnosť 14 dní + položky", body: header("issue-date", 14) },
+    { label: "7 — splatnosť ako dátum + položky", body: header("issue-date", new Date(Date.now() + 14 * 864e5).toISOString().slice(0, 10)) },
   ];
 
   const results: { label: string; status: number | string; response: unknown }[] = [];
@@ -70,5 +108,5 @@ export async function trialFlowiiInvoice(webOrderId: string, serialNr?: string) 
     if (typeof r.status === "string" && r.status.startsWith("OK")) break; // doklad vznikol — ďalej nie
     if (/per\s*day/i.test(JSON.stringify(r.body ?? ""))) break; // denný limit
   }
-  return { companyId, flowiiOrderId: sync.flowiiOrderId, partnerId, results };
+  return { companyId, flowiiOrderId: sync.flowiiOrderId, partnerId, lines: web.lines, results };
 }
