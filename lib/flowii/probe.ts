@@ -68,51 +68,54 @@ export async function probeFlowiiInvoices(opts: { webOrderId?: string; invoiceNu
     }
   };
 
-  // Číselníky, ktoré faktúra pravdepodobne potrebuje.
-  // /invoices a /issuedinvoices vrátili 404 — skúšajú sa iné pomenovania.
-  for (const p of [
-    "/documents",
-    "/outgoinginvoices",
-    "/salesinvoices",
-    "/invoicesissued",
-    "/billing/invoices",
-    "/documents/series",
-    "/documenttypes",
-    "/numberingseries",
-    "/paymentmethods",
-    "/payments",
-    "/units",
-    "/vatrates",
-    "/bankaccounts",
-  ]) {
-    await tryGet(p);
-  }
+  // Úplný výpis (číselníky a existujúca faktúra) — kompaktne, bez skracovania zoznamov.
+  const full: Record<string, unknown> = {};
+  const getFull = async (label: string, path: string, query: Record<string, string | number | undefined> = q) => {
+    const json = await tryGet(path, query);
+    if (!json) return null;
+    const pick = (r: any) => ({ type: r.type, id: r.id, attributes: r.attributes, relationships: r.relationships });
+    full[label] = {
+      data: Array.isArray(json.data) ? json.data.map(pick) : json.data ? pick(json.data) : null,
+      included: Array.isArray(json.included) ? json.included.map(pick) : undefined,
+    };
+    return json;
+  };
+  const names = async (label: string, path: string) => {
+    const json = await tryGet(path);
+    if (json) full[label] = (Array.isArray(json.data) ? json.data : []).map((r: any) => `${r.id}: ${r.attributes?.name ?? JSON.stringify(r.attributes)}`);
+  };
 
-  // Konkrétna faktúra podľa čísla (napr. 3026033).
-  if (opts.invoiceNumber) {
-    for (const p of ["/documents", "/outgoinginvoices"]) {
-      const json = await tryGet(p, { ...q, "filter[search-text]": opts.invoiceNumber });
-      const id = Array.isArray(json?.data) ? json.data[0]?.id : null;
-      if (id) {
-        await tryGet(`${p}/${encodeURIComponent(id)}`, { ...q, include: "items,payments" });
-        await tryGet(`${p}/${encodeURIComponent(id)}/items`);
-        await tryGet(`${p}/${encodeURIComponent(id)}/payments`);
-      }
-    }
-  }
+  // Číselníky pre faktúru.
+  await names("Spôsoby úhrady", "/paymentmethods");
+  await names("Bankové účty", "/bankaccounts");
+  await names("Jednotky", "/units");
+  await names("Vlastné polia zákazky", "/orders/customfields");
 
-  // Zákazka tejto objednávky (z prenosu do FLOWii) a jej doklady / vlastné polia.
+  // Existujúca faktúra (napr. 3026033) — cez doklady zákazky tejto objednávky.
   if (opts.webOrderId) {
     const sync = await prisma.flowiiSync.findUnique({ where: { orderId: opts.webOrderId } }).catch(() => null);
     if (sync?.flowiiOrderId) {
       const oid = encodeURIComponent(sync.flowiiOrderId);
-      await tryGet(`/orders/${oid}`, { ...q, include: "custom-field-string-values" });
-      for (const p of [`/orders/${oid}/documents`, `/orders/${oid}/invoices`]) await tryGet(p);
+      await getFull("Zákazka (vlastné polia)", `/orders/${oid}`, { ...q, include: "custom-field-string-values" });
+      const docs = await tryGet(`/orders/${oid}/documents`);
+      const list: any[] = Array.isArray(docs?.data) ? docs.data : [];
+      const doc = list.find((d) => !opts.invoiceNumber || d.attributes?.["serial-nr"] === opts.invoiceNumber) ?? list[0];
+      if (doc) {
+        const did = encodeURIComponent(doc.id);
+        await getFull("Faktúra", `/documents/${did}`);
+        for (const sub of ["items", "payments", "documentitems", "invoiceitems", "rows"]) {
+          await getFull(`Faktúra → ${sub}`, `/documents/${did}/${sub}`);
+        }
+        await getFull("Faktúra (include)", `/documents/${did}`, { ...q, include: "items,payments" });
+      } else {
+        results.push({ path: "(faktúra)", status: "-", error: "Zákazka tejto objednávky nemá doklad." });
+      }
     } else {
       results.push({ path: "(zákazka)", status: "-", error: "Objednávka nemá zákazku vo FLOWii vytvorenú cez web." });
     }
   }
-  await tryGet("/orders/customfields");
 
-  return { companyId, companies: companies.map((c) => ({ id: c.id, name: c.attributes?.name })), results };
+  // Len stavy (bez vzoriek) — úplné dáta sú v `full`.
+  for (const r of results) delete (r as { sample?: unknown }).sample;
+  return { companyId, companies: companies.map((c) => ({ id: c.id, name: c.attributes?.name })), results, full };
 }
