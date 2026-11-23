@@ -18,6 +18,7 @@ import { buildOrderCopyText } from "@/lib/order-copy-text";
 import { buildFlowiiZakazka, type FlowiiZakazkaDraft } from "@/lib/flowii/zakazka";
 import { getFlowiiSyncStatus, isFlowiiAutoEnabled, isFlowiiConfigured, type FlowiiSyncRow } from "@/lib/flowii/sync";
 import FlowiiActions from "@/components/FlowiiActions";
+import FlowiiInvoiceProbe from "@/components/admin/FlowiiInvoiceProbe";
 import PacketaLabelPanel from "@/components/admin/PacketaLabelPanel";
 import { PacketaLogo } from "@/components/admin/PacketaIcon";
 import { isPacketaConfigured } from "@/lib/packeta/client";
@@ -841,6 +842,7 @@ function FlowiiPreview({
       )}
 
       <FlowiiActions orderId={draft.orderId} configured={configured} canCreate={canCreate} syncStatus={sync?.status ?? null} />
+      {configured && <FlowiiInvoiceProbe orderId={draft.orderId} />}
 
       {draft.warnings.length > 0 && (
         <div className="mt-4 rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
