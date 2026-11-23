@@ -3,7 +3,7 @@ import { isAdminSession } from "@/lib/admin-auth";
 import { probeFlowiiInvoices } from "@/lib/flowii/probe";
 
 export const runtime = "nodejs";
-export const maxDuration = 120;
+export const maxDuration = 300;
 
 /** Admin: prieskum faktúr vo FLOWii — len čítanie (lib/flowii/probe). */
 export async function POST(req: NextRequest) {

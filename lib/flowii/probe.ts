@@ -42,41 +42,55 @@ export async function probeFlowiiInvoices(opts: { webOrderId?: string; invoiceNu
   const q = { companyId };
   const results: ProbeEntry[] = [];
 
+  // Pomaly — FLOWii pri rýchlom slede požiadaviek vracia 429. Pri dennom
+  // limite sa prieskum zastaví (ďalšie pokusy by len míňali limit).
+  let stopped = false;
   const tryGet = async (path: string, query: Record<string, string | number | undefined> = q) => {
+    if (stopped) return null;
+    await new Promise((r) => setTimeout(r, 1500));
     try {
       const json = await client.get(path, query);
       const s = sampleOf(json);
       results.push({ path, status: 200, count: s.count, sample: s.included ? { ...((s.sample as object) ?? {}), included: s.included } : s.sample });
       return json;
     } catch (e) {
-      results.push({ path, status: e instanceof FlowiiError ? e.status ?? "?" : "?", error: String((e as Error).message).slice(0, 200) });
+      const body = e instanceof FlowiiError ? String(e.body ?? "").slice(0, 300) : "";
+      results.push({
+        path,
+        status: e instanceof FlowiiError ? e.status ?? "?" : "?",
+        error: `${String((e as Error).message).slice(0, 160)}${body ? ` — ${body}` : ""}`,
+      });
+      if (/per\s*day/i.test(body)) {
+        stopped = true;
+        results.push({ path: "(prieskum zastavený)", status: "-", error: "Denný limit FLOWii je vyčerpaný — skúste prieskum zajtra ráno." });
+      }
       return null;
     }
   };
 
   // Číselníky, ktoré faktúra pravdepodobne potrebuje.
+  // /invoices a /issuedinvoices vrátili 404 — skúšajú sa iné pomenovania.
   for (const p of [
-    "/invoices",
-    "/issuedinvoices",
     "/documents",
-    "/invoices/series",
+    "/outgoinginvoices",
+    "/salesinvoices",
+    "/invoicesissued",
+    "/billing/invoices",
+    "/documents/series",
+    "/documenttypes",
     "/numberingseries",
-    "/documentseries",
     "/paymentmethods",
-    "/paymenttypes",
     "/payments",
     "/units",
     "/vatrates",
     "/bankaccounts",
-    "/currencies",
-    "/invoices/customfields",
   ]) {
     await tryGet(p);
   }
 
   // Konkrétna faktúra podľa čísla (napr. 3026033).
   if (opts.invoiceNumber) {
-    for (const p of ["/invoices", "/documents"]) {
+    for (const p of ["/documents", "/outgoinginvoices"]) {
       const json = await tryGet(p, { ...q, "filter[search-text]": opts.invoiceNumber });
       const id = Array.isArray(json?.data) ? json.data[0]?.id : null;
       if (id) {
@@ -93,7 +107,7 @@ export async function probeFlowiiInvoices(opts: { webOrderId?: string; invoiceNu
     if (sync?.flowiiOrderId) {
       const oid = encodeURIComponent(sync.flowiiOrderId);
       await tryGet(`/orders/${oid}`, { ...q, include: "custom-field-string-values" });
-      for (const p of [`/orders/${oid}/documents`, `/orders/${oid}/invoices`, `/orders/${oid}/payments`]) await tryGet(p);
+      for (const p of [`/orders/${oid}/documents`, `/orders/${oid}/invoices`]) await tryGet(p);
     } else {
       results.push({ path: "(zákazka)", status: "-", error: "Objednávka nemá zákazku vo FLOWii vytvorenú cez web." });
     }
