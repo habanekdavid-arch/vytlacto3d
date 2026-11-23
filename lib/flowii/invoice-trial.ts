@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { FlowiiClient, getFlowiiCredentials } from "@/lib/flowii/client";
+import { stripe } from "@/lib/stripe";
 import { colorSummary, materialLabel, qualityLabel } from "@/lib/print-options";
 
 const r2 = (n: number) => Math.round(n * 100) / 100;
@@ -7,7 +8,7 @@ const r2 = (n: number) => Math.round(n * 100) / 100;
 /** Položky faktúry podľa zadania: 3D tlač (+ riadok Konfigurácia) a doprava, ceny bez DPH. */
 async function invoiceLines(webOrderId: string) {
   const order = await prisma.order.findUnique({ where: { id: webOrderId }, include: { orderItems: { orderBy: { createdAt: "asc" } } } });
-  if (!order) return { orderNumber: "", lines: [] as Line[] };
+  if (!order) return { orderNumber: "", paidOn: new Date().toISOString().slice(0, 10), lines: [] as Line[] };
   const conf = (c: Record<string, any>) =>
     "Konfigurácia: " +
     [materialLabel(c?.material, ""), qualityLabel(c?.quality, ""), c?.infillPct != null ? `${c.infillPct}% infill` : "", colorSummary(c, "")]
@@ -24,7 +25,21 @@ async function invoiceLines(webOrderId: string) {
   const ship = (order.shippingCost ?? {}) as Record<string, any>;
   const shipEur = typeof ship.amount === "number" ? ship.amount / 100 : 0;
   if (shipEur > 0) lines.push({ name: order.shippingMethod ?? "Doprava", note: "", quantity: 1, unitNet: r2(shipEur / 1.23) });
-  return { orderNumber: order.orderNumber ?? "", paid: order.paidTotalEur ?? null, lines };
+  return { orderNumber: order.orderNumber ?? "", paid: order.paidTotalEur ?? null, paidOn: await paidDate(order), lines };
+}
+/** Deň zaplatenia (Stripe), dátum v časovom pásme Bratislavy. Záloha: dátum objednávky. */
+async function paidDate(order: { createdAt: Date; stripePaymentIntentId: string | null; stripeSessionId: string | null }) {
+  let at = order.createdAt;
+  try {
+    if (order.stripePaymentIntentId) {
+      const pi = await stripe.paymentIntents.retrieve(order.stripePaymentIntentId, { expand: ["latest_charge"] });
+      const ch = pi.latest_charge as { created?: number } | null;
+      at = new Date(((ch && typeof ch === "object" && ch.created) || pi.created) * 1000);
+    } else if (order.stripeSessionId) {
+      at = new Date((await stripe.checkout.sessions.retrieve(order.stripeSessionId)).created * 1000);
+    }
+  } catch {}
+  return new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Bratislava" }).format(at); // YYYY-MM-DD
 }
 type Line = { name: string; note: string; quantity: number; unitNet: number };
 
@@ -51,7 +66,8 @@ export async function trialFlowiiInvoice(webOrderId: string, serialNr?: string) 
   const currencyId = rel.currency?.data?.id ?? "44";
   const userId = rel.user?.data?.id;
   const web = await invoiceLines(webOrderId);
-  const today = new Date().toISOString().slice(0, 10);
+  // Dátum vystavenia aj dodania = deň zaplatenia objednávky.
+  const today = web.paidOn;
   const nr = serialNr && /^\d{4,12}$/.test(serialNr) ? { "serial-nr": serialNr } : {};
 
   // Firma (fakturačné údaje) — rovnako ako pri zakladaní zákaziek.
@@ -97,7 +113,7 @@ export async function trialFlowiiInvoice(webOrderId: string, serialNr?: string) 
   });
   const attempts: { label: string; body: unknown }[] = [
     { label: "6 — splatnosť 14 dní + položky", body: header("issue-date", 14) },
-    { label: "7 — splatnosť ako dátum + položky", body: header("issue-date", new Date(Date.now() + 14 * 864e5).toISOString().slice(0, 10)) },
+    { label: "7 — splatnosť ako dátum + položky", body: header("issue-date", new Date(Date.parse(today) + 14 * 864e5).toISOString().slice(0, 10)) },
   ];
 
   const results: { label: string; status: number | string; response: unknown }[] = [];
@@ -108,5 +124,5 @@ export async function trialFlowiiInvoice(webOrderId: string, serialNr?: string) 
     if (typeof r.status === "string" && r.status.startsWith("OK")) break; // doklad vznikol — ďalej nie
     if (/per\s*day/i.test(JSON.stringify(r.body ?? ""))) break; // denný limit
   }
-  return { companyId, flowiiOrderId: sync.flowiiOrderId, partnerId, lines: web.lines, results };
+  return { companyId, flowiiOrderId: sync.flowiiOrderId, partnerId, paidOn: web.paidOn, lines: web.lines, results };
 }
