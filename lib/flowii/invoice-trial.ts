@@ -135,8 +135,12 @@ export async function trialFlowiiInvoice(webOrderId: string, serialNr?: string) 
       const doc = (docs?.data ?? []).find((d: any) => String(d.id) === String(createdId));
       results.push({
         label: "kontrola súm",
-        status: doc ? (Math.abs((doc.attributes?.["order-gross-amount"] ?? -1) - expectedNet) < 0.011 ? "SEDÍ" : "NESEDÍ") : "?",
-        response: { ocakavane_bez_DPH: expectedNet, ocakavane_s_DPH: web.paid, doklad: doc?.attributes ?? null },
+        status: !doc
+          ? "FAKTÚRA NIE JE V ZÁKAZKE"
+          : Math.abs((doc.attributes?.["order-gross-amount"] ?? -1) - expectedNet) < 0.011
+            ? "V ZÁKAZKE, SUMA SEDÍ"
+            : "V ZÁKAZKE, SUMA NESEDÍ",
+        response: { vytvorena: r.body, ocakavane_bez_DPH: expectedNet, ocakavane_s_DPH: web.paid, doklad: doc?.attributes ?? null },
       });
       break;
     }
