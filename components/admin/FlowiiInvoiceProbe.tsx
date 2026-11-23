@@ -18,7 +18,7 @@ export default function FlowiiInvoiceProbe({ orderId }: { orderId: string }) {
       const res = await fetch("/api/admin/flowii/invoice-trial", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderId, confirm: true }),
+        body: JSON.stringify({ orderId, confirm: true, serialNr: invoiceNumber }),
       });
       setOut(JSON.stringify(await res.json(), null, 2));
     } catch (e: any) {
@@ -51,7 +51,7 @@ export default function FlowiiInvoiceProbe({ orderId }: { orderId: string }) {
       <div className="font-bold text-neutral-800">Prieskum faktúr vo FLOWii (len čítanie, nič nemení)</div>
       <div className="mt-2 flex flex-wrap items-center gap-2">
         <label className="text-neutral-600">
-          Číslo existujúcej faktúry:{" "}
+          Číslo faktúry:{" "}
           <input
             value={invoiceNumber}
             onChange={(e) => setInvoiceNumber(e.target.value)}

@@ -9,7 +9,7 @@ import { FlowiiClient, getFlowiiCredentials } from "@/lib/flowii/client";
  * doklad vytvorí — nikdy nevzniknú dve faktúry. Zákazku ani iné záznamy
  * nemení.
  */
-export async function trialFlowiiInvoice(webOrderId: string) {
+export async function trialFlowiiInvoice(webOrderId: string, serialNr?: string) {
   const creds = getFlowiiCredentials();
   if (!creds) return { error: "FLOWii nie je nastavené." };
   const client = new FlowiiClient(creds);
@@ -25,20 +25,21 @@ export async function trialFlowiiInvoice(webOrderId: string) {
   const userId = rel.user?.data?.id;
   const web = await prisma.order.findUnique({ where: { id: webOrderId }, select: { orderNumber: true } }).catch(() => null);
   const today = new Date().toISOString().slice(0, 10);
+  const nr = serialNr && /^\d{4,12}$/.test(serialNr) ? { "serial-nr": serialNr } : {};
 
   const orderRel = { order: { data: { type: "order", id: String(sync.flowiiOrderId) } } };
   const partnerRel = partnerId ? { partner: { data: { type: "partner", id: String(partnerId) } } } : {};
   const attempts: { label: string; body: unknown }[] = [
     {
       label: "1 — len typ faktúry (zistenie povinných polí)",
-      body: { data: { type: "document", attributes: { type: 4 } } },
+      body: { data: { type: "document", attributes: { type: 4, ...nr } } },
     },
     {
       label: "2 — typ + zákazka, odberateľ, mena",
       body: {
         data: {
           type: "document",
-          attributes: { type: 4 },
+          attributes: { type: 4, ...nr },
           relationships: {
             ...orderRel,
             ...partnerRel,
@@ -55,6 +56,7 @@ export async function trialFlowiiInvoice(webOrderId: string) {
           type: "document",
           attributes: {
             type: 4,
+            ...nr,
             issued: today,
             delivered: today,
             "constant-symbol": "0008",

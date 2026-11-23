@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Chýba objednávka alebo potvrdenie." }, { status: 400 });
   }
   try {
-    return NextResponse.json(await trialFlowiiInvoice(body.orderId));
+    return NextResponse.json(await trialFlowiiInvoice(body.orderId, typeof body?.serialNr === "string" ? body.serialNr.trim() : undefined));
   } catch (e: any) {
     return NextResponse.json({ error: e?.message || "Pokus zlyhal." }, { status: 500 });
   }
