@@ -146,7 +146,10 @@ export async function POST(req: NextRequest) {
       prisma.drawingGeneration.count({ where: { ipHash, createdAt: { gte: new Date(now - 86400_000) } } }),
       prisma.drawingGeneration.count({ where: { createdAt: { gte: new Date(now - 86400_000) } } }),
     ]);
-    if (hour >= PER_IP_HOUR || day >= PER_IP_DAY) {
+    // Na testovacej adrese (funkcia je zatiaľ skrytá pred verejnosťou) bez
+    // limitu na návštevníka; po zverejnení na vytlacto3d.sk platí znova.
+    const testHost = !isAnalyticsHost(req.headers.get("host"));
+    if (!testHost && (hour >= PER_IP_HOUR || day >= PER_IP_DAY)) {
       return fail("Dosiahli ste limit generovaní modelov. Skúste to znova neskôr alebo nám pošlite výkres cez kontaktný formulár.", 429);
     }
     if (total >= DAILY_LIMIT) {
