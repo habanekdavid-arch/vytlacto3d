@@ -9,6 +9,25 @@ export default function FlowiiInvoiceProbe({ orderId }: { orderId: string }) {
   const [out, setOut] = useState("");
   const [copied, setCopied] = useState(false);
 
+  async function trial() {
+    if (!confirm("Skúšobná faktúra: do FLOWii sa pošlú najviac 3 pokusy o vytvorenie faktúry k tejto zákazke. Ak sa niektorý podarí, vznikne skutočná faktúra (ďalšie číslo v rade). Pokračovať?")) return;
+    setBusy(true);
+    setOut("");
+    setCopied(false);
+    try {
+      const res = await fetch("/api/admin/flowii/invoice-trial", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId, confirm: true }),
+      });
+      setOut(JSON.stringify(await res.json(), null, 2));
+    } catch (e: any) {
+      setOut(`Chyba: ${e?.message || e}`);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function run() {
     setBusy(true);
     setOut("");
@@ -46,6 +65,14 @@ export default function FlowiiInvoiceProbe({ orderId }: { orderId: string }) {
           className="rounded-lg border border-neutral-300 bg-white px-3 py-1.5 font-bold text-neutral-800 hover:border-[#FFAE00] disabled:opacity-50"
         >
           {busy ? "Čítam z FLOWii…" : "Preskúmať faktúry"}
+        </button>
+        <button
+          type="button"
+          onClick={trial}
+          disabled={busy}
+          className="rounded-lg border border-red-300 bg-white px-3 py-1.5 font-bold text-red-700 hover:border-red-500 disabled:opacity-50"
+        >
+          Skúšobná faktúra (vytvorí doklad)
         </button>
         {out && (
           <button

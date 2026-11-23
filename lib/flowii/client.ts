@@ -7,7 +7,7 @@ import { createHash } from "node:crypto";
  * integrácia nesmie nič, čo vo FLOWii už je, upraviť ani zmazať.
  */
 
-const ALLOWED_POST_PATHS = new Set(["/token", "/partners", "/orders", "/tasks"]);
+const ALLOWED_POST_PATHS = new Set(["/token", "/partners", "/orders", "/tasks", "/documents"]);
 
 export class FlowiiError extends Error {
   constructor(message: string, readonly status?: number, readonly body?: string) {
@@ -242,6 +242,24 @@ export class FlowiiClient {
   async list(path: string, query: Record<string, string | number | undefined> = {}): Promise<JsonApiResource[]> {
     const json = await this.get(path, query);
     return Array.isArray(json?.data) ? json.data : [];
+  }
+
+  /**
+   * Skúšobné založenie dokladu (faktúry) — vráti surovú odpoveď (stav + telo)
+   * bez vyhodenia chyby, aby bolo vidieť chybové hlásenia FLOWii. Neopakuje sa.
+   */
+  async tryCreateDocument(companyId: string, body: unknown): Promise<{ status: number | string; body: unknown }> {
+    try {
+      const json = await this.request("POST", "/documents", { companyId }, body);
+      return { status: "OK (vytvorené)", body: json };
+    } catch (e) {
+      if (e instanceof FlowiiError) {
+        let parsed: unknown = e.body;
+        try { parsed = JSON.parse(String(e.body)); } catch {}
+        return { status: e.status ?? "?", body: parsed };
+      }
+      throw e;
+    }
   }
 
   /** Založí nový záznam a vráti jeho ID. */
