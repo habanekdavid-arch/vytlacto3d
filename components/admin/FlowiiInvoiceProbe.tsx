@@ -10,7 +10,7 @@ export default function FlowiiInvoiceProbe({ orderId }: { orderId: string }) {
   const [copied, setCopied] = useState(false);
 
   async function trial() {
-    if (!confirm("Skúšobná faktúra: do FLOWii sa pošlú najviac 3 pokusy o vytvorenie faktúry k tejto zákazke. Ak sa niektorý podarí, vznikne skutočná faktúra (ďalšie číslo v rade). Pokračovať?")) return;
+    if (!confirm("Skúšobná faktúra: do FLOWii sa pošlú najviac 2 pokusy o vytvorenie faktúry k tejto zákazke. Ak sa niektorý podarí, vznikne skutočná faktúra (ďalšie číslo v rade). Pokračovať?")) return;
     setBusy(true);
     setOut("");
     setCopied(false);

@@ -27,51 +27,39 @@ export async function trialFlowiiInvoice(webOrderId: string, serialNr?: string) 
   const today = new Date().toISOString().slice(0, 10);
   const nr = serialNr && /^\d{4,12}$/.test(serialNr) ? { "serial-nr": serialNr } : {};
 
-  const orderRel = { order: { data: { type: "order", id: String(sync.flowiiOrderId) } } };
-  const partnerRel = partnerId ? { partner: { data: { type: "partner", id: String(partnerId) } } } : {};
+  // Firma (fakturačné údaje) — rovnako ako pri zakladaní zákaziek.
+  const companyData = await client.list("/companydata", { companyId });
+  const companyDataId = companyData.length === 1 ? companyData[0].id : (rel["company-data"]?.data?.id ?? companyData[0]?.id);
+  const self = await client.get("/users/self", { companyId });
+  const selfUserId = String(self?.data?.id ?? userId ?? "");
+
+  // Kolo 2: FLOWii vyžaduje IssueDate, User, CompanyData, Partner.
+  const header = (dateKey: string) => ({
+    data: {
+      type: "document",
+      attributes: {
+        type: 4,
+        ...nr,
+        [dateKey]: today,
+        "delivery-date": today,
+        "due-date": new Date(Date.now() + 14 * 864e5).toISOString().slice(0, 10),
+        "constant-symbol": "0008",
+        "order-number": web?.orderNumber ?? "",
+      },
+      relationships: {
+        order: { data: { type: "order", id: String(sync.flowiiOrderId) } },
+        ...(partnerId ? { partner: { data: { type: "partner", id: String(partnerId) } } } : {}),
+        user: { data: { type: "user", id: selfUserId } },
+        "company-data": { data: { type: "company-data", id: String(companyDataId) } },
+        currency: { data: { type: "currency", id: String(currencyId) } },
+        "payment-method": { data: { type: "payment-method", id: "247565" } },
+        "bank-account": { data: { type: "bank-account", id: "9995" } },
+      },
+    },
+  });
   const attempts: { label: string; body: unknown }[] = [
-    {
-      label: "1 — len typ faktúry (zistenie povinných polí)",
-      body: { data: { type: "document", attributes: { type: 4, ...nr } } },
-    },
-    {
-      label: "2 — typ + zákazka, odberateľ, mena",
-      body: {
-        data: {
-          type: "document",
-          attributes: { type: 4, ...nr },
-          relationships: {
-            ...orderRel,
-            ...partnerRel,
-            currency: { data: { type: "currency", id: String(currencyId) } },
-            ...(userId ? { user: { data: { type: "user", id: String(userId) } } } : {}),
-          },
-        },
-      },
-    },
-    {
-      label: "3 — + dátumy, KS, číslo objednávky, úhrada, účet",
-      body: {
-        data: {
-          type: "document",
-          attributes: {
-            type: 4,
-            ...nr,
-            issued: today,
-            delivered: today,
-            "constant-symbol": "0008",
-            "order-number": web?.orderNumber ?? "",
-          },
-          relationships: {
-            ...orderRel,
-            ...partnerRel,
-            currency: { data: { type: "currency", id: String(currencyId) } },
-            "payment-method": { data: { type: "payment-method", id: "247565" } },
-            "bank-account": { data: { type: "bank-account", id: "9995" } },
-          },
-        },
-      },
-    },
+    { label: "4 — všetky povinné polia (issue-date)", body: header("issue-date") },
+    { label: "5 — iný názov dátumu (issued)", body: header("issued") },
   ];
 
   const results: { label: string; status: number | string; response: unknown }[] = [];
