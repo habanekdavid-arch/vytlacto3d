@@ -184,7 +184,8 @@ export class FlowiiClient {
   }
 
   private assertPostAllowed(path: string) {
-    if (!ALLOWED_POST_PATHS.has(path)) {
+    // Doklad (faktúra) aj priamo pod zákazkou: /orders/{číslo}/documents.
+    if (!ALLOWED_POST_PATHS.has(path) && !/^\/orders\/\d+\/documents$/.test(path)) {
       throw new FlowiiError(`Zablokované: POST na ${path} nie je povolený.`);
     }
   }
@@ -248,9 +249,9 @@ export class FlowiiClient {
    * Skúšobné založenie dokladu (faktúry) — vráti surovú odpoveď (stav + telo)
    * bez vyhodenia chyby, aby bolo vidieť chybové hlásenia FLOWii. Neopakuje sa.
    */
-  async tryCreateDocument(companyId: string, body: unknown): Promise<{ status: number | string; body: unknown }> {
+  async tryCreateDocument(companyId: string, body: unknown, path = "/documents"): Promise<{ status: number | string; body: unknown }> {
     try {
-      const json = await this.request("POST", "/documents", { companyId }, body);
+      const json = await this.request("POST", path, { companyId }, body);
       return { status: "OK (vytvorené)", body: json };
     } catch (e) {
       if (e instanceof FlowiiError) {

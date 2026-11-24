@@ -120,8 +120,13 @@ export async function trialFlowiiInvoice(webOrderId: string, serialNr?: string) 
       },
     },
   });
-  const attempts: { label: string; body: unknown }[] = [
-    { label: "14 — položky camelCase + väzba orders", body: header("issue-date", maturityDate, itemsFor("camel")) },
+  // Kolo 6: faktúra vznikla (3026034), ale väzbu "order" FLOWii ignoroval.
+  // Najprv sa skúša založiť doklad priamo pod zákazkou; ak taká cesta
+  // neexistuje (404/405 — nič nevznikne), pošle sa na /documents s väzbami.
+  const body = header("issue-date", maturityDate, itemsFor("camel"));
+  const attempts: { label: string; body: unknown; path: string }[] = [
+    { label: "15 — doklad pod zákazkou (/orders/{id}/documents)", body, path: `/orders/${encodeURIComponent(String(sync.flowiiOrderId))}/documents` },
+    { label: "16 — /documents s väzbami order + orders", body, path: "/documents" },
   ];
 
   // Poistka: ak odberateľ už má faktúru (napr. 3026034 mimo zákazky), nový
@@ -139,7 +144,7 @@ export async function trialFlowiiInvoice(webOrderId: string, serialNr?: string) 
   const results: { label: string; status: number | string; response: unknown }[] = [];
   for (const a of attempts) {
     await new Promise((r) => setTimeout(r, 1500));
-    const r = await client.tryCreateDocument(companyId, a.body);
+    const r = await client.tryCreateDocument(companyId, a.body, a.path);
     results.push({ label: a.label, status: r.status, response: r.body });
     if (typeof r.status === "string" && r.status.startsWith("OK")) {
       // Doklad vznikol — ďalej nie. Kontrola súm (bez DPH musí sedieť s webom).
@@ -162,6 +167,9 @@ export async function trialFlowiiInvoice(webOrderId: string, serialNr?: string) 
       break;
     }
     if (/per\s*day/i.test(JSON.stringify(r.body ?? ""))) break; // denný limit
+    // Cesta pod zákazkou existuje, ale niečo jej chýba — nepokračovať na
+    // /documents (tam by faktúra opäť vznikla mimo zákazky); najprv opraviť.
+    if (a.path !== "/documents" && r.status !== 404 && r.status !== 405) break;
   }
   return { companyId, flowiiOrderId: sync.flowiiOrderId, partnerId, paidOn: web.paidOn, lines: web.lines, results };
 }
