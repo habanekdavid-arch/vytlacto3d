@@ -3,8 +3,9 @@ import { createHash } from "node:crypto";
  * Minimálny klient FLOWii REST API (JSON:API, https://flowiiapi.docs.apiary.io/).
  *
  * BEZPEČNOSŤ: klient vie iba čítať (GET) a zakladať nové záznamy (POST) na
- * pevnom zozname ciest. PATCH/DELETE ani iné metódy tu zámerne neexistujú —
- * integrácia nesmie nič, čo vo FLOWii už je, upraviť ani zmazať.
+ * pevnom zozname ciest. Jediná úprava (PATCH) je zápis čísla faktúry do
+ * vlastného poľa zákazky "faktura cislo" — so súhlasom majiteľa, len cez
+ * patchOrderInvoiceNumber (lib/flowii/invoice). DELETE tu zámerne neexistuje.
  */
 
 const ALLOWED_POST_PATHS = new Set(["/token", "/partners", "/orders", "/tasks", "/documents"]);
@@ -198,8 +199,9 @@ export class FlowiiClient {
     return `${this.creds.baseUrl}${path}${qs ? `?${qs}` : ""}`;
   }
 
-  private async request(method: "GET" | "POST", path: string, query: Record<string, string | number | undefined>, body?: unknown) {
+  private async request(method: "GET" | "POST" | "PATCH", path: string, query: Record<string, string | number | undefined>, body?: unknown) {
     if (method === "POST") this.assertPostAllowed(path);
+    if (method === "PATCH" && !/^\/orders\/\d+$/.test(path)) throw new FlowiiError(`Zablokované: PATCH na ${path} nie je povolený.`);
 
     // Opakuje sa iba čítanie. Zakladanie záznamu (POST) sa nikdy neopakuje
     // automaticky — pri chybe sa zapíše stav a pokračuje sa "Skúsiť znova".
@@ -261,6 +263,15 @@ export class FlowiiClient {
       }
       throw e;
     }
+  }
+
+  /**
+   * Jediná povolená úprava: zákazka (PATCH /orders/{id}) — zápis čísla
+   * faktúry do vlastného poľa. Telo skladá lib/flowii/invoice tak, že všetky
+   * ostatné údaje zákazky posiela nezmenené. Neopakuje sa.
+   */
+  async patchOrderInvoiceNumber(companyId: string, orderId: string, body: unknown) {
+    return this.request("PATCH", `/orders/${encodeURIComponent(orderId)}`, { companyId }, body);
   }
 
   /** Založí nový záznam a vráti jeho ID. */

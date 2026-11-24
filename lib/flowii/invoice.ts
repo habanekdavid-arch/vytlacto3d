@@ -11,7 +11,9 @@ import { colorSummary, materialLabel, qualityLabel } from "@/lib/print-options";
  * POST /documents, attributes kebab-case (type 4, issue-date, maturity…),
  * položky `items` v camelCase (name, quantity, unitPrice, unitPriceType,
  * vatRate). Úhradu netreba — doklad s "Kreditná karta / Stripe" FLOWii
- * berie ako uhradený. Číslo pridelí FLOWii z číselného radu.
+ * berie ako uhradený. Číslo pridelí FLOWii z číselného radu (3026xxx) a
+ * zapíše sa do zákazky do poľa „faktura cislo“ (jediná úprava existujúceho
+ * záznamu vo FLOWii — so súhlasom majiteľa).
  *
  * POISTKY (nikdy nesmú vzniknúť dve faktúry k jednej objednávke):
  * - záznam v tabuľke FlowiiInvoice sa založí PRED odoslaním (zámok),
@@ -20,7 +22,7 @@ import { colorSummary, materialLabel, qualityLabel } from "@/lib/print-options";
  *   UNKNOWN a e-mail administrátorovi,
  * - suma faktúry sa porovná so zaplatenou sumou; ak nesedí (kupón, iné
  *   DPH…), faktúra sa nevytvorí a príde e-mail na ručné vystavenie.
- * Okrem nového dokladu vo FLOWii nič nemení.
+ * Okrem nového dokladu a poľa „faktura cislo“ vo FLOWii nič nemení.
  */
 
 const VAT = 23;
@@ -153,6 +155,102 @@ export async function buildInvoiceDraft(orderId: string) {
   return { order, lines, expectedNet, expectedGross, paidOn: await paidDate(order) };
 }
 
+// ── Číslo faktúry do zákazky (Detail → „faktura cislo“) ────────────────────
+
+const norm = (v: unknown) =>
+  String(v ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase();
+
+type Res = { type: string; id: string; attributes?: Record<string, unknown>; relationships?: Record<string, { data?: unknown }> };
+
+/**
+ * Zapíše číslo faktúry do vlastného poľa zákazky (so súhlasom majiteľa).
+ * Všetky ostatné údaje zákazky sa pošlú nezmenené (aj keby FLOWii pri PATCH
+ * prepisovalo celý záznam) a po zápise sa overí, že sa nič iné nezmenilo.
+ * Existujúcu inú hodnotu v poli neprepíše. Vráti popis problému alebo null.
+ */
+async function writeInvoiceNumber(client: FlowiiClient, companyId: string, flowiiOrderId: string, serialNr: string): Promise<string | null> {
+  const fieldName = norm(process.env.FLOWII_INVOICE_FIELD_NAME || "faktura cislo");
+  const fields = await client.list("/orders/customfields", { companyId });
+  const field = fields.find((f) => norm(f.attributes?.name) === fieldName);
+  if (!field) return `vlastné pole „${fieldName}“ sa vo FLOWii nenašlo — číslo faktúry doplňte ručne`;
+
+  const read = async () => {
+    const json = await client.get(`/orders/${encodeURIComponent(flowiiOrderId)}`, { companyId, include: "custom-field-string-values" });
+    const data = json?.data as Res;
+    const values = ((json?.included ?? []) as Res[]).filter((r) => r.type === "custom-field-string-value");
+    const valueOf = (fieldId: string) =>
+      values.find((v) => String((v.relationships?.["custom-field"]?.data as { id?: string } | undefined)?.id) === String(fieldId))?.attributes?.value;
+    return { data, values, valueOf };
+  };
+
+  const before = await read();
+  const current = before.valueOf(field.id);
+  if (current && String(current).trim() === serialNr) return null;
+  if (current && String(current).trim()) return `pole „faktura cislo“ už obsahuje ${current} — neprepísal som ho, skontrolujte`;
+
+  const a = before.data.attributes ?? {};
+  const rel = before.data.relationships ?? {};
+  const keep = (k: string) => (rel[k] && "data" in rel[k] ? { [k]: { data: rel[k].data } } : {});
+  const body = {
+    data: {
+      type: "order",
+      id: flowiiOrderId,
+      attributes: Object.fromEntries(
+        ["name", "created", "accepted", "deadline", "finished", "delivered", "warranty", "anticipated-income-amount", "description"]
+          .filter((k) => k in a)
+          .map((k) => [k, a[k]])
+      ),
+      relationships: {
+        ...keep("type"),
+        ...keep("subtype"),
+        ...keep("state"),
+        ...keep("parent"),
+        ...keep("user"),
+        ...keep("partner"),
+        ...keep("currency"),
+        ...keep("business-case"),
+        ...keep("responsible-users"),
+        "custom-field-string-values": {
+          data: [
+            ...before.values.map((v) => ({ type: "custom-field-string-value", id: v.id })),
+            {
+              type: "custom-field-string-value",
+              attributes: { value: serialNr },
+              relationships: { "custom-field": { data: { type: "custom-field", id: String(field.id) } } },
+            },
+          ],
+        },
+      },
+    },
+  };
+
+  try {
+    await client.patchOrderInvoiceNumber(companyId, flowiiOrderId, body);
+  } catch (e) {
+    const fe = e instanceof FlowiiError ? e : null;
+    return `číslo faktúry sa do zákazky nepodarilo zapísať (${fe?.status ?? (e as Error)?.message}${fe?.body ? `: ${String(fe.body).slice(0, 200)}` : ""}) — doplňte ho ručne`;
+  }
+
+  // Overenie: nové pole je zapísané a nič iné sa nezmenilo.
+  await new Promise((r) => setTimeout(r, 1200));
+  const after = await read().catch(() => null);
+  if (!after) return "zápis čísla faktúry sa nepodarilo overiť — skontrolujte zákazku";
+  const changed: string[] = [];
+  if (String(after.valueOf(field.id) ?? "").trim() !== serialNr) changed.push("pole „faktura cislo“ sa nezapísalo");
+  for (const v of before.values) {
+    const fid = String((v.relationships?.["custom-field"]?.data as { id?: string } | undefined)?.id);
+    if (String(after.valueOf(fid) ?? "") !== String(v.attributes?.value ?? "")) changed.push(`zmenilo sa vlastné pole ${fid}`);
+  }
+  for (const k of ["name", "description", "accepted", "deadline"]) {
+    if (k in a && String(after.data.attributes?.[k] ?? "") !== String(a[k] ?? "")) changed.push(`zmenil sa údaj zákazky „${k}“`);
+  }
+  return changed.length ? `${changed.join(", ")} — skontrolujte zákazku` : null;
+}
+
 // ── Vytvorenie ──────────────────────────────────────────────────────────────
 
 export type FlowiiInvoiceResult = { status: FlowiiInvoiceRow["status"] | "IN_PROGRESS" | "ALREADY"; message: string; serialNr?: string | null };
@@ -280,7 +378,11 @@ export async function createFlowiiInvoice(orderId: string, opts: { manual?: bool
     const doc = (after?.data ?? []).find((d: { id?: string }) => String(d.id) === documentId);
     const linked = Boolean(doc);
     const netOk = !doc || Math.abs(Number(doc.attributes?.["order-gross-amount"] ?? draft.expectedNet) - draft.expectedNet) < 0.011;
-    const problems = [!linked && "nie je priradená k zákazke", !netOk && `suma bez DPH vo FLOWii nesedí (čakalo sa ${draft.expectedNet} €)`].filter(Boolean);
+    // Číslo faktúry do zákazky (Detail → faktura cislo) — so súhlasom majiteľa.
+    const fieldProblem = serialNr
+      ? await writeInvoiceNumber(client, companyId, flowiiOrderId, String(serialNr)).catch((e) => `zápis čísla faktúry zlyhal (${(e as Error)?.message}) — doplňte ho ručne`)
+      : "FLOWii nevrátilo číslo faktúry — doplňte ho do zákazky ručne";
+    const problems = [!linked && "nie je priradená k zákazke", !netOk && `suma bez DPH vo FLOWii nesedí (čakalo sa ${draft.expectedNet} €)`, fieldProblem].filter(Boolean);
     await setRow(orderId, { status: "DONE", documentId, serialNr, linked, error: problems.length ? `Skontrolujte: ${problems.join(", ")}.` : null });
     if (problems.length) {
       await notify(
