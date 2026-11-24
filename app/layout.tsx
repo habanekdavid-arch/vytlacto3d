@@ -6,7 +6,6 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Providers from "@/components/Providers";
 import FourFromFloatingButton from "@/components/FourFromFloatingButton";
-import PromoTipPopup from "@/components/PromoTipPopup";
 import PromoBar from "@/components/PromoBar";
 import { activePromo } from "@/lib/promo";
 import RegisterNudgePopup from "@/components/RegisterNudgePopup";
@@ -173,7 +172,6 @@ export default async function RootLayout({
           <main className="flex-1">{children}</main>
           <Footer />
           <FourFromFloatingButton />
-          <PromoTipPopup />
           <RegisterNudgePopup />
           <CompleteProfilePopup />
           <TlackoGate />
