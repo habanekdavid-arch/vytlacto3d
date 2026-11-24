@@ -4,7 +4,7 @@ import { useState } from "react";
 
 /** Prieskum faktúr vo FLOWii (len čítanie) — výsledok sa skopíruje a pošle programátorovi. */
 export default function FlowiiInvoiceProbe({ orderId }: { orderId: string }) {
-  const [invoiceNumber, setInvoiceNumber] = useState("3026033");
+  const [invoiceNumber, setInvoiceNumber] = useState("");
   const [busy, setBusy] = useState(false);
   const [out, setOut] = useState("");
   const [copied, setCopied] = useState(false);
@@ -51,7 +51,7 @@ export default function FlowiiInvoiceProbe({ orderId }: { orderId: string }) {
       <div className="font-bold text-neutral-800">Prieskum faktúr vo FLOWii (len čítanie, nič nemení)</div>
       <div className="mt-2 flex flex-wrap items-center gap-2">
         <label className="text-neutral-600">
-          Číslo faktúry:{" "}
+          Číslo faktúry (prázdne = pridelí FLOWii):{" "}
           <input
             value={invoiceNumber}
             onChange={(e) => setInvoiceNumber(e.target.value)}

@@ -80,17 +80,17 @@ export async function trialFlowiiInvoice(webOrderId: string, serialNr?: string) 
   // Kolo 3: chýbali Maturity a Items. Položky ako pole v attributes (tvar sa
   // spresní podľa chybových hlásení FLOWii k jednotlivým poliam položky).
   // Kolo 4: položka vyžaduje Name, UnitPrice, UnitPriceType, VatRate.
-  const itemsFor = (priceType: number) =>
-    web.lines.map((l) => ({
-      name: l.name,
-      note: l.note,
-      quantity: l.quantity,
-      "unit-price": l.unitNet,
-      "unit-price-type": priceType,
-      "vat-rate": 23,
-      unit: "ks",
-    }));
-  // Splatnosť FLOWii vyžaduje — faktúra je už zaplatená, preto = deň zaplatenia.
+  // Kolo 5: plochý tvar položky FLOWii nespoznal (chýbal aj Name) — skúšajú
+  // sa iné tvary: JSON:API obal {type, attributes}, camelCase, PascalCase.
+  const itemsFor = (shape: "jsonapi" | "camel" | "pascal", priceType = 1) =>
+    web.lines.map((l) => {
+      if (shape === "camel") return { name: l.name, quantity: l.quantity, unitPrice: l.unitNet, unitPriceType: priceType, vatRate: 23 };
+      if (shape === "pascal") return { Name: l.name, Quantity: l.quantity, UnitPrice: l.unitNet, UnitPriceType: priceType, VatRate: 23 };
+      return {
+        type: "line-item",
+        attributes: { name: l.name, note: l.note, quantity: l.quantity, "unit-price": l.unitNet, "unit-price-type": priceType, "vat-rate": 23 },
+      };
+    });
   const maturityDate = today;
   const header = (dateKey: string, maturity: unknown, items: unknown) => ({
     data: {
@@ -117,9 +117,9 @@ export async function trialFlowiiInvoice(webOrderId: string, serialNr?: string) 
     },
   });
   const attempts: { label: string; body: unknown }[] = [
-    { label: "8 — typ ceny 1", body: header("issue-date", maturityDate, itemsFor(1)) },
-    { label: "9 — typ ceny 0", body: header("issue-date", maturityDate, itemsFor(0)) },
-    { label: "10 — typ ceny 2", body: header("issue-date", maturityDate, itemsFor(2)) },
+    { label: "11 — položky ako {type, attributes}", body: header("issue-date", maturityDate, itemsFor("jsonapi")) },
+    { label: "12 — položky camelCase", body: header("issue-date", maturityDate, itemsFor("camel")) },
+    { label: "13 — položky PascalCase", body: header("issue-date", maturityDate, itemsFor("pascal")) },
   ];
 
   const results: { label: string; status: number | string; response: unknown }[] = [];
