@@ -34,6 +34,7 @@ export const CONTACT = {
 export const TARGETS = {
   upload: { page: "/", selector: '[data-tlacko="upload"]', label: "Sem pretiahnite súbor alebo kliknite a vyberte ho 👆" },
   cennik: { page: "/", selector: "#cennik", label: "Tu je cenník materiálov 👇" },
+  settings: { page: "/", selector: '[data-tlacko="settings"]', label: "Tu nastavíte materiál, kvalitu, výplň, farbu a počet kusov 👇" },
 } as const;
 export type TargetId = keyof typeof TARGETS;
 
@@ -84,7 +85,33 @@ export const FALLBACK: TlackoIntent = {
   ],
 };
 
+function AFTER_UPLOAD_TEXT() {
+  return "Nastavenie modelu v konfigurátore (krok 3):\n• Materiál — podľa toho, kde bude výrobok: interiér PLA, exteriér PETG, teplo a auto ABS, maximálna pevnosť PA6-CF.\n• Kvalita — Štandard stačí na väčšinu dielov, Detailná na jemné detaily, Rýchla na lacné prototypy.\n• Výplň — 15–20 % na bežné diely, 30–50 % na namáhané.\n• Farba a počet kusov — od 20 ks máte zľavu.\nCena sa prepočíta hneď pri každej zmene.";
+}
+
+/** Po nahratí modelu — Tlačko sa sám ozve s radou k nastaveniu. */
+export const AFTER_UPLOAD: TlackoIntent = {
+  id: "po-nahrati",
+  keywords: [],
+  answer:
+    "Model je nahratý 🎉 Teraz ho nastavte v kroku 3:\n• Materiál — podľa toho, kde bude výrobok (poradím nižšie).\n• Kvalita — Štandard stačí na väčšinu dielov, Detailná na jemné detaily.\n• Výplň — 15–20 % na bežné diely, 30–50 % na namáhané.\n• Farba a počet kusov — od 20 ks máte zľavu.\nCena sa prepočíta hneď pri každej zmene.",
+  actions: [
+    { kind: "show", label: "Ukáž nastavenia", target: "settings" },
+    { kind: "intent", label: "Aký materiál vybrať?", intent: "sprievodca" },
+    { kind: "intent", label: "Kvalita a výplň", intent: "kvalita" },
+  ],
+};
+
 export const INTENTS: TlackoIntent[] = [
+  {
+    id: "nastavenia",
+    keywords: ["nastavit", "nastavenie", "nastavenia", "parametre", "parameter", "ako nastavit", "co nastavit", "co zvolit", "co vybrat"],
+    answer: AFTER_UPLOAD_TEXT(),
+    actions: [
+      { kind: "show", label: "Ukáž nastavenia", target: "settings" },
+      { kind: "intent", label: "Aký materiál vybrať?", intent: "sprievodca" },
+    ],
+  },
   {
     id: "konfigurator",
     keywords: ["konfigurator", "ako funguje", "ako to funguje", "ukaz", "ukazte", "navod", "ako objednat", "postup", "ako na to", "kde nahram", "kde nahrat", "nahrat model", "ako zacat"],
@@ -245,7 +272,7 @@ export const INTENTS: TlackoIntent[] = [
   },
 ];
 
-const ALL = [...INTENTS, WELCOME, FALLBACK];
+const ALL = [...INTENTS, WELCOME, FALLBACK, AFTER_UPLOAD];
 
 export function getIntent(id: string): TlackoIntent {
   return ALL.find((i) => i.id === id) ?? FALLBACK;

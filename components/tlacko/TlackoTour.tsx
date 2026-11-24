@@ -3,112 +3,38 @@
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import TlackoMascot from "./TlackoMascot";
 import { BRAND } from "./tlacko-styles";
+import { DeliveryScene, ModelScene, PriceScene, SettingsScene, UploadScene } from "./TlackoScenes";
 
 /**
  * Animovaná prehliadka konfigurátora — 5 krokov od nahratia po doručenie.
  * Ilustrácie sú čisté CSS/SVG (žiadne obrázky ani požiadavky).
  */
 
-function PriceCounter() {
-  const [v, setV] = useState(0);
-  useEffect(() => {
-    let n = 0;
-    const id = window.setInterval(() => {
-      n += 1;
-      setV(Math.min(12.3, (12.3 * n) / 30));
-      if (n >= 30) window.clearInterval(id);
-    }, 35);
-    return () => window.clearInterval(id);
-  }, []);
-  return <>{v.toFixed(2).replace(".", ",")} €</>;
-}
-
-function Layers() {
-  const [k, setK] = useState(0);
-  useEffect(() => {
-    const id = window.setInterval(() => setK((x) => (x + 1) % 9), 450);
-    return () => window.clearInterval(id);
-  }, []);
-  return (
-    <div className="tl-layers">
-      {Array.from({ length: k }, (_, i) => (
-        <b key={i} style={{ width: `${100 - i * 6}%`, margin: "0 auto", background: i % 2 ? "#FFAE00" : "#111" }} />
-      ))}
-    </div>
-  );
-}
-
 const STEPS: { title: string; text: string; scene: () => ReactNode }[] = [
   {
     title: "1. Nahrajte model",
     text: "Pretiahnite súbor STL, OBJ alebo 3MF do konfigurátora. Máte len logo? Stačí SVG, PNG alebo JPG — 3D model z neho vytvoríme.",
-    scene: () => (
-      <div className="tl-scene">
-        <div className="tl-drop-zone" />
-        <div className="tl-file">STL</div>
-        <div className="tl-ok">✓</div>
-      </div>
-    ),
+    scene: () => <UploadScene />,
   },
   {
     title: "2. Pozrite si model v 3D",
     text: "Model sa hneď zobrazí v 3D — môžete ho otáčať zo všetkých strán, vidíte rozmery aj objem a môžete zmeniť veľkosť.",
-    scene: () => (
-      <div className="tl-scene">
-        <div className="tl-cube-wrap">
-          <div className="tl-cube">
-            <div /><div /><div /><div /><div /><div />
-          </div>
-        </div>
-      </div>
-    ),
+    scene: () => <ModelScene />,
   },
   {
     title: "3. Vyberte materiál, kvalitu a farbu",
     text: "Kliknutím zvolíte materiál (PLA, PETG, ABS, PA6-CF), kvalitu tlače, pevnosť výplne, farbu a počet kusov.",
-    scene: () => (
-      <div className="tl-scene" style={{ paddingTop: 22 }}>
-        <div className="tl-chiprow">
-          <span>PLA</span>
-          <span>PETG</span>
-          <span>ABS</span>
-        </div>
-        <div className="tl-swatches">
-          <i style={{ background: "#111" }} />
-          <i style={{ background: "#fff" }} />
-          <i style={{ background: "#2563eb" }} />
-          <i style={{ background: "#dc2626" }} />
-        </div>
-        <Layers />
-      </div>
-    ),
+    scene: () => <SettingsScene />,
   },
   {
     title: "4. Cenu vidíte okamžite",
     text: "Pri každej zmene sa cena prepočíta hneď — bez čakania na ponuku. Pri viac kusoch dostanete množstevnú zľavu.",
-    scene: () => (
-      <div className="tl-scene" style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6 }}>
-        <div style={{ fontSize: 12, fontWeight: 700, color: "#737373" }}>Cena s DPH</div>
-        <div style={{ fontSize: 38, fontWeight: 900, letterSpacing: -1 }}>
-          <PriceCounter />
-        </div>
-        <div style={{ fontSize: 11, fontWeight: 800, background: "#dcfce7", color: "#166534", borderRadius: 999, padding: "3px 9px" }}>
-          od 20 ks −5 % · od 50 ks −10 % · od 100 ks −15 %
-        </div>
-      </div>
-    ),
+    scene: () => <PriceScene />,
   },
   {
     title: "5. Objednajte a my vytlačíme",
     text: "Pridajte model do košíka, zvoľte dopravu (Packeta / Z-Box alebo kuriér) a zaplaťte kartou či prevodom. Vytlačíme a pošleme vám to.",
-    scene: () => (
-      <div className="tl-scene">
-        <div style={{ position: "absolute", left: 14, top: 14, fontSize: 30 }}>🛒</div>
-        <div style={{ position: "absolute", right: 14, top: 16, fontSize: 26 }}>🏠</div>
-        <div className="tl-road" />
-        <div className="tl-truck">🚚</div>
-      </div>
-    ),
+    scene: () => <DeliveryScene />,
   },
 ];
 

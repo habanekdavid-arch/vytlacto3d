@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { TARGETS, WELCOME, findIntent, getIntent, type TargetId, type TlackoAction, type TlackoIntent } from "./tlacko-data";
+import { AFTER_UPLOAD, TARGETS, WELCOME, findIntent, getIntent, type TargetId, type TlackoAction, type TlackoIntent } from "./tlacko-data";
 import TlackoMascot from "./TlackoMascot";
 import TlackoTour from "./TlackoTour";
 import { BRAND, TLACKO_CSS } from "./tlacko-styles";
@@ -11,6 +11,7 @@ const BRAND_TEXT = "#000000";
 const TEASER_DELAY_MS = 3000;
 const TEASER_SNOOZE_DAYS = 3;
 const TEASER_KEY = "vytlacto3d:tlacko-teaser";
+const UPLOAD_TIP_KEY = "vytlacto3d:tlacko-upload-tip";
 
 type Msg = { from: "bot" | "user"; text: string; actions?: TlackoAction[] };
 
@@ -119,6 +120,8 @@ export default function Tlacko() {
   const pathname = usePathname() ?? "/";
   const [open, setOpen] = useState(false);
   const [teaser, setTeaser] = useState(false);
+  /** Bublina po nahratí modelu (rada k nastaveniu). */
+  const [uploadTip, setUploadTip] = useState(false);
   const [tour, setTour] = useState(false);
   const [spot, setSpot] = useState<TargetId | null>(null);
   const [pendingSpot, setPendingSpot] = useState<TargetId | null>(null);
@@ -144,6 +147,27 @@ export default function Tlacko() {
     };
     t = window.setTimeout(tryShow, TEASER_DELAY_MS);
     return () => window.clearTimeout(t);
+  }, []);
+
+  // Po prvom nahratí modelu v návšteve poradí s nastavením a materiálom
+  // (udalosť posiela konfigurátor — app/page.tsx finishBuild).
+  useEffect(() => {
+    let t = 0;
+    const onAdded = () => {
+      if (storage("session")?.getItem(UPLOAD_TIP_KEY)) return;
+      storage("session")?.setItem(UPLOAD_TIP_KEY, "1");
+      window.clearTimeout(t);
+      t = window.setTimeout(() => {
+        setTeaser(false);
+        setUploadTip(true);
+        track("tlacko_upload_tip");
+      }, 1800);
+    };
+    window.addEventListener("vytlacto3d:model-added", onAdded);
+    return () => {
+      window.removeEventListener("vytlacto3d:model-added", onAdded);
+      window.clearTimeout(t);
+    };
   }, []);
 
   useEffect(() => {
@@ -181,6 +205,7 @@ export default function Tlacko() {
 
   function openChat() {
     setTeaser(false);
+    setUploadTip(false);
     setOpen(true);
     track("tlacko_open");
   }
@@ -190,8 +215,16 @@ export default function Tlacko() {
     storage("local")?.setItem(TEASER_KEY, String(Date.now() + TEASER_SNOOZE_DAYS * 864e5));
   }
 
+  /** Otvorí chat rovno s danou odpoveďou (napr. rada po nahratí). */
+  function openWith(intent: TlackoIntent, userText?: string) {
+    openChat();
+    if (userText) reply(intent, userText);
+    else setMsgs((m) => [...m, botMsg(intent)]);
+  }
+
   function startTour() {
     setTeaser(false);
+    setUploadTip(false);
     setOpen(false);
     setTour(true);
     track("tlacko_tour");
@@ -265,6 +298,40 @@ export default function Tlacko() {
             </button>
             <button type="button" className="tl-chip" onClick={openChat} style={st.chip}>
               Mám otázku
+            </button>
+          </div>
+        </div>
+      )}
+
+      {uploadTip && !open && !tour && (
+        <div className="tl-teaser" role="dialog" aria-label="Tlačko radí" style={st.teaser}>
+          <button type="button" aria-label="Zavrieť" onClick={() => setUploadTip(false)} style={st.teaserX}>
+            ×
+          </button>
+          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+            <TlackoMascot size={40} mood="wow" />
+            <div style={{ fontWeight: 900, fontSize: 15, paddingRight: 14 }}>Super, model je nahratý! 🎉</div>
+          </div>
+          <div style={{ marginTop: 6, color: "#404040", lineHeight: 1.45 }}>
+            Poradím vám, ako ho nastaviť a podľa čoho vybrať materiál, aby vydržal a nepreplatili ste.
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
+            <button type="button" className="tl-chip" onClick={() => openWith(AFTER_UPLOAD)} style={st.linkBtn}>
+              Ako to nastaviť?
+            </button>
+            <button type="button" className="tl-chip" onClick={() => openWith(getIntent("sprievodca"), "Aký materiál vybrať?")} style={st.chip}>
+              Aký materiál?
+            </button>
+            <button
+              type="button"
+              className="tl-chip"
+              onClick={() => {
+                setUploadTip(false);
+                show("settings");
+              }}
+              style={st.chip}
+            >
+              Ukáž kde
             </button>
           </div>
         </div>
@@ -353,11 +420,11 @@ export default function Tlacko() {
         onClick={() => (open ? setOpen(false) : openChat())}
         aria-label={open ? "Zavrieť chat" : "Otvoriť chat Tlačko"}
         aria-expanded={open}
-        className={["tl-fab", open ? "" : teaser ? "tl-fab-call" : "tl-fab-idle"].join(" ")}
+        className={["tl-fab", open ? "" : teaser || uploadTip ? "tl-fab-call" : "tl-fab-idle"].join(" ")}
         style={st.fab}
       >
         {open ? <span style={{ fontSize: 30, lineHeight: 1, fontWeight: 700 }}>×</span> : <TlackoMascot size={44} />}
-        {!open && teaser && <span style={st.badge}>1</span>}
+        {!open && (teaser || uploadTip) && <span style={st.badge}>1</span>}
       </button>
     </div>
   );

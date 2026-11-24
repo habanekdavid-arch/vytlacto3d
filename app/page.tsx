@@ -251,6 +251,8 @@ export default function Home() {
     if (result && handedOffRef.current !== result) {
       handedOffRef.current = result;
       addToCart(result);
+      // Tlačko (chat asistent) poradí s nastavením — components/tlacko.
+      window.dispatchEvent(new CustomEvent("vytlacto3d:model-added"));
     }
     setBuild(null);
   }
@@ -1094,7 +1096,7 @@ export default function Home() {
                   )}
                 </div>
 
-                <div className="rounded-3xl border border-neutral-200 bg-white p-3 sm:p-5">
+                <div data-tlacko="settings" className="rounded-3xl border border-neutral-200 bg-white p-3 sm:p-5">
                   <div className="flex items-center justify-between gap-3 mb-4">
                     <div className="flex items-center gap-3">
                       <div className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-black text-sm font-bold text-white">3</div>
