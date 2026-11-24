@@ -84,7 +84,9 @@ export async function trialFlowiiInvoice(webOrderId: string, serialNr?: string) 
   // sa iné tvary: JSON:API obal {type, attributes}, camelCase, PascalCase.
   const itemsFor = (shape: "jsonapi" | "camel" | "pascal", priceType = 1) =>
     web.lines.map((l) => {
-      if (shape === "camel") return { name: l.name, quantity: l.quantity, unitPrice: l.unitNet, unitPriceType: priceType, vatRate: 23 };
+      // camelCase FLOWii prijal (3026034). Druhý riadok skúšame cez note aj description.
+      if (shape === "camel")
+        return { name: l.name, ...(l.note ? { note: l.note, description: l.note } : {}), quantity: l.quantity, unitPrice: l.unitNet, unitPriceType: priceType, vatRate: 23 };
       if (shape === "pascal") return { Name: l.name, Quantity: l.quantity, UnitPrice: l.unitNet, UnitPriceType: priceType, VatRate: 23 };
       return {
         type: "line-item",
@@ -106,7 +108,9 @@ export async function trialFlowiiInvoice(webOrderId: string, serialNr?: string) 
         "order-number": web?.orderNumber ?? "",
       },
       relationships: {
+        // "order" FLOWii ignoroval (3026034 nebola v zákazke) — skúša sa aj zoznam "orders".
         order: { data: { type: "order", id: String(sync.flowiiOrderId) } },
+        orders: { data: [{ type: "order", id: String(sync.flowiiOrderId) }] },
         ...(partnerId ? { partner: { data: { type: "partner", id: String(partnerId) } } } : {}),
         user: { data: { type: "user", id: selfUserId } },
         "company-data": { data: { type: "company-data", id: String(companyDataId) } },
@@ -117,10 +121,20 @@ export async function trialFlowiiInvoice(webOrderId: string, serialNr?: string) 
     },
   });
   const attempts: { label: string; body: unknown }[] = [
-    { label: "11 — položky ako {type, attributes}", body: header("issue-date", maturityDate, itemsFor("jsonapi")) },
-    { label: "12 — položky camelCase", body: header("issue-date", maturityDate, itemsFor("camel")) },
-    { label: "13 — položky PascalCase", body: header("issue-date", maturityDate, itemsFor("pascal")) },
+    { label: "14 — položky camelCase + väzba orders", body: header("issue-date", maturityDate, itemsFor("camel")) },
   ];
+
+  // Poistka: ak odberateľ už má faktúru (napr. 3026034 mimo zákazky), nový
+  // pokus sa nepošle — najprv ju treba vo FLOWii skontrolovať alebo vymazať.
+  const existing = partnerId
+    ? await client.get(`/partners/${encodeURIComponent(String(partnerId))}/documents`, { companyId }).catch(() => null)
+    : null;
+  const existingInvoices = (existing?.data ?? []).filter((d: any) => d.attributes?.type === 4);
+  if (existingInvoices.length) {
+    return {
+      error: `Odberateľ už má vo FLOWii faktúru ${existingInvoices.map((d: any) => d.attributes?.["serial-nr"]).join(", ")} — nový pokus sa neposlal (aby nevznikla druhá). Ak ju chcete nahradiť, najprv ju vo FLOWii vymažte.`,
+    };
+  }
 
   const results: { label: string; status: number | string; response: unknown }[] = [];
   for (const a of attempts) {
@@ -134,6 +148,8 @@ export async function trialFlowiiInvoice(webOrderId: string, serialNr?: string) 
       const docs = await client.get(`/orders/${encodeURIComponent(sync.flowiiOrderId)}/documents`, { companyId }).catch(() => null);
       const createdId = (r.body as any)?.data?.id;
       const doc = (docs?.data ?? []).find((d: any) => String(d.id) === String(createdId));
+      const pdocs = partnerId ? await client.get(`/partners/${encodeURIComponent(String(partnerId))}/documents`, { companyId }).catch(() => null) : null;
+      const pdoc = (pdocs?.data ?? []).find((d: any) => String(d.id) === String(createdId));
       results.push({
         label: "kontrola súm",
         status: !doc
@@ -141,7 +157,7 @@ export async function trialFlowiiInvoice(webOrderId: string, serialNr?: string) 
           : Math.abs((doc.attributes?.["order-gross-amount"] ?? -1) - expectedNet) < 0.011
             ? "V ZÁKAZKE, SUMA SEDÍ"
             : "V ZÁKAZKE, SUMA NESEDÍ",
-        response: { vytvorena: r.body, ocakavane_bez_DPH: expectedNet, ocakavane_s_DPH: web.paid, doklad: doc?.attributes ?? null },
+        response: { vytvorena: r.body, ocakavane_bez_DPH: expectedNet, ocakavane_s_DPH: web.paid, doklad: doc?.attributes ?? null, doklad_u_odberatela: pdoc?.attributes ?? null },
       });
       break;
     }
