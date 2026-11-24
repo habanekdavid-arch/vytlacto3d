@@ -90,7 +90,8 @@ export async function trialFlowiiInvoice(webOrderId: string, serialNr?: string) 
       "vat-rate": 23,
       unit: "ks",
     }));
-  const maturityDate = new Date(Date.parse(today) + 14 * 864e5).toISOString().slice(0, 10);
+  // Splatnosť FLOWii vyžaduje — faktúra je už zaplatená, preto = deň zaplatenia.
+  const maturityDate = today;
   const header = (dateKey: string, maturity: unknown, items: unknown) => ({
     data: {
       type: "document",
