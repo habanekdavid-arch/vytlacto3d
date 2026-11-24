@@ -119,6 +119,7 @@ export function scheduleFlowiiSync(orderId: string) {
           onRetry: (n) => console.warn(`FLOWii sync: limit požiadaviek, pokus ${n + 1} o minútu`, orderId),
         });
         console.log("FLOWii sync:", orderId, result.status);
+        if (result.status === "DONE") await invoiceAfterSync(orderId);
       } catch (e) {
         if (isFlowiiDailyQuota(e)) {
           console.warn("FLOWii sync odložený (denný limit FLOWii), dokončí sa ráno:", orderId);
@@ -601,6 +602,26 @@ function buildTaskBody(draft: FlowiiZakazkaDraft, refs: TaskRefs, partnerId: str
   };
 }
 
+/** Firma (fakturačné údaje) podľa nastavení — rovnaká ako pri zákazkách (pre faktúry). */
+export async function resolveFlowiiCompanyDataId(client: FlowiiClient): Promise<string> {
+  const creds = getFlowiiCredentials();
+  if (!creds) throw new FlowiiError("FLOWii nie je nastavené.");
+  const ref = await loadRefData(client, refCacheKey(creds));
+  return resolveRefs(ref, getFlowiiSettings()).companyDataId;
+}
+
+/** Po vytvorení zákazky: automatická faktúra (lib/flowii/invoice). Chyby rieši a hlási sama. */
+async function invoiceAfterSync(orderId: string) {
+  try {
+    const { createFlowiiInvoice, isFlowiiAutoInvoiceEnabled } = await import("@/lib/flowii/invoice");
+    if (!isFlowiiAutoInvoiceEnabled()) return;
+    const res = await withFlowiiRateLimitRetry(() => createFlowiiInvoice(orderId));
+    console.log("FLOWii invoice:", orderId, res.status, res.message);
+  } catch (e) {
+    console.error("FLOWii invoice failed:", orderId, e);
+  }
+}
+
 // ── Hlavný tok ─────────────────────────────────────────────────────────────
 
 export type FlowiiSyncResult =
@@ -927,6 +948,7 @@ export async function retryWaitingFlowiiSyncs(limit = 25): Promise<FlowiiRetryRe
     try {
       const res = await withFlowiiRateLimitRetry(() => syncOrderToFlowii(r.orderId));
       if (res.status === "DONE" || res.status === "ALREADY_DONE") report.done++;
+      if (res.status === "DONE") await invoiceAfterSync(r.orderId);
       report.details.push(`${r.orderId}: ${res.status}`);
     } catch (e) {
       if (isFlowiiDailyQuota(e)) {

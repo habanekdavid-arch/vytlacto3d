@@ -1,90 +1,89 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
-/** Prieskum faktúr vo FLOWii (len čítanie) — výsledok sa skopíruje a pošle programátorovi. */
+type Row = { status: string; serialNr: string | null; linked: boolean | null; error: string | null; updatedAt: string } | null;
+
+const LABEL: Record<string, string> = {
+  RUNNING: "Vytvára sa…",
+  DONE: "Vystavená",
+  FAILED: "Nevytvorila sa",
+  UNKNOWN: "Neisté — skontrolujte FLOWii",
+  SKIPPED: "Vystavte ručne",
+};
+
+/** Faktúra vo FLOWii k objednávke: stav automatiky a ručné vystavenie. */
 export default function FlowiiInvoiceProbe({ orderId }: { orderId: string }) {
-  const [invoiceNumber, setInvoiceNumber] = useState("");
+  const [row, setRow] = useState<Row>(null);
+  const [loaded, setLoaded] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [out, setOut] = useState("");
-  const [copied, setCopied] = useState(false);
+  const [msg, setMsg] = useState("");
+  const [checked, setChecked] = useState(false);
 
-  async function trial() {
-    if (!confirm("Skúšobná faktúra: do FLOWii sa pošlú najviac 3 pokusy o vytvorenie faktúry k tejto zákazke. Ak sa niektorý podarí, vznikne skutočná faktúra (ďalšie číslo v rade). Pokračovať?")) return;
+  const load = useCallback(async () => {
+    const res = await fetch(`/api/admin/flowii/invoice?orderId=${encodeURIComponent(orderId)}`).catch(() => null);
+    const json = await res?.json().catch(() => null);
+    setRow(json?.row ?? null);
+    setLoaded(true);
+  }, [orderId]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  async function create() {
+    if (!confirm("Vystaviť faktúru k tejto objednávke vo FLOWii?")) return;
     setBusy(true);
-    setOut("");
-    setCopied(false);
+    setMsg("");
     try {
-      const res = await fetch("/api/admin/flowii/invoice-trial", {
+      const res = await fetch("/api/admin/flowii/invoice", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderId, confirm: true, serialNr: invoiceNumber }),
+        body: JSON.stringify({ orderId, confirmUnknown: checked }),
       });
-      setOut(JSON.stringify(await res.json(), null, 2));
-    } catch (e: any) {
-      setOut(`Chyba: ${e?.message || e}`);
+      const json = await res.json();
+      setMsg(json?.result?.message ?? json?.error ?? "");
+      setRow(json?.row ?? null);
+    } catch (e) {
+      setMsg(`Chyba: ${(e as Error)?.message || e}`);
     } finally {
       setBusy(false);
     }
   }
 
-  async function run() {
-    setBusy(true);
-    setOut("");
-    setCopied(false);
-    try {
-      const res = await fetch("/api/admin/flowii/probe", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderId, invoiceNumber }),
-      });
-      setOut(JSON.stringify(await res.json(), null, 2));
-    } catch (e: any) {
-      setOut(`Chyba: ${e?.message || e}`);
-    } finally {
-      setBusy(false);
-    }
-  }
+  if (!loaded) return null;
+  const status = row?.status;
+  const canCreate = !row || status === "FAILED" || status === "SKIPPED" || (status === "UNKNOWN" && checked);
+  const tone = status === "DONE" && !row?.error ? "border-green-200 bg-green-50" : status ? "border-amber-200 bg-amber-50" : "border-neutral-200 bg-neutral-50";
 
   return (
-    <div className="mt-4 rounded-2xl border border-dashed border-neutral-300 bg-neutral-50 p-3 text-xs">
-      <div className="font-bold text-neutral-800">Prieskum faktúr vo FLOWii (len čítanie, nič nemení)</div>
-      <div className="mt-2 flex flex-wrap items-center gap-2">
-        <label className="text-neutral-600">
-          Číslo faktúry (prázdne = pridelí FLOWii):{" "}
-          <input
-            value={invoiceNumber}
-            onChange={(e) => setInvoiceNumber(e.target.value)}
-            className="ml-1 w-28 rounded-lg border border-neutral-200 bg-white px-2 py-1"
-          />
-        </label>
-        <button
-          type="button"
-          onClick={run}
-          disabled={busy}
-          className="rounded-lg border border-neutral-300 bg-white px-3 py-1.5 font-bold text-neutral-800 hover:border-[#FFAE00] disabled:opacity-50"
-        >
-          {busy ? "Čítam z FLOWii…" : "Preskúmať faktúry"}
-        </button>
-        <button
-          type="button"
-          onClick={trial}
-          disabled={busy}
-          className="rounded-lg border border-red-300 bg-white px-3 py-1.5 font-bold text-red-700 hover:border-red-500 disabled:opacity-50"
-        >
-          Skúšobná faktúra (vytvorí doklad)
-        </button>
-        {out && (
+    <div className={`mt-4 rounded-2xl border p-3 text-sm ${tone}`}>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <span className="font-bold text-neutral-900">Faktúra vo FLOWii: </span>
+          <span className="text-neutral-700">
+            {status ? `${LABEL[status] ?? status}${row?.serialNr ? ` — ${row.serialNr}` : ""}` : "zatiaľ nevystavená (vytvára sa automaticky po zaplatení kartou)"}
+          </span>
+        </div>
+        {status !== "DONE" && status !== "RUNNING" && (
           <button
             type="button"
-            onClick={() => navigator.clipboard.writeText(out).then(() => setCopied(true))}
-            className="rounded-lg bg-[#FFAE00] px-3 py-1.5 font-bold text-black"
+            onClick={create}
+            disabled={busy || !canCreate}
+            className="rounded-lg bg-[#FFAE00] px-3 py-1.5 text-xs font-bold text-black disabled:opacity-50"
           >
-            {copied ? "Skopírované ✓" : "Kopírovať výsledok"}
+            {busy ? "Vystavujem…" : "Vystaviť faktúru vo FLOWii"}
           </button>
         )}
       </div>
-      {out && <textarea readOnly value={out} className="mt-2 h-64 w-full rounded-lg border border-neutral-200 bg-white p-2 font-mono text-[11px]" />}
+      {row?.error && <div className="mt-1 text-xs text-neutral-700">{row.error}</div>}
+      {status === "UNKNOWN" && (
+        <label className="mt-2 flex items-center gap-2 text-xs text-neutral-700">
+          <input type="checkbox" checked={checked} onChange={(e) => setChecked(e.target.checked)} />
+          Skontroloval(a) som FLOWii — faktúra k tejto objednávke tam nie je.
+        </label>
+      )}
+      {msg && <div className="mt-1 text-xs font-semibold text-neutral-800">{msg}</div>}
     </div>
   );
 }
