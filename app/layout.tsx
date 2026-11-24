@@ -16,6 +16,7 @@ import { getLocale, getT } from "@/lib/i18n/server";
 import { dictionaryFor } from "@/lib/i18n/messages";
 import { GA_MEASUREMENT_ID, GTM_ID, isAnalyticsHost } from "@/lib/analytics";
 import AnalyticsRouteGuard from "@/components/AnalyticsRouteGuard";
+import TlackoGate from "@/components/tlacko/TlackoGate";
 
 const baseUrl =
   process.env.NEXT_PUBLIC_BASE_URL || "https://www.vytlacto3d.sk";
@@ -175,6 +176,7 @@ export default async function RootLayout({
           <PromoTipPopup />
           <RegisterNudgePopup />
           <CompleteProfilePopup />
+          <TlackoGate />
         </Providers>
         </LocaleProvider>
       </body>

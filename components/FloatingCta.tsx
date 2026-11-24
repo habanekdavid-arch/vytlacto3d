@@ -33,7 +33,7 @@ export default function FloatingCta() {
   return (
     <a
       href="#kalkulator"
-      className="fixed bottom-5 right-5 z-50 inline-flex items-center justify-center rounded-2xl bg-[#FFAE00] px-5 py-3 text-sm font-extrabold text-black shadow-lg transition hover:opacity-90"
+      className="fixed bottom-6 right-[88px] z-50 inline-flex items-center justify-center rounded-2xl bg-[#FFAE00] px-5 py-3 text-sm font-extrabold text-black shadow-lg transition hover:opacity-90"
     >
       {t("Naceniť 3D tlač")}
     </a>
