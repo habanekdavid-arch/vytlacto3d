@@ -174,6 +174,7 @@ function PriceCounter({ to }: { to: number }) {
 export function PriceScene() {
   return (
     <div className="tl-scene">
+      <div style={{ position: "absolute", top: 6, right: 10, zIndex: 1, fontSize: 10, fontWeight: 800, color: "#8A8A8A", letterSpacing: ".06em", textTransform: "uppercase" }}>Ukážka</div>
       <div className="tl-s4">
         <div className="tl-s4-row" style={{ animationDelay: ".1s" }}>
           <span>Materiál</span>

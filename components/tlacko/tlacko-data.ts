@@ -6,7 +6,9 @@
  * alebo podľa tlačidla. Ceny a údaje zodpovedajú kódu webu k 24. 11. 2026:
  * lib/pricing.ts (materiály, minimálna cena, množstevné zľavy),
  * lib/shipping.ts (doprava), lib/print-options.ts (farby, kvality),
- * lib/multicolor.ts (viacfarebná tlač). Pri zmene cien ich uprav aj tu.
+ * lib/multicolor.ts (viacfarebná tlač), lib/company-info.ts + /kontakt
+ * (kontakt), ContactForm (typy dopytu). Pri zmene cien ich uprav aj tu.
+ * Pravidlo: Tlačko smie sľúbiť len to, čo web naozaj robí.
  */
 
 export const LINKS = {
@@ -27,7 +29,7 @@ export const LINKS = {
 
 export const CONTACT = {
   email: "info@vytlacto3d.sk",
-  phone: "+421 917 244 422",
+  phone: "+421 907 907 097",
 };
 
 /** Miesta na stránke, ktoré Tlačko vie zvýrazniť (spotlight). */
@@ -102,6 +104,28 @@ export const AFTER_UPLOAD: TlackoIntent = {
   ],
 };
 
+/** Keď zvýrazňované miesto na stránke ešte nie je (napr. nastavenia pred nahratím modelu). */
+export const TARGET_MISSING: Record<TargetId, TlackoIntent> = {
+  settings: {
+    id: "chyba-nastavenia",
+    keywords: [],
+    answer: "Nastavenia (materiál, kvalita, výplň, farba, počet kusov) sa zobrazia až po nahratí modelu. Nahrajte ho a potom vám ich ukážem.",
+    actions: [{ kind: "upload", label: "Nahrať model teraz" }, { kind: "tour", label: "▶ Ukáž mi, ako to funguje" }],
+  },
+  upload: {
+    id: "chyba-nahratie",
+    keywords: [],
+    answer: "Miesto na nahratie modelu sa mi teraz nepodarilo nájsť. Nájdete ho na úvodnej stránke v časti Konfigurátor.",
+    actions: [{ kind: "link", label: "Úvodná stránka", href: "/#kalkulator" }],
+  },
+  cennik: {
+    id: "chyba-cennik",
+    keywords: [],
+    answer: "Cenník sa mi teraz nepodarilo nájsť. Nájdete ho na úvodnej stránke v časti Cenník.",
+    actions: [{ kind: "link", label: "Úvodná stránka", href: "/#cennik" }],
+  },
+};
+
 export const INTENTS: TlackoIntent[] = [
   {
     id: "nastavenia",
@@ -122,14 +146,14 @@ export const INTENTS: TlackoIntent[] = [
     id: "cena",
     keywords: ["kolko", "stoji", "cena", "ceny", "cennik", "naceni", "nacenenie", "kalkul", "drahe", "lacne", "price", "eur", "€", "zlava", "zlavy"],
     answer:
-      "Cenu vypočíta kalkulátor hneď po nahratí modelu — podľa hmotnosti materiálu, času tlače, kvality a počtu kusov. Minimálna cena položky je 10 € bez DPH (12,30 € s DPH). Pri väčšom počte kusov dostanete zľavu: od 20 ks 5 %, od 50 ks 10 %, od 100 ks 15 %. Ak vám nezáleží na presnom materiáli alebo farbe, ušetríte ďalšie 1 € za každú voľbu.",
+      "Cenu vypočíta kalkulátor hneď po nahratí modelu — podľa hmotnosti materiálu, času tlače, kvality a počtu kusov. Minimálna cena jednej položky je 10 € bez DPH (12,30 € s DPH), počas akcie sa z nej odpočíta akciová zľava. Pri väčšom počte kusov dostanete zľavu: od 20 ks 5 %, od 50 ks 10 %, od 100 ks 15 %. Ak vám nezáleží na presnom materiáli alebo farbe, ušetríte 1 € za každú takú voľbu (nie však pod minimálnu cenu).",
     actions: [toCalc, { kind: "show", label: "Ukáž cenník", target: "cennik" }, { kind: "link", label: "Koľko stojí 3D tlač (článok)", href: LINKS.blogCena }],
   },
   {
     id: "subory",
     keywords: ["subor", "format", "stl", "obj", "3mf", "step", "stp", "nahrat", "nahrajem", "upload", "aky subor"],
     answer:
-      "Do kalkulátora nahráte 3D model vo formáte STL, OBJ alebo 3MF. Prijímame aj obrázky SVG, PNG, JPG a WEBP — z nich vytvoríme 3D model (napr. logo alebo nápis). Formát STEP zatiaľ nepodporujeme, vyexportujte ho prosím do STL.",
+      "Do kalkulátora nahráte 3D model vo formáte STL, OBJ alebo 3MF. Prijímame aj obrázky SVG, PNG, JPG a WEBP — z nich vytvoríme 3D model (napr. logo alebo nápis). Formát STEP konfigurátor nevie otvoriť — vyexportujte ho do STL, alebo nám ho pošlite cez formulár „Napíšte nám“ a nacenníme ho.",
     actions: [toCalc, { kind: "link", label: "Ako pripraviť STL", href: LINKS.blogStl }],
   },
   {
@@ -143,10 +167,10 @@ export const INTENTS: TlackoIntent[] = [
     id: "bez-modelu",
     keywords: ["nemam model", "nemam 3d", "bez modelu", "nemam subor", "navrh", "navrhnut", "modelovanie", "vymodelovat", "nakreslit", "vykres", "zadarmo", "modely zadarmo", "stiahnut model"],
     answer:
-      "Nevadí. Máte tieto možnosti: 1) vyberte si hotový model z našej ponuky, 2) napíšte nám, čo hľadáte, a pomôžeme vám nájsť model, 3) ak máte logo alebo obrázok, nahrajte ho a 3D model vytvoríme z neho, 4) pošlite nám fotku, nákres alebo výkres cez formulár „Napíšte nám“ a pripravíme ponuku na vymodelovanie.",
+      "Nevadí. Máte tieto možnosti: 1) vyberte si hotový model z našej ponuky produktov, 2) nájdite si model na internete (na stránkach s 3D modelmi zadarmo), stiahnite ho a nahrajte do konfigurátora, 3) ak máte logo alebo obrázok, nahrajte ho a 3D model sa vytvorí z neho, 4) ak si neviete rady, napíšte nám cez formulár „Napíšte nám“ a ozveme sa vám.",
     actions: [
       { kind: "link", label: "Hotové modely", href: LINKS.modely },
-      { kind: "link", label: "Pomôžte mi nájsť model", href: LINKS.hladatModel },
+      { kind: "link", label: "Stiahol som model z internetu", href: LINKS.hladatModel },
       { kind: "intent", label: "Mám len logo", intent: "logo" },
       toContact,
     ],
@@ -172,7 +196,7 @@ export const INTENTS: TlackoIntent[] = [
   {
     id: "mat-interier",
     keywords: [],
-    answer: "Na dekorácie, makety a bežné diely do interiéru odporúčam PLA — je najlacnejšie, presné a má najviac farieb. Ak má diel niečo vydržať (napr. držiak), zvoľte PETG.",
+    answer: "Na dekorácie, makety a bežné diely do interiéru odporúčam PLA — je najlacnejšie, presné a ako jediné sa dá tlačiť aj viacfarebne. Ak má diel niečo vydržať (napr. držiak), zvoľte PETG.",
     actions: [toCalc, { kind: "intent", label: "Iné použitie", intent: "sprievodca" }],
   },
   {
@@ -197,7 +221,7 @@ export const INTENTS: TlackoIntent[] = [
     id: "farby",
     keywords: ["farba", "farby", "farbu", "farieb", "cierna", "biela", "cervena", "modra", "zelena", "siva", "fialova", "oranzova", "viacfarebn", "farebn"],
     answer:
-      "Farby: čierna, biela, sivá, červená, modrá, zelená, fialová a oranžová (PLA, PETG, ABS). PA6-CF tlačíme len v čiernej. Viacfarebný model (aspoň dve farby) stojí navyše 10 € bez DPH za položku. Ak vám na farbe nezáleží, zaškrtnite to a ušetríte 1 €.",
+      "Farby: čierna, biela, sivá, červená, modrá, zelená, fialová a oranžová (PLA, PETG, ABS). PA6-CF tlačíme len v čiernej. Viacfarebná tlač (aspoň dve farby na jednom modeli) je len z PLA a stojí navyše 10 € bez DPH za položku. Ak vám na farbe nezáleží, zaškrtnite to a ušetríte 1 €. Skutočná dostupnosť farby závisí od skladových zásob.",
     actions: [toCalc],
   },
   {
@@ -216,22 +240,22 @@ export const INTENTS: TlackoIntent[] = [
   },
   {
     id: "platba",
-    keywords: ["platba", "platit", "zaplatit", "zaplatim", "karta", "kartou", "prevod", "prevodom", "stripe", "apple pay", "google pay", "dobierka", "faktura", "fakturu"],
+    keywords: ["platba", "platit", "zaplatit", "zaplatim", "karta", "kartou", "prevod", "prevodom", "stripe", "apple pay", "google pay", "dobierka", "ico", "dic"],
     answer:
-      "Zaplatiť môžete platobnou kartou cez zabezpečenú bránu Stripe alebo bankovým prevodom (pri prevode spúšťame výrobu po pripísaní platby). Na dobierku zatiaľ neposielame. Faktúru dostanete k objednávke; firmy vyplnia IČO, DIČ a IČ DPH pri objednávke.",
+      "Zaplatiť môžete platobnou kartou cez zabezpečenú bránu Stripe alebo bankovým prevodom — pri prevode vám pošleme platobné údaje e-mailom a objednávku spracujeme po prijatí platby. Na dobierku zatiaľ neposielame. Firmy môžu pri objednávke vyplniť IČO, DIČ a IČ DPH.",
     actions: [toCalc, { kind: "intent", label: "Doprava", intent: "doprava" }],
   },
   {
     id: "termin",
     keywords: ["ako dlho", "kedy", "termin", "rychlo", "dodacia", "lehota", "trva", "urgent", "expres", "zajtra", "do kedy"],
     answer:
-      "Termín závisí od veľkosti modelu a počtu kusov. Stav objednávky vidíte v účte a o zmenách stavu vám príde e-mail. Ak to súri, napíšte nám pred objednaním a povieme vám presný termín.",
+      "Termín závisí od veľkosti modelu a počtu kusov. O každej zmene stavu (prijatá platba, tlačí sa, odoslaná) vám príde e-mail. Ak to súri, napíšte nám pred objednaním a povieme vám presný termín.",
     actions: [{ kind: "link", label: "Moje objednávky", href: LINKS.objednavky }, toContact],
   },
   {
     id: "objednavka",
-    keywords: ["stav objednavky", "moja objednavka", "kde je", "sledovat", "sledovanie", "zasielka", "objednavku", "objednal"],
-    answer: "Stav objednávky nájdete po prihlásení v časti Môj účet → Objednávky. O zmenách stavu vám príde e-mail. Ak niečo nesedí, napíšte nám s číslom objednávky (VYT3D-…).",
+    keywords: ["stav objednavky", "moja objednavka", "moje objednavky", "kde je", "zasielka", "objednavku", "objednal"],
+    answer: "Ak ste objednávali prihlásený, stav nájdete v časti Moje objednávky. O každej zmene stavu (prijatá platba, tlačí sa, odoslaná, doručená) vám príde e-mail. Ak niečo nesedí, napíšte nám s číslom objednávky (VYT3D-…).",
     actions: [{ kind: "link", label: "Moje objednávky", href: LINKS.objednavky }, toContact],
   },
   {
@@ -249,7 +273,7 @@ export const INTENTS: TlackoIntent[] = [
   {
     id: "realizacie",
     keywords: ["realizacie", "ukazky", "ukazka", "referencie", "co ste tlacili", "priklady", "portfolio", "galeria"],
-    answer: "Pozrite si, čo sme už vytlačili — technické diely, prototypy aj darčeky.",
+    answer: "Pozrite si ukážky toho, čo sme už vytlačili.",
     actions: [{ kind: "link", label: "Realizácie", href: LINKS.realizacie }, { kind: "link", label: "Blog", href: LINKS.blog }],
   },
   {

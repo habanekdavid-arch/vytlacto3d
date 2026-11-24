@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { AFTER_UPLOAD, TARGETS, WELCOME, findIntent, getIntent, type TargetId, type TlackoAction, type TlackoIntent } from "./tlacko-data";
+import { AFTER_UPLOAD, TARGETS, TARGET_MISSING, WELCOME, findIntent, getIntent, type TargetId, type TlackoAction, type TlackoIntent } from "./tlacko-data";
 import TlackoMascot from "./TlackoMascot";
 import TlackoTour from "./TlackoTour";
 import { BRAND, TLACKO_CSS } from "./tlacko-styles";
@@ -38,12 +38,12 @@ function teaserAllowed(): boolean {
 }
 
 /** Zvýraznenie miesta na stránke: stmavenie okolia, žltý pulzujúci rámik a bublina. */
-function Spotlight({ selector, label, onDone }: { selector: string; label: string; onDone: () => void }) {
+function Spotlight({ selector, label, onDone, onMissing }: { selector: string; label: string; onDone: () => void; onMissing: () => void }) {
   const [rect, setRect] = useState<DOMRect | null>(null);
   useEffect(() => {
     const el = document.querySelector(selector);
     if (!el) {
-      onDone();
+      onMissing();
       return;
     }
     // Vysoké miesto (napr. nahrávanie na mobile) od vrchu pod hlavičkou, inak na stred.
@@ -62,7 +62,7 @@ function Spotlight({ selector, label, onDone }: { selector: string; label: strin
       window.clearTimeout(done);
       window.removeEventListener("pointerdown", onClick);
     };
-  }, [selector, onDone]);
+  }, [selector, onDone, onMissing]);
   if (!rect) return null;
   const pad = 8;
   const top = rect.top - pad;
@@ -193,6 +193,13 @@ export default function Tlacko() {
   }, [pathname, pendingSpot]);
 
   const endSpot = useCallback(() => setSpot(null), []);
+  // Miesto na stránke chýba — Tlačko to povie v chate namiesto toho, aby sa nič nestalo.
+  const spotMissing = useCallback(() => {
+    setSpot(null);
+    if (!spot) return;
+    setOpen(true);
+    setMsgs((m) => [...m, botMsg(TARGET_MISSING[spot])]);
+  }, [spot]);
 
   function reply(intent: TlackoIntent, userText: string) {
     setMsgs((m) => [...m, { from: "user", text: userText }]);
@@ -233,7 +240,7 @@ export default function Tlacko() {
   function show(target: TargetId) {
     setOpen(false);
     setTour(false);
-    if (pathname === TARGETS[target].page && document.querySelector(TARGETS[target].selector)) setSpot(target);
+    if (pathname === TARGETS[target].page) setSpot(target);
     else {
       setPendingSpot(target);
       router.push(TARGETS[target].page);
@@ -272,7 +279,7 @@ export default function Tlacko() {
     <div className="tl-root">
       <style>{TLACKO_CSS}</style>
 
-      {spot && <Spotlight selector={TARGETS[spot].selector} label={TARGETS[spot].label} onDone={endSpot} />}
+      {spot && <Spotlight selector={TARGETS[spot].selector} label={TARGETS[spot].label} onDone={endSpot} onMissing={spotMissing} />}
 
       {tour && (
         <TlackoTour
