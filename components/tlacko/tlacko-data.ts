@@ -19,6 +19,7 @@ export const LINKS = {
   podmienky: "/podmienky",
   modely: "/produkty",
   objednavky: "/ucet/objednavky",
+  hladatModel: "/kontakt?dopyt=hladat-model",
   blogCena: "/blog/kolko-stoji-3d-tlac",
   blogMaterialy: "/blog/materialy-na-3d-tlac-pla-petg-abs-tpu",
   blogStl: "/blog/priprava-stl-suboru-na-3d-tlac",
@@ -29,9 +30,22 @@ export const CONTACT = {
   phone: "+421 917 244 422",
 };
 
+/** Miesta na stránke, ktoré Tlačko vie zvýrazniť (spotlight). */
+export const TARGETS = {
+  upload: { page: "/", selector: '[data-tlacko="upload"]', label: "Sem pretiahnite súbor alebo kliknite a vyberte ho 👆" },
+  cennik: { page: "/", selector: "#cennik", label: "Tu je cenník materiálov 👇" },
+} as const;
+export type TargetId = keyof typeof TARGETS;
+
 export type TlackoAction =
   | { kind: "link"; label: string; href: string }
-  | { kind: "intent"; label: string; intent: string };
+  | { kind: "intent"; label: string; intent: string }
+  /** Animovaná prehliadka konfigurátora. */
+  | { kind: "tour"; label: string }
+  /** Prejde na stránku a zvýrazní miesto (spotlight). */
+  | { kind: "show"; label: string; target: TargetId }
+  /** Zvýrazní nahrávanie a rovno otvorí výber súboru. */
+  | { kind: "upload"; label: string };
 
 export type TlackoIntent = {
   id: string;
@@ -41,15 +55,17 @@ export type TlackoIntent = {
   actions?: TlackoAction[];
 };
 
-const toCalc: TlackoAction = { kind: "link", label: "Prejsť na kalkulátor", href: LINKS.kalkulator };
+const toCalc: TlackoAction = { kind: "show", label: "Prejsť na kalkulátor", target: "upload" };
+const tour: TlackoAction = { kind: "tour", label: "▶ Ukáž mi, ako to funguje" };
 const toContact: TlackoAction = { kind: "link", label: "Napíšte nám", href: LINKS.kontakt };
 
 export const WELCOME: TlackoIntent = {
   id: "uvod",
   keywords: [],
   answer:
-    "Ahoj, som Tlačko 👋 Pomôžem vám s 3D tlačou na vytlacto3d.sk — s cenou, súbormi, materiálmi aj doručením. Vyberte tému alebo napíšte otázku.",
+    "Ahoj, som Tlačko 👋 Pomôžem vám s 3D tlačou — ukážem vám, ako funguje konfigurátor, poradím s cenou, materiálom aj doručením. Vyberte tému alebo napíšte otázku.",
   actions: [
+    tour,
     { kind: "intent", label: "Koľko to stojí?", intent: "cena" },
     { kind: "intent", label: "Nemám 3D model", intent: "bez-modelu" },
     { kind: "intent", label: "Aký materiál?", intent: "sprievodca" },
@@ -70,11 +86,17 @@ export const FALLBACK: TlackoIntent = {
 
 export const INTENTS: TlackoIntent[] = [
   {
+    id: "konfigurator",
+    keywords: ["konfigurator", "ako funguje", "ako to funguje", "ukaz", "ukazte", "navod", "ako objednat", "postup", "ako na to", "kde nahram", "kde nahrat", "nahrat model", "ako zacat"],
+    answer: "Ukážem vám to krok po kroku — v 5 krokoch od nahratia modelu po doručenie. Alebo vám rovno ukážem, kam model nahrať.",
+    actions: [tour, { kind: "show", label: "Kam nahrám model?", target: "upload" }, { kind: "upload", label: "Nahrať model teraz" }],
+  },
+  {
     id: "cena",
     keywords: ["kolko", "stoji", "cena", "ceny", "cennik", "naceni", "nacenenie", "kalkul", "drahe", "lacne", "price", "eur", "€", "zlava", "zlavy"],
     answer:
       "Cenu vypočíta kalkulátor hneď po nahratí modelu — podľa hmotnosti materiálu, času tlače, kvality a počtu kusov. Minimálna cena položky je 10 € bez DPH (12,30 € s DPH). Pri väčšom počte kusov dostanete zľavu: od 20 ks 5 %, od 50 ks 10 %, od 100 ks 15 %. Ak vám nezáleží na presnom materiáli alebo farbe, ušetríte ďalšie 1 € za každú voľbu.",
-    actions: [toCalc, { kind: "link", label: "Cenník materiálov", href: LINKS.cennik }, { kind: "link", label: "Koľko stojí 3D tlač (článok)", href: LINKS.blogCena }],
+    actions: [toCalc, { kind: "show", label: "Ukáž cenník", target: "cennik" }, { kind: "link", label: "Koľko stojí 3D tlač (článok)", href: LINKS.blogCena }],
   },
   {
     id: "subory",
@@ -88,14 +110,19 @@ export const INTENTS: TlackoIntent[] = [
     keywords: ["logo", "obrazok", "obrazka", "svg", "png", "jpg", "jpeg", "napis", "fotka", "nalepka", "znak", "erb", "mam len logo"],
     answer:
       "Stačí logo alebo obrázok 👍 Postup: 1) v kalkulátore nahrajte SVG, PNG alebo JPG (najlepšie SVG alebo obrázok s jasným kontrastom), 2) web z neho vytvorí 3D model, 3) nastavte výšku a veľkosť, materiál a farbu, 4) cenu uvidíte hneď a môžete objednať.",
-    actions: [toCalc],
+    actions: [{ kind: "upload", label: "Nahrať logo teraz" }, tour],
   },
   {
     id: "bez-modelu",
     keywords: ["nemam model", "nemam 3d", "bez modelu", "nemam subor", "navrh", "navrhnut", "modelovanie", "vymodelovat", "nakreslit", "vykres", "zadarmo", "modely zadarmo", "stiahnut model"],
     answer:
-      "Nevadí. Máte tri možnosti: 1) vyberte si hotový model z našej ponuky, 2) ak máte logo alebo obrázok, nahrajte ho a 3D model vytvoríme z neho, 3) pošlite nám fotku, nákres alebo výkres cez formulár „Napíšte nám“ a pripravíme vám ponuku na vymodelovanie.",
-    actions: [{ kind: "link", label: "Hotové modely", href: LINKS.modely }, { kind: "intent", label: "Mám len logo", intent: "logo" }, toContact],
+      "Nevadí. Máte tieto možnosti: 1) vyberte si hotový model z našej ponuky, 2) napíšte nám, čo hľadáte, a pomôžeme vám nájsť model, 3) ak máte logo alebo obrázok, nahrajte ho a 3D model vytvoríme z neho, 4) pošlite nám fotku, nákres alebo výkres cez formulár „Napíšte nám“ a pripravíme ponuku na vymodelovanie.",
+    actions: [
+      { kind: "link", label: "Hotové modely", href: LINKS.modely },
+      { kind: "link", label: "Pomôžte mi nájsť model", href: LINKS.hladatModel },
+      { kind: "intent", label: "Mám len logo", intent: "logo" },
+      toContact,
+    ],
   },
   {
     id: "materialy",
@@ -200,9 +227,9 @@ export const INTENTS: TlackoIntent[] = [
   },
   {
     id: "faq",
-    keywords: ["faq", "otazky", "casto", "pomoc", "navod", "ako to funguje", "ako objednat", "postup"],
+    keywords: ["faq", "otazky", "casto", "pomoc"],
     answer: "Ako to funguje: 1) nahrajte model do kalkulátora, 2) vyberte materiál, kvalitu, farbu a počet kusov, 3) cenu uvidíte hneď, 4) objednáte a zaplatíte, 5) vytlačíme a pošleme. Odpovede na ďalšie otázky sú v časti FAQ.",
-    actions: [toCalc, { kind: "link", label: "Časté otázky", href: LINKS.faq }],
+    actions: [tour, { kind: "link", label: "Časté otázky", href: LINKS.faq }],
   },
   {
     id: "pozdrav",

@@ -173,6 +173,7 @@ export default function PromoTipPopup() {
   return (
     <>
       <div
+        data-site-popup
         className={[
           "fixed bottom-6 right-6 z-[90] w-[calc(100%-48px)] max-w-[420px]",
           closing

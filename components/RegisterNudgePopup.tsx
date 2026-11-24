@@ -83,7 +83,7 @@ export default function RegisterNudgePopup() {
 
   return (
     <>
-      <div
+      <div data-site-popup
         className={[
           "fixed bottom-6 left-6 z-[89] w-[calc(100%-48px)] max-w-[400px]",
           closing

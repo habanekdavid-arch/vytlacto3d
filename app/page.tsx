@@ -1008,7 +1008,7 @@ export default function Home() {
                 survives), only the dropzone itself hides once an item
                 is active. This lets a customer keep adjusting the
                 height of an SVG-derived model after it's inserted. */}
-            <div className={activeItem ? "" : "rounded-3xl border border-neutral-200 bg-neutral-50 p-4 sm:p-5"}>
+            <div data-tlacko="upload" className={activeItem ? "" : "rounded-3xl border border-neutral-200 bg-neutral-50 p-4 sm:p-5"}>
               {!activeItem && (
                 <div className="flex items-center gap-3 mb-4">
                   <div className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-black text-sm font-bold text-white">1</div>
