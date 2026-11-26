@@ -1,6 +1,16 @@
 import { getT } from "@/lib/i18n/server";
 import { CONTACT_EMAIL } from "@/lib/contact";
 import ContactForm from "@/components/ContactForm";
+import type { Metadata } from "next";
+
+// Varianty s parametrom (napr. ?dopyt=hladat-model z konfigurátora) sú tá istá
+// stránka — kanonická adresa povie Googlu, že sa má indexovať len /kontakt.
+export const metadata: Metadata = {
+  title: "Kontakt",
+  description: "Napíšte nám alebo zavolajte — otázky k 3D tlači, objednávke alebo modelu. Pošlite aj súbor STL, OBJ, 3MF či STEP.",
+  alternates: { canonical: "/kontakt" },
+};
+
 export default async function KontaktPage() {
   const { t } = await getT();
   return (
