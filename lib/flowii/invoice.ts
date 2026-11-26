@@ -326,7 +326,9 @@ export async function createFlowiiInvoice(orderId: string, opts: { manual?: bool
     const { resolveFlowiiCompanyDataId } = await import("@/lib/flowii/sync");
     const companyDataId = await resolveFlowiiCompanyDataId(client);
     const orderRef = { type: "order", id: flowiiOrderId };
-    const body = {
+    // Zákazku nesie pravdepodobne každá položka (FLOWii počíta sumy dokladu
+    // „za zákazku“ — order-gross-amount); väzba na celý doklad sa ignoruje.
+    const buildBody = (linkItems: boolean) => ({
       data: {
         type: "document",
         attributes: {
@@ -343,6 +345,7 @@ export async function createFlowiiInvoice(orderId: string, opts: { manual?: bool
             unitPrice: l.unitNet,
             unitPriceType: 1,
             vatRate: VAT,
+            ...(linkItems ? { orderId: Number(flowiiOrderId), order: { id: Number(flowiiOrderId) } } : {}),
           })),
         },
         relationships: {
@@ -356,14 +359,27 @@ export async function createFlowiiInvoice(orderId: string, opts: { manual?: bool
           "bank-account": { data: { type: "bank-account", id: BANK_ACCOUNT } },
         },
       },
-    };
+    });
 
-    // Najprv priamo pod zákazkou. Ak to FLOWii odmietne (4xx = nič nevzniklo),
-    // vytvorí sa cez /documents — faktúra má prednosť, priradenie sa skontroluje.
+    // Pokusy od najlepšieho; ďalší len keď FLOWii predošlý odmietne (4xx =
+    // doklad nevznikol). Posledný je overený tvar (3026034, 3026035) — faktúra
+    // má prednosť, priradenie k zákazke sa potom skontroluje.
+    const attempts = [
+      { label: "pod zákazkou, položky so zákazkou", path: `/orders/${encodeURIComponent(flowiiOrderId)}/documents`, body: buildBody(true) },
+      { label: "/documents, položky so zákazkou", path: "/documents", body: buildBody(true) },
+      { label: "/documents (overený tvar)", path: "/documents", body: buildBody(false) },
+    ];
+    const tried: string[] = [];
     sent = true;
-    let r = await client.tryCreateDocument(companyId, body, `/orders/${encodeURIComponent(flowiiOrderId)}/documents`);
-    const firstRejected = typeof r.status === "number" && r.status >= 400 && r.status < 500 && ![401, 403, 429].includes(r.status);
-    if (firstRejected) r = await client.tryCreateDocument(companyId, body, "/documents");
+    let r: { status: number | string; body: unknown } = { status: "?", body: null };
+    for (const at of attempts) {
+      r = await client.tryCreateDocument(companyId, at.body, at.path);
+      tried.push(`${at.label}: ${r.status}${typeof r.status === "number" ? ` ${JSON.stringify(r.body).slice(0, 160)}` : ""}`);
+      const rejected = typeof r.status === "number" && r.status >= 400 && r.status < 500 && ![401, 403, 429].includes(r.status);
+      if (!rejected) break;
+      await new Promise((res) => setTimeout(res, 1200));
+    }
+    console.log("FLOWii invoice attempts:", ref, JSON.stringify(tried));
     if (!(typeof r.status === "string" && r.status.startsWith("OK"))) {
       // FLOWii požiadavku odmietol — doklad nevznikol.
       throw new FlowiiError(`FLOWii faktúru odmietol (${r.status}).`, typeof r.status === "number" ? r.status : undefined, JSON.stringify(r.body).slice(0, 1000));
@@ -382,7 +398,7 @@ export async function createFlowiiInvoice(orderId: string, opts: { manual?: bool
     const fieldProblem = serialNr
       ? await writeInvoiceNumber(client, companyId, flowiiOrderId, String(serialNr)).catch((e) => `zápis čísla faktúry zlyhal (${(e as Error)?.message}) — doplňte ho ručne`)
       : "FLOWii nevrátilo číslo faktúry — doplňte ho do zákazky ručne";
-    const problems = [!linked && "nie je priradená k zákazke", !netOk && `suma bez DPH vo FLOWii nesedí (čakalo sa ${draft.expectedNet} €)`, fieldProblem].filter(Boolean);
+    const problems = [!linked && `nie je priradená k zákazke (pokusy: ${tried.join(" | ").slice(0, 600)})`, !netOk && `suma bez DPH vo FLOWii nesedí (čakalo sa ${draft.expectedNet} €)`, fieldProblem].filter(Boolean);
     await setRow(orderId, { status: "DONE", documentId, serialNr, linked, error: problems.length ? `Skontrolujte: ${problems.join(", ")}.` : null });
     if (problems.length) {
       await notify(
