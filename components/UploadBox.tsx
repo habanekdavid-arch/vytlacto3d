@@ -445,6 +445,7 @@ const UploadBox = forwardRef<UploadBoxHandle, {
     <div>
       {!hideDropzone && (
         <div
+          data-tlacko="dropzone"
           onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
           onDragLeave={() => setDragging(false)}
           onDrop={onDrop}

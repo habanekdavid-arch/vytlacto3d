@@ -38,19 +38,32 @@ function teaserAllowed(): boolean {
 }
 
 /** Zvýraznenie miesta na stránke: stmavenie okolia, žltý pulzujúci rámik a bublina. */
-function Spotlight({ selector, label, onDone, onMissing }: { selector: string; label: string; onDone: () => void; onMissing: () => void }) {
-  const [rect, setRect] = useState<DOMRect | null>(null);
+/** Prvý kandidát, ktorý je na stránke naozaj viditeľný (nie skrytý ani prázdny). */
+function findVisible(candidates: readonly { selector: string; label: string }[]) {
+  for (const c of candidates) {
+    for (const el of Array.from(document.querySelectorAll<HTMLElement>(c.selector))) {
+      const r = el.getBoundingClientRect();
+      const cs = getComputedStyle(el);
+      if (r.width >= 40 && r.height >= 24 && cs.visibility !== "hidden" && cs.display !== "none" && Number(cs.opacity) > 0.1) return { el, label: c.label };
+    }
+  }
+  return null;
+}
+
+function Spotlight({ target, onDone, onMissing }: { target: TargetId; onDone: () => void; onMissing: () => void }) {
+  const [shown, setShown] = useState<{ rect: DOMRect; label: string } | null>(null);
   useEffect(() => {
-    const el = document.querySelector(selector);
-    if (!el) {
+    const found = findVisible(TARGETS[target].candidates);
+    if (!found) {
       onMissing();
       return;
     }
+    const el = found.el;
     // Vysoké miesto (napr. nahrávanie na mobile) od vrchu pod hlavičkou, inak na stred.
     const r0 = el.getBoundingClientRect();
     if (r0.height > window.innerHeight * 0.6) window.scrollTo({ top: window.scrollY + r0.top - 96, behavior: "smooth" });
     else el.scrollIntoView({ behavior: "smooth", block: "center" });
-    const update = () => setRect(el.getBoundingClientRect());
+    const update = () => setShown({ rect: el.getBoundingClientRect(), label: found.label });
     update();
     const id = window.setInterval(update, 80);
     const done = window.setTimeout(onDone, 7000);
@@ -62,12 +75,14 @@ function Spotlight({ selector, label, onDone, onMissing }: { selector: string; l
       window.clearTimeout(done);
       window.removeEventListener("pointerdown", onClick);
     };
-  }, [selector, onDone, onMissing]);
-  if (!rect) return null;
+  }, [target, onDone, onMissing]);
+  if (!shown) return null;
+  const { rect, label } = shown;
   const pad = 8;
   const top = rect.top - pad;
   const below = top < 90; // bublina pod miestom, ak je hore málo miesta
   const vh = typeof window !== "undefined" ? window.innerHeight : 800;
+  const vw = typeof window !== "undefined" ? window.innerWidth : 1200;
   const bubbleTop = below ? Math.min(rect.bottom + pad + 14, vh - 70) : Math.max(8, top - 62);
   return (
     <div className="tl-root" style={{ position: "fixed", inset: 0, zIndex: 95, pointerEvents: "none" }}>
@@ -89,8 +104,8 @@ function Spotlight({ selector, label, onDone, onMissing }: { selector: string; l
         style={{
           position: "fixed",
           top: bubbleTop,
-          left: "50%",
-          marginLeft: -150,
+          // Bublina priamo nad/pod zvýrazneným prvkom (nie v strede obrazovky).
+          left: Math.min(Math.max(8, rect.left + rect.width / 2 - 150), vw - 308),
           width: 300,
           display: "flex",
           alignItems: "center",
@@ -279,7 +294,7 @@ export default function Tlacko() {
     <div className="tl-root">
       <style>{TLACKO_CSS}</style>
 
-      {spot && <Spotlight selector={TARGETS[spot].selector} label={TARGETS[spot].label} onDone={endSpot} onMissing={spotMissing} />}
+      {spot && <Spotlight target={spot} onDone={endSpot} onMissing={spotMissing} />}
 
       {tour && (
         <TlackoTour

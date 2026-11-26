@@ -995,6 +995,7 @@ export default function Home() {
                 ))}
                 <button
                   type="button"
+                  data-tlacko="add-model"
                   onClick={() => { uploadBoxRef.current?.triggerOpen(); setActiveItemId(null); }}
                   className="flex-none flex items-center gap-1.5 rounded-2xl border-2 border-dashed border-neutral-300 bg-neutral-50 px-3 py-2 text-xs font-semibold text-neutral-500 transition hover:border-[#FFAE00] hover:bg-[#FFAE00]/5 hover:text-neutral-900"
                 >

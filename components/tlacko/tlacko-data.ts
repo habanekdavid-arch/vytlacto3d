@@ -32,11 +32,25 @@ export const CONTACT = {
   phone: "+421 907 907 097",
 };
 
-/** Miesta na stránke, ktoré Tlačko vie zvýrazniť (spotlight). */
+/**
+ * Miesta na stránke, ktoré Tlačko vie zvýrazniť (spotlight). Každé má
+ * kandidátov v poradí — použije sa prvý, ktorý je naozaj viditeľný, s popisom
+ * presne k nemu (napr. po nahratí modelu je pole na nahratie skryté → ukáže
+ * „+ Pridať“). Keď nie je viditeľný žiadny, Tlačko to povie v chate.
+ */
 export const TARGETS = {
-  upload: { page: "/", selector: '[data-tlacko="upload"]', label: "Sem pretiahnite súbor alebo kliknite a vyberte ho 👆" },
-  cennik: { page: "/", selector: "#cennik", label: "Tu je cenník materiálov 👇" },
-  settings: { page: "/", selector: '[data-tlacko="settings"]', label: "Tu nastavíte materiál, kvalitu, výplň, farbu a počet kusov 👇" },
+  upload: {
+    page: "/",
+    candidates: [
+      { selector: '[data-tlacko="dropzone"]', label: "Sem pretiahnite súbor alebo kliknite a vyberte ho 👆" },
+      { selector: '[data-tlacko="add-model"]', label: "Ďalší model pridáte tu — kliknite na „+ Pridať“ 👆" },
+    ],
+  },
+  cennik: { page: "/", candidates: [{ selector: "#cennik", label: "Tu je cenník materiálov 👇" }] },
+  settings: {
+    page: "/",
+    candidates: [{ selector: '[data-tlacko="settings"]', label: "Tu nastavíte materiál, kvalitu, výplň, farbu a počet kusov 👇" }],
+  },
 } as const;
 export type TargetId = keyof typeof TARGETS;
 

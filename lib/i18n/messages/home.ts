@@ -441,6 +441,21 @@ const messages: Messages = {
     hu: "Modellelemzés",
     de: "Modellanalyse",
   },
+  "Rozmery": {
+    en: "Dimensions",
+    hu: "Méretek",
+    de: "Abmessungen",
+  },
+  "Objem": {
+    en: "Volume",
+    hu: "Térfogat",
+    de: "Volumen",
+  },
+  "Kartu môžete chytiť a presunúť (dvojklik ju vráti na miesto)": {
+    en: "You can drag this card anywhere (double-click puts it back)",
+    hu: "A kártyát áthúzhatja (dupla kattintással visszakerül)",
+    de: "Sie können die Karte verschieben (Doppelklick setzt sie zurück)",
+  },
   "Cena je uvedená s DPH": {
     en: "Price includes VAT",
     hu: "Az ár áfát tartalmaz",
